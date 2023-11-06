@@ -7,6 +7,7 @@
 	smoothing_flags = NONE
 	liquid_height = -30
 	turf_height = -30
+	rad_insulation = RAD_EXTREME_INSULATION
 
 	///the id we use to get the connected blob of connected objects
 	var/merger_id = "pool_floors"

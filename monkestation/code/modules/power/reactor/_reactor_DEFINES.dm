@@ -78,16 +78,12 @@
 #define REACTOR_WASTE_BASE "Base Waste Multiplier"
 /// How much waste multiplier we get because of the gases around us.
 #define REACTOR_WASTE_GAS "Gas Waste Multiplier"
-/// How much waste multiplier we (don't) get because there is a psychologist.
-#define REACTOR_WASTE_SOOTHED "Psychologist Waste Multiplier"
 
 /// How many kelvins we get before taking damage, Given by god.
 #define REACTOR_TEMP_LIMIT_BASE "Base Heat Resistance"
 /// How many extra kelvins we get before taking damage, this time from gases.
 /// Order matters, depends on base resistance.
 #define REACTOR_TEMP_LIMIT_GAS "Gas Heat Resistance"
-/// How many extra kelvins we get before taking damage, this time from psychologist.
-#define REACTOR_TEMP_LIMIT_SOOTHED "Psychologist Heat Resistance"
 /// How many extra kelvins we get before taking damage because our moles are low.
 /// Order matters, depends on base resistance.
 #define REACTOR_TEMP_LIMIT_LOW_MOLES "Low Moles Heat Resistance"

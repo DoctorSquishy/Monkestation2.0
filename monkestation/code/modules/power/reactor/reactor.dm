@@ -156,8 +156,6 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 	///The key our internal radio uses
 	var/radio_key = /obj/item/encryptionkey/headset_eng
 
-	///Var that increases from 0 to 1 when a psychologist is nearby, and decreases in the same way
-	var/psy_coeff = 0
 	///Can it be moved?
 	var/moveable = FALSE
 
@@ -399,7 +397,7 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 //Processes the temperature effects from standing on top of the reactor such as grilling
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/process(seconds_per_tick)
 	// Meltdown this, blowout that, I just wanna grill for god's sake!
-	for(var/atom/movable/atom_on_reactor in get_turf(src))
+	for(var/atom/movable/atom_on_reactor in orange(2, src))
 		if(isliving(atom_on_reactor))
 			var/mob/living/living_mob = atom_on_reactor
 			if(temperature > living_mob.bodytemperature)

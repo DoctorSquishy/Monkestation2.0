@@ -58,10 +58,6 @@
 /obj/effect/mapping_helpers/airlock/access/all/engineering/general,
 /turf/open/floor/iron/dark,
 /area/station/engineering/supermatter/room)
-"by" = (
-/obj/machinery/atmospherics/pipe/smart/manifold4w/cyan/visible,
-/turf/open/space/basic,
-/area/station/engineering/supermatter/room)
 "bP" = (
 /obj/machinery/camera/emp_proof/directional/north{
 	c_tag = "Singularity Engine #1"
@@ -681,7 +677,7 @@ iE
 US
 Ke
 wt
-by
+aJ
 aO
 BM
 ZA

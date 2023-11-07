@@ -129,7 +129,6 @@
 	var/additive_waste_multiplier = list()
 	additive_waste_multiplier[REACTOR_WASTE_BASE] = 1
 	additive_waste_multiplier[REACTOR_WASTE_GAS] = gas_heat_mod
-	additive_waste_multiplier[REACTOR_WASTE_SOOTHED] = -0.2 * psy_coeff
 
 	for (var/waste_type in additive_waste_multiplier)
 		waste_multiplier += additive_waste_multiplier[waste_type]
@@ -138,7 +137,7 @@
 
 /**
  * Calculate at which temperature the reactor starts taking damage.
- * heat limit is given by: (T0C+40) * (1 + gas heat res + psy_coeff)
+ * heat limit is given by: (T0C+40) * (1 + gas heat res)
  *
  * Description of each factors can be found in the defines.
  *
@@ -152,7 +151,6 @@
 	var/list/additive_temp_limit = list()
 	additive_temp_limit[REACTOR_TEMP_LIMIT_BASE] = T0C + REACTOR_HEAT_PENALTY_THRESHOLD
 	additive_temp_limit[REACTOR_TEMP_LIMIT_GAS] = gas_heat_resistance * (T0C + REACTOR_HEAT_PENALTY_THRESHOLD)
-	additive_temp_limit[REACTOR_TEMP_LIMIT_SOOTHED] = psy_coeff * 45
 	additive_temp_limit[REACTOR_TEMP_LIMIT_LOW_MOLES] =  clamp(2 - coolant_input.total_moles() / 100, 0, 1) * (T0C + REACTOR_HEAT_PENALTY_THRESHOLD)
 
 	temp_limit = 0

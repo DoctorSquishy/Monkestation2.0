@@ -33,8 +33,7 @@ Tips:
 Be careful to not exhaust your plasma supply. I recommend you DON'T max out the moderator input when youre running plasma + o2, or you're at a tangible risk of running out of those gasses from atmos.
 The reactor CHEWS through moderator. It does not do this slowly. Be very careful with that!
 
-//Remember kids. If the reactor itself is not physically powered by an APC, it cannot shove coolant in!
-
+If the reactor itself is not physically powered by an APC, it cannot shove coolant in!
 */
 
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor
@@ -45,10 +44,11 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 	icon_state = "reactor_map"
 	pixel_x = -32
 	pixel_y = -32
-	processing_flags = START_PROCESSING_MANUALLY
+	pipe_flags = PIPING_ONE_PER_TURF | PIPING_ALL_LAYER
 	density = FALSE //It burns you if you're stupid enough to walk over it
 	anchored = TRUE
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF | FREEZE_PROOF
+	flags_1 = PREVENT_CONTENTS_EXPLOSION_1
 	critical_machine = TRUE
 	light_color = LIGHT_COLOR_CYAN
 	dir = 8 //Less headache inducing
@@ -58,29 +58,8 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 	///The amount of reactors that have been created this round
 	var/static/gl_uid = 1
 
-	///The portion of the gasmix we're on that we should remove
-	var/absorption_ratio = 0.1
-	/// The gasmix we just recently absorbed. Tile's air multiplied by absorption_ratio
-	var/datum/gas_mixture/absorbed_gasmix
-
-	///The amount of damage we have currently.
-	var/damage = 0
-	/// The damage we had before this cycle.
-	/// Used to check if we are currently taking damage or healing.
-	var/damage_archived = 0
-	var/list/damage_factors
-
-	/// The temperature at which we start taking damage
-	var/temp_limit = T0C + REACTOR_HEAT_PENALTY_THRESHOLD
-	var/list/temp_limit_factors
-
-	/// The temperature at which we start taking damage
-	var/pressure_limit = 10000
-	var/list/pressure_limit_factors
-
-	/// Multiplies our waste gas amount and temperature.
-	var/waste_multiplier = 0
-	var/list/waste_multiplier_factors
+	///Only main engines can trigger nuclear armageddon, and can spawn stationwide anomalies.
+	var/is_main_engine = FALSE
 
 	///The point at which we consider the reactor to be [REACTOR_STATUS_WARNING]
 	var/warning_point = 5
@@ -100,6 +79,8 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 	///Time in 1/10th of seconds since the last sent warning
 	var/lastwarning = 0
 
+	/// The moderator gasmix we just recently absorbed for nuclear reactions. moderator_input multiplied by absorption_ratio
+	var/datum/gas_mixture/moderator_gasmix
 	/// The list of gases mapped against their current comp.
 	/// We use this to calculate different values the reactor uses, like power or heat resistance.
 	/// Ranges from 0 to 1
@@ -117,10 +98,6 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 	// Gases effect on a fuel rod's fuel depletion
 	var/gas_depletion_mod = 0
 
-	/// External damage that are added to the reactor on next [/obj/machinery/atmospherics/components/trinary/nuclear_reactor/process_atmos] call.
-	/// Reactor will not take damage if it's health is lower than emergency point.
-	var/external_damage_immediate = 0
-
 	/// Lose control of this -> Meltdown
 	var/temperature = 0
 	/// Lose control of this -> Blowout
@@ -131,33 +108,45 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 	var/desired_k = 0
 	var/last_user = null
 	var/current_desired_k = null
-	/// Starts off with a lot of control over K. If you flood this thing with plasma, you lose your ability to control K as easily.
-	var/control_rod_effectiveness = 0.65
-	//Amount of Fuels_rods in reactor
-	var/list/fuel_rods = list()
 
-	// Secondary variables.
-	/// Default gas_absorption before being randomized slightly
-	var/gas_absorption_effectiveness = 0.5
-	/// We refer to this one as it's set on init, randomized.
-	var/gas_absorption_constant = 0.5
-	/// The minimum coolant level
-	var/minimum_coolant_level = 5
-	/// Integrity restoration amount via moderator Healium gas
-	var/integrity_restoration = 0
-
-
-	/// Slag that reactor. Is this reactor even usable any more?
-	var/slagged = FALSE
-
-	//Console statistics.
 	var/last_coolant_temperature = 0
 	var/last_output_temperature = 0
 	//For administrative cheating only. Knowing the delta lets you know EXACTLY what to set K at.
 	var/last_heat_delta = 0
 
-	//How many times in succession did we not have enough coolant? Decays twice as fast as it accumulates.
-	var/no_coolant_ticks = 0
+	//Amount of Fuels_rods in reactor
+	var/list/fuel_rods = list()
+	/// Default gas_absorption before being randomized slightly
+	var/gas_absorption_effectiveness = 0.5
+	/// We refer to this one as it's set on init, randomized.
+	var/gas_absorption_constant = 0.5
+
+	/// The minimum coolant level
+	var/minimum_coolant_level = 5
+	/// Integrity restoration amount via moderator Healium gas
+	var/integrity_restoration = 0
+	/// External damage that are added to the reactor on next [/obj/machinery/atmospherics/components/trinary/nuclear_reactor/process_atmos] call.
+	/// Reactor will not take damage if it's health is lower than emergency point.
+	var/external_damage_immediate = 0
+	///The amount of damage we have currently.
+	var/damage = 0
+	/// The damage we had before this cycle.
+	/// Used to check if we are currently taking damage or healing.
+	var/damage_archived = 0
+
+	var/list/damage_factors
+	/// The temperature at which we start taking damage
+	var/temp_limit = T0C + REACTOR_HEAT_PENALTY_THRESHOLD
+	var/list/temp_limit_factors
+	/// The temperature at which we start taking damage
+	var/pressure_limit = 10000
+	var/list/pressure_limit_factors
+	/// Multiplies our waste gas amount
+	var/waste_multiplier = 0
+	var/list/waste_multiplier_factors
+
+	/// Slag that reactor. Is this reactor even usable any more?
+	var/slagged = FALSE
 
 	///An effect we show to admins and ghosts the percentage of meltdown we're at
 	var/obj/effect/countdown/reactor/countdown
@@ -167,12 +156,6 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 	///The key our internal radio uses
 	var/radio_key = /obj/item/encryptionkey/headset_eng
 
-	///Only main engines can trigger nuclear armageddon, and can spawn stationwide anomalies.
-	var/is_main_engine = FALSE
-	///Reactor soundloop
-	var/datum/looping_sound/reactor_reactor/reactor_loop
-	///cooldown tracker for accent sounds
-	var/last_accent_sound = 0
 	///Var that increases from 0 to 1 when a psychologist is nearby, and decreases in the same way
 	var/psy_coeff = 0
 	///Can it be moved?
@@ -188,7 +171,7 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 	var/disable_power_change = FALSE
 	/// Disables the REACTOR's proccessing totally when set to REACTOR_PROCESS_DISABLED.
 	/// Temporary disables the processing when it's set to REACTOR_PROCESS_TIMESTOP.
-	/// Make sure absorbed_gasmix and gas_percentage isnt null if this is on REACTOR_PROCESS_DISABLED.
+	/// Make sure gas_percentage isnt null if this is on REACTOR_PROCESS_DISABLED.
 	var/disable_process = REACTOR_PROCESS_DISABLED
 
 	///Do we show this reactor in the CIMS modular program
@@ -214,6 +197,10 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 	var/list/tempInputData = list()
 	var/list/tempOutputData = list()
 
+	///Reactor soundloops
+	var/datum/looping_sound/nuclear_reactor_hum/reactor_hum
+	var/datum/looping_sound/reactor_meltdown_alarm/meltdown_alarm
+
 	//Grilling soundloop
 	var/datum/looping_sound/grill/grill_loop
 	var/obj/item/food/grilled_item
@@ -232,19 +219,22 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/Initialize(mapload)
 	. = ..()
 	icon_state = "reactor_off"
-	gas_absorption_effectiveness = rand(5, 6)/10 //All reactors are slightly different. This will result in you having to figure out what the balance is for K.
-	gas_absorption_constant = gas_absorption_effectiveness //And set this up for the rest of the round.
 	gas_percentage = list()
-	absorbed_gasmix = new()
+	moderator_gasmix = new()
+	SSair.stop_processing_machine(src)
 	uid = gl_uid++
+	gas_absorption_effectiveness = rand(4, 6)/10 //All reactors are slightly different. This will result in you having to figure out what the balance is for K.
+	gas_absorption_constant = gas_absorption_effectiveness //And set this up for the rest of the round.
 	set_meltdown(REACTOR_MELTDOWN_PRIO_NONE, /datum/reactor_meltdown/core_meltdown)
 	countdown = new(src)
 	countdown.start()
-	SSpoints_of_interest.make_point_of_interest(src)
+
 	radio = new(src)
 	radio.keyslot = new radio_key
 	radio.set_listening(FALSE)
 	radio.recalculateChannels()
+
+	SSpoints_of_interest.make_point_of_interest(src)
 	investigate_log("has been created.", INVESTIGATE_ENGINE)
 
 	RegisterSignal(src, COMSIG_ATOM_BSA_BEAM, PROC_REF(force_meltdown))
@@ -253,18 +243,21 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 
 	if (!moveable)
 		move_resist = MOVE_FORCE_OVERPOWERING // Avoid being moved by statues or other memes
-	SSair.stop_processing_machine(src)
 
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/Destroy()
 	SSair.stop_processing_machine(src)
 	color = null
 	radio_key = null
-	absorbed_gasmix = null
 	grilled_item = null
 	QDEL_NULL(radio)
-	QDEL_NULL(countdown)
-	QDEL_NULL(reactor_loop)
-	QDEL_NULL(grill_loop)
+	if(countdown)
+		QDEL_NULL(countdown)
+	if(reactor_hum)
+		QDEL_NULL(reactor_hum)
+	if(meltdown_alarm)
+		QDEL_NULL(meltdown_alarm)
+	if(grill_loop)
+		QDEL_NULL(grill_loop)
 	return ..()
 
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/examine(mob/user)
@@ -405,7 +398,6 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 
 //Processes the temperature effects from standing on top of the reactor such as grilling
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/process(seconds_per_tick)
-	update_appearance()
 	// Meltdown this, blowout that, I just wanna grill for god's sake!
 	for(var/atom/movable/atom_on_reactor in get_turf(src))
 		if(isliving(atom_on_reactor))
@@ -424,22 +416,25 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 	// PRELIMINARIES
 	if(disable_process != REACTOR_PROCESS_ENABLED || !on)
 		return
+
+	update_parents() //Make absolutely sure that pipe connections are updated
 	/// Set pipe inputs and outputs
-	var/datum/gas_mixture/coolant_input = airs[1]
-	var/datum/gas_mixture/moderator_input = airs[2]
-	var/datum/gas_mixture/coolant_output = airs[3]
+	var/datum/gas_mixture/coolant_input = airs[COOLANT_INPUT_GATE]
+	var/datum/gas_mixture/moderator_input = airs[MODERATOR_INPUT_GATE]
+	var/datum/gas_mixture/coolant_output = airs[COOLANT_OUTPUT_GATE]
 
 	gas_radioactivity_mod = 1 + get_fuel_power() //Set fuel rod ambient radiation
 	gas_absorption_effectiveness = gas_absorption_constant
 
 	// MODERATOR GASSES
 	if(moderator_input.total_moles() >= minimum_coolant_level)
-		absorbed_gasmix = moderator_input?.remove_ratio(absorption_ratio)
-		absorbed_gasmix.volume = (moderator_input?.volume || CELL_VOLUME) * 0.5 // To match the pressure
+		moderator_gasmix = moderator_input?.remove_ratio(gas_absorption_constant) || new()
+		moderator_gasmix.volume = (moderator_input?.volume || CELL_VOLUME) * gas_absorption_constant // To match the pressure
 		calculate_moderators() //updates moderator variables
+		waste_multiplier_factors = calculate_waste_multiplier()
 		// Extra effects should always fire after the compositions are all finished
 		// Handles Waste Gas and Extra Effects such as with Healium repairing reactor integrity
-		for (var/gas_path in absorbed_gasmix.gases)
+		for (var/gas_path in moderator_gasmix.gases)
 			var/datum/reactor_gas/reactor_gas = GLOB.reactor_gas_behavior[gas_path]
 			reactor_gas?.extra_effects(src)
 
@@ -462,8 +457,11 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 	calculate_reactor_temp()
 
 	// OUTPUT MODIFIER AND WASTE GASSES
-	coolant_output.merge(absorbed_gasmix)
-	absorbed_gasmix.garbage_collect()
+	var/datum/gas_mixture/merged_gasmix = moderator_gasmix.copy()
+	merged_gasmix.temperature = clamp(merged_gasmix.temperature, TCMB, gas_heat_mod * 100)
+	merged_gasmix.garbage_collect()
+	coolant_output.merge(coolant_input)
+	coolant_output.merge(merged_gasmix)
 	pressure = coolant_output.return_pressure()
 
 	// RADIATION
@@ -528,7 +526,7 @@ The reactor CHEWS through moderator. It does not do this slowly. Be very careful
 			icon_state = "[base_icon_state]_overheat"
 		if(100 to INFINITY)
 			icon_state = "[base_icon_state]_meltdown"
-	if(!has_fuel())
+	if(!has_fuel() || !on)
 		icon_state = "[base_icon_state]_off"
 	if(slagged)
 		icon_state = "[base_icon_state]_slagged"

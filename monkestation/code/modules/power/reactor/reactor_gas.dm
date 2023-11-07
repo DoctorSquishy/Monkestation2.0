@@ -65,7 +65,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 /datum/reactor_gas
 	// Path of the [/datum/gas] involved with this interaction
 	var/gas_path
-
 	// How much more waste heat the reactor generates
 	var/heat_mod = 0
 	// How extra hot the reactor can run before taking damage
@@ -87,23 +86,23 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/oxygen
 	gas_path = /datum/gas/oxygen
-
-	heat_mod = 0
-	heat_resistance = 0
-	permeability_mod = 0
-	radioactivity_mod = 0
-	control_mod = 0
-	depletion_mod = 0
+	heat_mod = 1
+	heat_resistance = 1
+	permeability_mod = 1
+	radioactivity_mod = 1
+	control_mod = 1
+	depletion_mod = 1
 	desc ="Oxygen EFFECT"
 
 /datum/reactor_gas/oxygen/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/oxygen])
 		return
-	var/consumed_oxygen = reactor.absorbed_gasmix.gases[/datum/gas/oxygen][MOLES] * 0.02
+	var/waste_production = 0.1 * reactor.waste_multiplier
+	var/consumed_oxygen = reactor.moderator_gasmix.gases[/datum/gas/oxygen][MOLES] * waste_production
 	if(!consumed_oxygen)
 		return
-	reactor.absorbed_gasmix.gases[/datum/gas/oxygen][MOLES] -= consumed_oxygen
-	reactor.absorbed_gasmix.gases[/datum/gas/tritium][MOLES] += consumed_oxygen
+	reactor.moderator_gasmix.gases[/datum/gas/oxygen][MOLES] -= consumed_oxygen
+	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += consumed_oxygen
 
 /datum/reactor_gas/nitrogen
 	gas_path = /datum/gas/nitrogen

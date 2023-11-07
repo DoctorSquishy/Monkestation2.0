@@ -2,12 +2,12 @@
 /// Explodes
 /datum/reactor_meltdown/proc/effect_explosion(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor, avoid)
 	var/explosion_power = reactor.explosion_power
-	var/power_scaling = reactor.absorbed_gasmix.return_pressure()
+	var/power_scaling = reactor.pressure
 	var/turf/reactor_turf = get_turf(reactor)
 	//Dear mappers, balance the reactor max explosion radius to 17.5, 37, 39, 41
 	explosion(origin = reactor_turf,
 		devastation_range = explosion_power * max(power_scaling, 0.205) * 0.5,
-		heavy_impact_range = explosion_power * max(power_scaling, 0.205) + 2,
+		heavy_impact_range = explosion_power * max(power_scaling, 0),
 		light_impact_range = explosion_power * max(power_scaling, 0.205) + 4,
 		flash_range = explosion_power * max(power_scaling, 0.205) + 6,
 		adminlog = TRUE,

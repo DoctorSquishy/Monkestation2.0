@@ -21,10 +21,6 @@
 	for(var/mob/victim as anything in GLOB.player_list)
 		to_chat(victim, span_danger(pick(messages)))
 
-	reactor.set_light(0)
-	sleep(2 SECONDS)
-	reactor.set_light(10)
-
 	return TRUE
 
 /datum/reactor_meltdown/core_meltdown/meltdown_now(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)

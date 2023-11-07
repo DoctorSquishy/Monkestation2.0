@@ -43,17 +43,23 @@ GLOBAL_LIST_INIT(reactor_meltdown_list, list(
 
 	switch(reactor.get_status())
 		if(REACTOR_MELTDOWN)
-			playsound(reactor, 'monkestation/sound/effects/reactor/alarm.ogg', 100, FALSE, 40, 30, falloff_distance = 10)
+			playsound(reactor, 'monkestation/sound/effects/reactor/reactor_alert_3.ogg', 100, FALSE, 30, 30, falloff_distance = 10)
+			if(!reactor.meltdown_alarm)
+				reactor.meltdown_alarm = new(reactor, TRUE)
 		if(REACTOR_EMERGENCY)
 			playsound(reactor, 'sound/machines/engine_alert2.ogg', 100, FALSE, 30, 30, falloff_distance = 10)
-			playsound(reactor, 'monkestation/sound/effects/reactor/reactor_alert_3.ogg', 100, FALSE, 30, 30, falloff_distance = 10)
+			if(reactor.meltdown_alarm)
+				QDEL_NULL(reactor.meltdown_alarm)
 		if(REACTOR_DANGER)
-			playsound(reactor, 'sound/machines/engine_alert2.ogg', 100, FALSE, 30, 30, falloff_distance = 10)
+			playsound(reactor, 'sound/machines/engine_alert1.ogg', 100, FALSE, 30, 30, falloff_distance = 10)
 			playsound(reactor, 'monkestation/sound/effects/reactor/reactor_alert_2.ogg', 100, FALSE, 30, 30, falloff_distance = 10)
+			if(reactor.meltdown_alarm)
+				QDEL_NULL(reactor.meltdown_alarm)
 		if(REACTOR_WARNING)
 			playsound(reactor, 'sound/machines/terminal_alert.ogg', 75)
 			playsound(reactor, 'monkestation/sound/effects/reactor/reactor_alert_1.ogg', 75)
-
+			if(reactor.meltdown_alarm)
+				QDEL_NULL(reactor.meltdown_alarm)
 	if(reactor.damage < reactor.damage_archived) // Healing
 		reactor.radio.talk_into(reactor,"Reactor returning to safe operating parameters. Integrity: [round(reactor.get_integrity_percent(), 0.01)]%", reactor.damage_archived >= reactor.emergency_point ? reactor.emergency_channel : reactor.warning_channel)
 		return FALSE

@@ -1,7 +1,7 @@
 /datum/reactor_meltdown/blowout
 
 /datum/reactor_meltdown/blowout/can_select(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
-	return (reactor.absorbed_gasmix.total_moles() >= REACTOR_PRESSURE_CRITICAL)
+	return (reactor.pressure >= REACTOR_PRESSURE_CRITICAL)
 
 
 /datum/reactor_meltdown/blowout/meltdown_progress(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)

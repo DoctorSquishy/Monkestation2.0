@@ -5467,7 +5467,6 @@
 #include "interface\menu.dm"
 #include "interface\stylesheet.dm"
 #include "interface\skin.dmf"
-#include "monkestation\_maps\RandomEngines\MetaStation\nuclear_reactor.dmm"
 #include "monkestation\code\__DEFINES\projectile.dm"
 #include "monkestation\code\__HELPERS\_lists.dm"
 #include "monkestation\code\__HELPERS\reagents.dm"

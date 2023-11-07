@@ -5,22 +5,28 @@
 	SSair.start_processing_machine(src)
 	desired_k = 1
 	on = TRUE
+	set_light(10)
 	disable_process = REACTOR_PROCESS_ENABLED
 	var/startup_sound = pick('monkestation/sound/effects/reactor/startup.ogg', 'monkestation/sound/effects/reactor/startup2.ogg')
 	playsound(loc, startup_sound, 70)
 	update_parents()
-	reactor_loop = new(src, TRUE)
+	reactor_hum = new(src, TRUE)
+	update_appearance()
 
 //Shuts off the fuel rods, ambience, etc. Keep in mind that your temperature may still go up!
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/shut_down()
-	SSair.stop_processing_machine(src)
-	QDEL_NULL(reactor_loop)
-	investigate_log("Reactor shutdown at [pressure] kPa and [temperature] K.", INVESTIGATE_ENGINE)
-	radio.talk_into(src, "REACTOR SHUTDOWN INITIATED at [pressure] kPa and [temperature] K." , engi_channel)
 	K = 0
 	desired_k = 0
 	temperature = 0
 	pressure = 0
+	set_meltdown(REACTOR_MELTDOWN_PRIO_NONE, REACTOR_MELTDOWN_STRATEGY_PURGE)
+	SSair.stop_processing_machine(src)
+	if(reactor_hum)
+		QDEL_NULL(reactor_hum)
+	if(meltdown_alarm)
+		QDEL_NULL(meltdown_alarm)
+	investigate_log("Reactor shutdown at [pressure] kPa and [temperature] K.", INVESTIGATE_ENGINE)
+	radio.talk_into(src, "REACTOR SHUTDOWN INITIATED at [pressure] kPa and [temperature] K." , engi_channel)
 	on = FALSE
 	disable_process = REACTOR_PROCESS_DISABLED
 	update_appearance()
@@ -90,10 +96,10 @@
 	gas_permeability_mod = 0
 	gas_depletion_mod = 0
 
-	var/total_moles = absorbed_gasmix.total_moles()
+	var/total_moles = moderator_gasmix.total_moles()
 
-	for (var/gas_path in absorbed_gasmix.gases)
-		gas_percentage[gas_path] = absorbed_gasmix.gases[gas_path][MOLES] / total_moles
+	for (var/gas_path in moderator_gasmix.gases)
+		gas_percentage[gas_path] = moderator_gasmix.gases[gas_path][MOLES] / total_moles
 		var/datum/reactor_gas/reactor_gas = GLOB.reactor_gas_behavior[gas_path]
 		if(!reactor_gas)
 			continue
@@ -103,6 +109,32 @@
 		gas_control_mod += reactor_gas.control_mod * gas_percentage[gas_path]
 		gas_permeability_mod += reactor_gas.permeability_mod * gas_percentage[gas_path]
 		gas_depletion_mod += reactor_gas.depletion_mod * gas_percentage[gas_path]
+
+/**
+ * Perform calculation for the waste multiplier.
+ * This number affects the temperature and waste gas production
+ *
+ * Description of each factors can be found in the defines.
+ *
+ * Updates:
+ * [/obj/machinery/atmospherics/components/trinary/nuclear_reactor/var/waste_multiplier]
+ *
+ * Returns: The factors that have influenced the calculation. list[FACTOR_DEFINE] = number
+ */
+/obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/calculate_waste_multiplier()
+	waste_multiplier = 0
+	if(disable_gas)
+		return
+	/// Tell people the heat output in energy. More informative than telling them the heat multiplier.
+	var/additive_waste_multiplier = list()
+	additive_waste_multiplier[REACTOR_WASTE_BASE] = 1
+	additive_waste_multiplier[REACTOR_WASTE_GAS] = gas_heat_mod
+	additive_waste_multiplier[REACTOR_WASTE_SOOTHED] = -0.2 * psy_coeff
+
+	for (var/waste_type in additive_waste_multiplier)
+		waste_multiplier += additive_waste_multiplier[waste_type]
+	waste_multiplier = clamp(waste_multiplier, 0.5, INFINITY)
+	return additive_waste_multiplier
 
 /**
  * Calculate at which temperature the reactor starts taking damage.
@@ -116,11 +148,12 @@
  * Returns: The factors that have influenced the calculation. list[FACTOR_DEFINE] = number
  */
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/calculate_temp_limit()
+	var/datum/gas_mixture/coolant_input = airs[COOLANT_INPUT_GATE]
 	var/list/additive_temp_limit = list()
 	additive_temp_limit[REACTOR_TEMP_LIMIT_BASE] = T0C + REACTOR_HEAT_PENALTY_THRESHOLD
 	additive_temp_limit[REACTOR_TEMP_LIMIT_GAS] = gas_heat_resistance * (T0C + REACTOR_HEAT_PENALTY_THRESHOLD)
 	additive_temp_limit[REACTOR_TEMP_LIMIT_SOOTHED] = psy_coeff * 45
-	additive_temp_limit[REACTOR_TEMP_LIMIT_LOW_MOLES] =  clamp(2 - absorbed_gasmix.total_moles() / 100, 0, 1) * (T0C + REACTOR_HEAT_PENALTY_THRESHOLD)
+	additive_temp_limit[REACTOR_TEMP_LIMIT_LOW_MOLES] =  clamp(2 - coolant_input.total_moles() / 100, 0, 1) * (T0C + REACTOR_HEAT_PENALTY_THRESHOLD)
 
 	temp_limit = 0
 	for (var/resistance_type in additive_temp_limit)
@@ -130,8 +163,8 @@
 	return additive_temp_limit
 
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/calculate_reactor_temp()
-	var/datum/gas_mixture/coolant_input = airs[1]
-	var/datum/gas_mixture/coolant_output = airs[3]
+	var/datum/gas_mixture/coolant_input = airs[COOLANT_INPUT_GATE]
+	var/datum/gas_mixture/coolant_output = airs[COOLANT_OUTPUT_GATE]
 	if(has_fuel())
 		temperature += REACTOR_HEAT_FACTOR * has_fuel() * ((REACTOR_HEAT_EXPONENT**K) - 1) // heating from K has to be exponential to make higher K more dangerous
 	var/input_moles = coolant_input.total_moles() //Firstly. Do we have enough moles of coolant?
@@ -168,8 +201,8 @@
 	additive_damage[REACTOR_DAMAGE_HEAT] = external_damage_immediate * clamp((emergency_point - damage) / emergency_point, 0, 1)
 	external_damage_immediate = 0
 
-	additive_damage[REACTOR_DAMAGE_HEAT] = clamp((temperature - temp_limit) / 24000, 0, 0.15)
-	additive_damage[REACTOR_DAMAGE_PRESSURE] = clamp(pressure/300, 0, 0.1)
+	additive_damage[REACTOR_DAMAGE_HEAT] = clamp((temperature - temp_limit) / 10000, 0, 0.15)
+	additive_damage[REACTOR_DAMAGE_PRESSURE] = clamp(pressure/100, 0, 0.1)
 
 	var/total_damage = 0
 	for (var/damage_type in additive_damage)
@@ -204,7 +237,7 @@
 
 /// Encodes the current state of the reactor
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/get_status()
-	if(!absorbed_gasmix)
+	if(!temperature || !pressure || !temp_limit || !damage)
 		return REACTOR_ERROR
 	if(final_countdown)
 		return REACTOR_MELTDOWN
@@ -214,9 +247,9 @@
 		return REACTOR_DANGER
 	if(damage >= warning_point)
 		return REACTOR_WARNING
-	if(absorbed_gasmix.temperature > temp_limit * 0.8 || absorbed_gasmix.volume > pressure_limit * 0.8)
+	if(temperature > temp_limit * 0.8 || pressure > pressure_limit * 0.8)
 		return REACTOR_NOTIFY
-	if(absorbed_gasmix.temperature < temp_limit * 0.8 || absorbed_gasmix.volume < pressure_limit * 0.8)
+	if(temperature < temp_limit * 0.8 || pressure < pressure_limit * 0.8)
 		return REACTOR_NORMAL
 	return REACTOR_INACTIVE
 
@@ -227,7 +260,7 @@
 	return integrity
 
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/get_temperature_percent()
-	var/temperature_percent = absorbed_gasmix.temperature / temp_limit
+	var/temperature_percent = temperature / temp_limit
 	temperature_percent = 100 - (temperature_percent * 100)
 	temperature_percent = temperature_percent < 0 ? 0 : temperature_percent
 	return temperature_percent
@@ -461,11 +494,12 @@
 		)
 	data["rods"] = rod_data
 
-	data["absorbed_ratio"] = absorption_ratio
+	data["absorbed_ratio"] = gas_absorption_constant
 	var/list/formatted_gas_percentage = list()
 	for (var/datum/gas/gas_path as anything in subtypesof(/datum/gas))
 		formatted_gas_percentage[gas_path] = gas_percentage?[gas_path] || 0
 	data["gas_composition"] = formatted_gas_percentage
-	data["gas_temperature"] = absorbed_gasmix.temperature
-	data["gas_total_moles"] = absorbed_gasmix.total_moles()
+	data["gas_temperature"] = round(temperature)
+	var/datum/gas_mixture/moderator_input = airs[MODERATOR_INPUT_GATE]
+	data["gas_total_moles"] = moderator_input.total_moles()
 	return data

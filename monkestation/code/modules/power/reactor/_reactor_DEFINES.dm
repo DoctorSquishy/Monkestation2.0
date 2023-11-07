@@ -1,4 +1,10 @@
 // DEFINES FOR NUCLEAR REACTOR
+
+// Index of each node in the list of nodes the reactor has
+#define COOLANT_INPUT_GATE 1
+#define MODERATOR_INPUT_GATE 2
+#define COOLANT_OUTPUT_GATE 3
+
 /// from /obj/machinery/atmospherics/components/trinary/nuclear_reactor/process_atmos(); when the Reactor sounds an audible alarm
 #define COMSIG_REACTOR_MELTDOWN_ALARM "reactor_meltdown_alarm"
 

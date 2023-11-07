@@ -6,7 +6,7 @@
 	centerspawner = FALSE
 	template_height = 25
 	template_width = 33
-	weight = 1
+	weight = 0
 	station_name = "MetaStation"
 
 /datum/map_template/random_room/random_engines/meta_singularity
@@ -16,7 +16,7 @@
 	centerspawner = FALSE
 	template_height = 25
 	template_width = 33
-	weight = 1
+	weight = 0
 	station_name = "MetaStation"
 
 /datum/map_template/random_room/random_engines/reactor_reactor
@@ -26,5 +26,5 @@
 	centerspawner = FALSE
 	template_height = 25
 	template_width = 33
-	weight = 10
+	weight = 5
 	station_name = "MetaStation"

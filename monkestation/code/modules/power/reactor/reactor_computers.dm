@@ -234,23 +234,23 @@
 
 /// Apparently destroy calls this [/datum/computer_file/Destroy]. Here just to clean our references.
 /datum/computer_file/program/reactor_monitor/kill_program(forced = FALSE)
-	for(var/reactor in reactors)
-		clear_reactor(reactor)
+	for(var/rbmk in reactors)
+		clear_reactor(rbmk)
 	return ..()
 
 /// Refreshes list of active reactors
 /datum/computer_file/program/reactor_monitor/proc/refresh()
-	for(var/reactor in reactors)
-		clear_reactor(reactor)
+	for(var/rbmk in reactors)
+		clear_reactor(rbmk)
 	var/turf/user_turf = get_turf(computer.ui_host())
 	if(!user_turf)
 		return
-	for(var/obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactors in GLOB.machines)
+	for(var/obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor in GLOB.machines)
 		//Exclude Syndicate owned, meltdowns, not within coverage, not on a tile.
-		if (!reactors.include_in_cims || !isturf(reactors.loc) || !(is_station_level(reactors.z) || is_mining_level(reactors.z) || reactors.z == user_turf.z))
+		if (!reactor.include_in_cims || !isturf(reactor.loc) || !(is_station_level(reactor.z) || is_mining_level(reactor.z) || reactor.z == user_turf.z))
 			continue
-		reactors += reactors
-		RegisterSignal(reactors, COMSIG_PARENT_QDELETING, PROC_REF(clear_reactor))
+		reactors += reactor
+		RegisterSignal(reactor, COMSIG_PARENT_QDELETING, PROC_REF(clear_reactor))
 
 /datum/computer_file/program/reactor_monitor/ui_static_data(mob/user)
 	var/list/data = list()

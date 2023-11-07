@@ -414,7 +414,7 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 ///Processes reactor gasses and the effects
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/process_atmos(seconds_per_tick)
 	// PRELIMINARIES
-	if(disable_process != REACTOR_PROCESS_ENABLED || !on)
+	if(disable_process != REACTOR_PROCESS_ENABLED || !on || !(nodes[1] && nodes[2] && nodes[3]))
 		return
 
 	update_parents() //Make absolutely sure that pipe connections are updated
@@ -459,9 +459,10 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 	// OUTPUT MODIFIER AND WASTE GASSES
 	var/datum/gas_mixture/merged_gasmix = moderator_gasmix.copy()
 	merged_gasmix.temperature = clamp(merged_gasmix.temperature, TCMB, gas_heat_mod * 100)
-	merged_gasmix.garbage_collect()
+	if(merged_gasmix)
+		merged_gasmix.garbage_collect()
+		coolant_output.merge(merged_gasmix)
 	coolant_output.merge(coolant_input)
-	coolant_output.merge(merged_gasmix)
 	pressure = coolant_output.return_pressure()
 
 	// RADIATION

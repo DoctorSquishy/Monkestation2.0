@@ -59,6 +59,7 @@
 /turf/open/floor/iron/dark,
 /area/station/engineering/supermatter/room)
 "by" = (
+/obj/machinery/atmospherics/pipe/smart/manifold4w/cyan/visible,
 /turf/open/space/basic,
 /area/station/engineering/supermatter/room)
 "bP" = (
@@ -654,7 +655,7 @@ sf
 cb
 cb
 cb
-cb
+vw
 cb
 cb
 cb
@@ -682,7 +683,7 @@ Ke
 wt
 by
 aO
-cb
+BM
 ZA
 cb
 cb

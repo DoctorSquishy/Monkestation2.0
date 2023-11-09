@@ -483,7 +483,7 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 	return TRUE
 
 // ReactorMonitor UI for ghosts only. Inherited attack_ghost will call this.
-/obj/machinery/atmospherics/components/trinary/ui_interact(mob/user, datum/tgui/ui)
+/obj/machinery/atmospherics/components/trinary/nuclear_reactor/ui_interact(mob/user, datum/tgui/ui)
 	if(!isobserver(user))
 		return FALSE
 	. = ..()

@@ -48,7 +48,7 @@
 			))
 		if(reactor_gas.depletion_mod)
 			numeric_data += list(list(
-				"name" = "Waste Fuel Decay",
+				"name" = "Waste Fuel",
 				"amount" = reactor_gas.depletion_mod,
 				"positive" = TRUE,
 			))

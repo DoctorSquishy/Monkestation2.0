@@ -247,7 +247,7 @@
 	requires_ntnet = TRUE
 	transfer_access = list(ACCESS_CONSTRUCTION)
 	size = 5
-	tgui_id = "NtosReactorStats"
+	tgui_id = "NtosReactor"
 	program_icon = "radiation"
 	alert_able = TRUE
 

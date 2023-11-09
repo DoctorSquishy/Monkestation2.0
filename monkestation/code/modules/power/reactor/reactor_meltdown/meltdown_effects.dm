@@ -57,9 +57,9 @@
 	var/datum/gas_mixture/moderator_input = reactor.airs[2]
 	var/datum/gas_mixture/coolant_output = reactor.airs[3]
 
-	reactor_turf.assume_air(coolant_input*0.1)
-	reactor_turf.assume_air(moderator_input*0.1)
-	reactor_turf.assume_air(coolant_output*0.1)
+	reactor_turf.assume_air(coolant_input.gases*0.1)
+	reactor_turf.assume_air(moderator_input.gases*0.1)
+	reactor_turf.assume_air(coolant_output.gases*0.1)
 
 // Leak all the gas from the pipes
 /datum/reactor_meltdown/proc/effect_gas_leak_all(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)

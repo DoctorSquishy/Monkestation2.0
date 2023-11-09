@@ -18,13 +18,13 @@
 		var/list/numeric_data = list()
 		if(reactor_gas.heat_mod)
 			numeric_data += list(list(
-				"name" = "Power Transmission",
+				"name" = "Core Heat Gain",
 				"amount" = reactor_gas.heat_mod,
 				"positive" = TRUE,
 			))
 		if(reactor_gas.heat_resistance)
 			numeric_data += list(list(
-				"name" = "Waste Multiplier",
+				"name" = "Core Thermal Resistance",
 				"amount" = reactor_gas.heat_resistance,
 				"positive" = FALSE,
 			))
@@ -36,19 +36,19 @@
 			))
 		if(reactor_gas.control_mod)
 			numeric_data += list(list(
-				"name" = "Heat Power Gain",
+				"name" = "Control Mod",
 				"amount" = reactor_gas.control_mod,
 				"positive" = TRUE,
 			))
 		if(reactor_gas.permeability_mod)
 			numeric_data += list(list(
-				"name" = "Power Decay Negation",
+				"name" = "Core Temperature Permeability",
 				"amount" = reactor_gas.permeability_mod,
 				"positive" = TRUE,
 			))
 		if(reactor_gas.depletion_mod)
 			numeric_data += list(list(
-				"name" = "Power Decay Negation",
+				"name" = "Waste Fuel Decay",
 				"amount" = reactor_gas.depletion_mod,
 				"positive" = TRUE,
 			))
@@ -101,6 +101,8 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 	var/consumed_oxygen = reactor.moderator_gasmix.gases[/datum/gas/oxygen][MOLES] * waste_production
 	if(!consumed_oxygen)
 		return
+	ASSERT_GAS(/datum/gas/oxygen, reactor.moderator_gasmix)
+	ASSERT_GAS(/datum/gas/tritium, reactor.moderator_gasmix)
 	reactor.moderator_gasmix.gases[/datum/gas/oxygen][MOLES] -= consumed_oxygen
 	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += consumed_oxygen
 

@@ -4,10 +4,11 @@ import { toFixed } from 'common/math';
 import { BooleanLike } from 'common/react';
 import { InfernoNode } from 'inferno';
 import { useBackend, useLocalState } from 'tgui/backend';
-import { Box, Button, Chart, Flex, LabeledList, ProgressBar, Section, Tabs, Slider, Stack } from 'tgui/components';
+import { Box, Button, Chart, Flex, LabeledList, ProgressBar, Section, Slider, Stack } from 'tgui/components';
 import { getGasFromPath } from 'tgui/constants';
 import { Window } from 'tgui/layouts';
 
+const buttonWidth = 2;
 const logScale = (value) => Math.log2(16 + Math.max(0, value)) - 4;
 
 type ReactorGasMetadata = {
@@ -31,14 +32,15 @@ type ReactorProps = {
   k: number;
   desiredK: number;
   coreTemp: number;
-  control_rods: number;
-  rods: number;
+  rods: { name: string; depletion: number; rod_index: number }[];
   pressureData: number;
   tempCoreData: number;
   tempInputData: number;
   tempOutputData: number;
   temp_limit: number;
   temp_limit_factors: { name: string; amount: number }[];
+  waste_multiplier: number;
+  waste_multiplier_factors: { name: string; amount: number }[];
   shutdownTemp: number;
   absorbed_ratio: number;
   gas_composition: { [gas_path: string]: number };
@@ -91,34 +93,47 @@ const ReactorEntry = (props: ReactorEntryProps, context) => {
   );
 };
 
-export const ReactorContent = (props, context) => {
+export const ReactorTabs = (props, context) => {
   const [tabIndex, setTabIndex] = useLocalState(context, 'tab-index', 1);
   return (
-    <Window
-      resizable
-      width={360}
-      height={540}>
-      <Window.Content fitted>
-        <Tabs>
-          <Tabs.Tab
-            selected={tabIndex === 1}
-            onClick={() => setTabIndex(1)}>
-            Status
-          </Tabs.Tab>
-          <Tabs.Tab
-            selected={tabIndex === 2}
-            onClick={() => setTabIndex(2)}>
-            Control
-          </Tabs.Tab>
-          <Tabs.Tab
-            selected={tabIndex === 3}
-            onClick={() => setTabIndex(3)}>
-            Control
-          </Tabs.Tab>
-        </Tabs>
-        {tabIndex === 1 && <ReactorStatsSection />}
-        {tabIndex === 2 && <ReactorControlRodControl />}
-        {tabIndex === 3 && <ReactorModeratorGasses />}
+    <Window resizable width={360} height={540}>
+      <Window.Content>
+        <Stack.Item>
+          <Section fill>
+            <Stack textAlign="center">
+              <Stack.Item grow={3}>
+                <Button
+                  fluid
+                  color="green"
+                  lineHeight={buttonWidth}
+                  icon="cart-plus"
+                  content="ReactorStatsSection"
+                  onClick={() => setTabIndex(1)}
+                />
+              </Stack.Item>
+              <Stack.Item grow>
+                <Button
+                  fluid
+                  color="green"
+                  lineHeight={buttonWidth}
+                  icon="dollar-sign"
+                  content="ReactorControlRodControl"
+                  onClick={() => setTabIndex(2)}
+                />
+              </Stack.Item>
+              <Stack.Item grow>
+                <Button
+                  fluid
+                  color="green"
+                  lineHeight={buttonWidth}
+                  icon="dollar-sign"
+                  content="ReactorModeratorGasses"
+                  onClick={() => setTabIndex(3)}
+                />
+              </Stack.Item>
+            </Stack>
+          </Section>
+        </Stack.Item>
       </Window.Content>
     </Window>
   );
@@ -226,22 +241,8 @@ export const ReactorStatsSection = (props: ReactorProps, context) => {
 };
 
 export const ReactorControlRodControl = (props: ReactorProps, context) => {
-  const {
-    pressureData,
-    tempCoreData,
-    tempInputData,
-    tempOutputData,
-    integrity,
-    k,
-    coreTemp,
-    rods,
-    control_rods,
-    shutdownTemp,
-    desiredK,
-    active,
-  } = props;
+  const { k, coreTemp, rods, shutdownTemp, desiredK, active } = props;
   const { act, data } = useBackend(context);
-  const fuel_rods = rods;
 
   return (
     <Box height="100%">
@@ -250,7 +251,7 @@ export const ReactorControlRodControl = (props: ReactorProps, context) => {
         <Button
           disabled={
             (coreTemp > shutdownTemp && active) ||
-            (fuel_rods <= 0 && !active) ||
+            (rods.length <= 0 && !active) ||
             k > 0
           }
           icon={active ? 'power-off' : 'times'}
@@ -262,7 +263,7 @@ export const ReactorControlRodControl = (props: ReactorProps, context) => {
       <Section fill title="Control Rod Management:" height="100%">
         Control Rod Insertion:
         <ProgressBar
-          value={(control_rods / 100) * 100 * 0.01}
+          value={(rods.length / 100) * 100 * 0.01}
           ranges={{
             good: [0.7, Infinity],
             average: [0.4, 0.7],
@@ -304,22 +305,11 @@ export const ReactorControlRodControl = (props: ReactorProps, context) => {
 
 export const ReactorFuelControl = (props: ReactorProps, context) => {
   const { act, data } = useBackend(context);
-  const {
-    pressureData,
-    tempCoreData,
-    tempInputData,
-    tempOutputData,
-    integrity,
-    k,
-    coreTemp,
-    rods,
-    shutdownTemp,
-    desiredK,
-  } = props;
+  const { coreTemp, rods, shutdownTemp } = props;
   const shutdown_temp = shutdownTemp;
   return (
     <Section title="Fuel Rod Management" height="100%">
-      {rods > 0 ? (
+      {rods.length > 0 ? (
         <Box>
           <Flex direction="column">
             {Object.keys(rods).map((rod) => (
@@ -358,22 +348,17 @@ export const ReactorFuelControl = (props: ReactorProps, context) => {
     </Section>
   );
 };
-
-export const ReactorModeratorGasses = (props: ReactorProps, context) => {
+export const ReactorContent = (props: ReactorProps, context) => {
   const {
     sectionButton,
     uid,
     area_name,
     integrity,
     integrity_factors,
-    rods,
-    pressureData,
-    tempCoreData,
-    tempInputData,
-    tempOutputData,
-    shutdownTemp,
     temp_limit,
     temp_limit_factors,
+    waste_multiplier,
+    waste_multiplier_factors,
     absorbed_ratio,
     gas_temperature,
     gas_total_moles,
@@ -472,6 +457,36 @@ export const ReactorModeratorGasses = (props: ReactorProps, context) => {
                       <LabeledList.Item key={name} label={name} labelWrap>
                         <Box color={amount > 0 ? 'green' : 'red'}>
                           {toFixed(amount, 2) + ' K'}
+                        </Box>
+                      </LabeledList.Item>
+                    ))}
+                  </LabeledList>
+                )
+              }
+            />
+            <ReactorEntry
+              title="Waste Multiplier"
+              alwaysShowChevron
+              content={
+                <ProgressBar
+                  value={waste_multiplier}
+                  minValue={0}
+                  maxValue={20}
+                  ranges={{
+                    good: [-Infinity, 0.8],
+                    average: [0.8, 2],
+                    bad: [2, Infinity],
+                  }}>
+                  {toFixed(waste_multiplier, 2) + ' x'}
+                </ProgressBar>
+              }
+              detail={
+                !!waste_multiplier_factors.length && (
+                  <LabeledList>
+                    {waste_multiplier_factors.map(({ name, amount }) => (
+                      <LabeledList.Item key={name} label={name} labelWrap>
+                        <Box color={amount < 0 ? 'green' : 'red'}>
+                          {toFixed(amount, 2) + ' x'}
                         </Box>
                       </LabeledList.Item>
                     ))}

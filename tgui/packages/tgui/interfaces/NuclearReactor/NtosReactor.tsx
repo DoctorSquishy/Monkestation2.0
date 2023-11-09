@@ -1,7 +1,6 @@
 import { useBackend, useLocalState } from 'tgui/backend';
 import { NtosWindow } from 'tgui/layouts';
 import { ReactorContent, ReactorData } from './Reactor';
-
 import { Button, ProgressBar, Section, Table } from 'tgui/components';
 
 type NtosReactorData = ReactorData & { focus_uid?: number };
@@ -19,7 +18,7 @@ export const NtosReactor = (props, context) => {
         {activeREACTOR ? (
           <ReactorContent
             {...activeREACTOR}
-            gas_metadata={reactor_gas_metadata}
+            reactor_gas_metadata={reactor_gas_metadata}
             sectionButton={
               <Button icon="arrow-left" onClick={() => setActiveUID(0)}>
                 Back

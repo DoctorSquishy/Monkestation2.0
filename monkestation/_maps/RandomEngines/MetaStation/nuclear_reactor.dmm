@@ -71,9 +71,6 @@
 /obj/structure/cable,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
-"cI" = (
-/turf/open/floor/lowered/iron/pool,
-/area/station/engineering/supermatter/room)
 "do" = (
 /obj/effect/turf_decal/stripes/line,
 /obj/effect/spawner/structure/window/reinforced/plasma,
@@ -118,6 +115,11 @@
 /obj/machinery/meter,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
+"jD" = (
+/obj/machinery/atmospherics/pipe/smart/manifold4w/yellow/visible,
+/obj/machinery/meter,
+/turf/open/floor/plating,
+/area/station/engineering/supermatter/room)
 "ke" = (
 /obj/machinery/door/firedoor,
 /obj/machinery/door/airlock/engineering/glass{
@@ -127,14 +129,18 @@
 /obj/structure/cable,
 /turf/open/floor/iron/dark,
 /area/station/engineering/supermatter/room)
+"kl" = (
+/obj/item/fuel_rod,
+/turf/open/floor/plating,
+/area/station/engineering/supermatter/room)
 "lc" = (
 /obj/machinery/light/directional/west,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
-"my" = (
-/obj/structure/cable,
-/obj/machinery/atmospherics/components/unary/thermomachine/freezer/on,
-/turf/open/floor/iron/dark,
+"mq" = (
+/obj/machinery/portable_atmospherics/canister/oxygen,
+/obj/machinery/atmospherics/components/unary/portables_connector/visible,
+/turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "mD" = (
 /obj/machinery/power/rad_collector,
@@ -153,6 +159,12 @@
 "pX" = (
 /obj/structure/sign/warning/no_smoking,
 /turf/closed/wall/r_wall,
+/area/station/engineering/supermatter/room)
+"qK" = (
+/obj/machinery/atmospherics/components/binary/pump/reactor_moderator{
+	dir = 4
+	},
+/turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "rM" = (
 /obj/machinery/power/apc/auto_name/directional/south,
@@ -179,6 +191,12 @@
 /obj/structure/cable/layer1,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
+"uG" = (
+/obj/machinery/atmospherics/pipe/smart/manifold/yellow/visible{
+	dir = 1
+	},
+/turf/open/floor/plating,
+/area/station/engineering/supermatter/room)
 "vg" = (
 /obj/machinery/atmospherics/pipe/heat_exchanging/simple{
 	dir = 10
@@ -186,14 +204,17 @@
 /obj/structure/lattice/catwalk,
 /turf/open/space/basic,
 /area/space/nearstation)
+"vm" = (
+/obj/machinery/computer/reactor/pump/reactor_input,
+/turf/open/floor/plating,
+/area/station/engineering/supermatter/room)
 "vw" = (
 /obj/machinery/atmospherics/pipe/smart/manifold4w/orange/visible,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "wt" = (
-/obj/machinery/atmospherics/pipe/smart/manifold4w/cyan/visible,
-/obj/machinery/meter,
 /obj/structure/cable,
+/obj/machinery/atmospherics/components/binary/pump/reactor_input,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "xt" = (
@@ -253,6 +274,14 @@
 /obj/structure/cable,
 /turf/open/floor/iron/dark,
 /area/station/engineering/supermatter/room)
+"El" = (
+/obj/machinery/computer/reactor/pump/reactor_moderator,
+/turf/open/floor/plating,
+/area/station/engineering/supermatter/room)
+"Fs" = (
+/obj/machinery/computer/reactor/preset,
+/turf/open/floor/iron,
+/area/station/engineering/supermatter/room)
 "GT" = (
 /obj/machinery/atmospherics/components/trinary/filter/critical{
 	dir = 8;
@@ -260,12 +289,15 @@
 	},
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
-"HJ" = (
-/obj/item/fuel_rod,
-/turf/open/floor/lowered/iron/pool,
-/area/station/engineering/supermatter/room)
 "HZ" = (
 /obj/machinery/atmospherics/components/unary/thermomachine/freezer,
+/turf/open/floor/plating,
+/area/station/engineering/supermatter/room)
+"Ir" = (
+/obj/machinery/portable_atmospherics/canister/plasma,
+/obj/machinery/atmospherics/components/unary/portables_connector/visible{
+	dir = 8
+	},
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "IV" = (
@@ -289,18 +321,18 @@
 "Ke" = (
 /obj/machinery/atmospherics/pipe/smart/manifold4w/cyan/visible,
 /obj/structure/cable,
+/obj/machinery/meter,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
-"Kw" = (
-/obj/structure/lattice/catwalk,
-/obj/machinery/atmospherics/components/trinary/nuclear_reactor/preset,
-/turf/open/space/basic,
-/area/space/nearstation)
 "Lj" = (
 /obj/machinery/power/terminal{
 	dir = 4
 	},
 /obj/structure/cable,
+/turf/open/floor/plating,
+/area/station/engineering/supermatter/room)
+"MY" = (
+/obj/machinery/computer/reactor/pump/reactor_output,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "Np" = (
@@ -336,13 +368,6 @@
 /obj/structure/lattice/catwalk,
 /turf/open/space/basic,
 /area/space/nearstation)
-"Sn" = (
-/obj/machinery/atmospherics/components/unary/portables_connector/visible{
-	dir = 4
-	},
-/obj/machinery/portable_atmospherics/canister/nitrogen,
-/turf/open/floor/plating,
-/area/station/engineering/supermatter/room)
 "TK" = (
 /obj/machinery/light/directional/west,
 /obj/machinery/airalarm/directional/south,
@@ -385,14 +410,19 @@
 /obj/structure/lattice/catwalk,
 /turf/open/space/basic,
 /area/space/nearstation)
+"Yv" = (
+/obj/machinery/atmospherics/components/trinary/mixer/flipped{
+	dir = 1
+	},
+/turf/open/floor/plating,
+/area/station/engineering/supermatter/room)
 "YQ" = (
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
 /turf/open/floor/iron/dark,
 /area/station/engineering/supermatter/room)
 "ZA" = (
-/obj/machinery/meter,
-/obj/machinery/atmospherics/pipe/smart/manifold4w/yellow/visible,
+/obj/machinery/atmospherics/components/binary/pump/reactor_output,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 
@@ -570,7 +600,7 @@ sf
 lc
 cb
 cb
-Sn
+cb
 cb
 cb
 lc
@@ -595,9 +625,9 @@ Np
 Wd
 sf
 cb
-cb
-cb
-vw
+mq
+Yv
+iX
 vw
 vw
 vw
@@ -619,16 +649,16 @@ mD
 mD
 aV
 Np
-my
+Wd
 sf
 cb
 cb
+Ir
+qK
+El
 cb
-iX
 cb
-cb
-cb
-sf
+Fs
 VM
 OD
 au
@@ -681,7 +711,7 @@ aJ
 aO
 BM
 ZA
-cb
+jD
 cb
 cb
 cb
@@ -703,15 +733,15 @@ Bv
 uD
 cb
 aJ
+vm
 cb
 cb
 cb
-cb
-BM
+MY
+uG
 HZ
 cb
-HJ
-cI
+cb
 au
 IV
 IV
@@ -731,14 +761,14 @@ Ui
 vw
 GT
 cb
+kl
+kl
+kl
 cb
-cb
-cb
-BM
+uG
 HZ
 cb
-HJ
-cI
+cb
 au
 IV
 IV
@@ -762,10 +792,10 @@ BM
 BM
 BM
 BM
+BM
 cb
 cb
-HJ
-cI
+cb
 au
 IV
 IV
@@ -975,7 +1005,7 @@ af
 af
 af
 af
-Kw
+af
 af
 af
 af

@@ -106,6 +106,8 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 	var/K = 0
 	/// Control rod desired_k
 	var/desired_k = 0
+	//Starts off with a lot of control over K. If you flood this thing with plasma, you lose your ability to control K as easily.
+	var/control_rod_effectiveness = 0.65
 	var/last_user = null
 	var/current_desired_k = null
 
@@ -189,8 +191,7 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 	var/meltdown_priority = REACTOR_MELTDOWN_PRIO_NONE
 
 	//Data for graphs
-	var/list/kpaData = list()
-	var/list/powerData = list()
+	var/list/pressureData = list()
 	var/list/tempCoreData = list()
 	var/list/tempInputData = list()
 	var/list/tempOutputData = list()
@@ -219,7 +220,6 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 	icon_state = "reactor_off"
 	gas_percentage = list()
 	moderator_gasmix = new()
-	SSair.stop_processing_machine(src)
 	uid = gl_uid++
 	gas_absorption_effectiveness = rand(4, 6)/10 //All reactors are slightly different. This will result in you having to figure out what the balance is for K.
 	gas_absorption_constant = gas_absorption_effectiveness //And set this up for the rest of the round.
@@ -238,7 +238,6 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 	RegisterSignal(src, COMSIG_ATOM_BSA_BEAM, PROC_REF(force_meltdown))
 	RegisterSignal(src, COMSIG_ATOM_TIMESTOP_FREEZE, PROC_REF(time_frozen))
 	RegisterSignal(src, COMSIG_ATOM_TIMESTOP_UNFREEZE, PROC_REF(time_unfrozen))
-
 	if (!moveable)
 		move_resist = MOVE_FORCE_OVERPOWERING // Avoid being moved by statues or other memes
 
@@ -411,8 +410,9 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 
 ///Processes reactor gasses and the effects
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/process_atmos(seconds_per_tick)
+	..()
 	// PRELIMINARIES
-	if(disable_process != REACTOR_PROCESS_ENABLED || !on || !(nodes[1] && nodes[2] && nodes[3]))
+	if(disable_process != REACTOR_PROCESS_ENABLED || !on )
 		return
 
 	update_parents() //Make absolutely sure that pipe connections are updated
@@ -430,6 +430,9 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 		moderator_gasmix.volume = (moderator_input?.volume || CELL_VOLUME) * gas_absorption_constant // To match the pressure
 		calculate_moderators() //updates moderator variables
 		waste_multiplier_factors = calculate_waste_multiplier()
+		var/control_bonus = gas_control_mod / REACTOR_CONTROL_FACTOR
+		control_rod_effectiveness = initial(control_rod_effectiveness) + control_bonus
+		gas_absorption_effectiveness = clamp(gas_absorption_constant + (gas_permeability_mod / REACTOR_PERMEABILITY_FACTOR), 0, 1)
 		// Extra effects should always fire after the compositions are all finished
 		// Handles Waste Gas and Extra Effects such as with Healium repairing reactor integrity
 		for (var/gas_path in moderator_gasmix.gases)
@@ -456,7 +459,8 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 
 	// OUTPUT MODIFIER AND WASTE GASSES
 	var/datum/gas_mixture/merged_gasmix = moderator_gasmix.copy()
-	merged_gasmix.temperature = clamp(merged_gasmix.temperature, TCMB, gas_heat_mod * 100)
+	merged_gasmix.temperature += waste_multiplier / K
+	merged_gasmix.temperature = clamp(merged_gasmix.temperature, TCMB, gas_heat_mod * 1000)
 	if(merged_gasmix)
 		merged_gasmix.garbage_collect()
 		coolant_output.merge(merged_gasmix)

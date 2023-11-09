@@ -1,6 +1,3 @@
-#define FREQ_REACTOR_CONTROL 1439.69
-
-
 //Controlling the reactor.
 /obj/machinery/computer/reactor
 	name = "Reactor control console"
@@ -9,8 +6,9 @@
 	icon_state = "oldcomp"
 	icon_screen = "library"
 	icon_keyboard = null
+	circuit = /obj/item/circuitboard/computer/reactor // we have the technology
 	var/obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor = null
-	var/id = "default_reactor_for_mappers"
+	var/id = null
 
 /obj/machinery/computer/reactor/Initialize(mapload, obj/item/circuitboard/item_circuitboard)
 	. = ..()
@@ -23,36 +21,84 @@
 			return TRUE
 	return FALSE
 
-/obj/machinery/computer/reactor/control_rods
-	name = "Control rod management computer"
-	desc = "A computer which can remotely raise / lower the control rods of a reactor."
-	icon_screen = "reactor_rods"
+/obj/machinery/computer/reactor/multitool_act(mob/living/user, obj/item/multitool/I)
+	if(isnull(id) || isnum(id))
+		var/obj/machinery/atmospherics/components/trinary/nuclear_reactor/N = I.buffer
+		if(!istype(N))
+			user.balloon_alert(user, "invalid reactor ID!")
+			return TRUE
+		reactor = N
+		id = N.uid
+		user.balloon_alert(user, "linked!")
+		return TRUE
+	return ..()
 
-/obj/machinery/computer/reactor/control_rods/attack_hand(mob/living/user)
+/obj/machinery/computer/reactor/preset
+	id = "default_reactor_for_lazy_mappers"
+
+/obj/machinery/computer/reactor/syndie_base
+	id = "syndie_base_reactor"
+
+/obj/item/circuitboard/computer/reactor
+	name = "Reactor Control (Computer Board)"
+	icon_state = "engineering"
+	build_path = /obj/machinery/computer/reactor
+
+/obj/machinery/computer/reactor/Initialize(mapload, obj/item/circuitboard/C)
+	. = ..()
+	return INITIALIZE_HINT_LATELOAD
+
+/obj/machinery/computer/reactor/LateInitialize()
+	. = ..()
+	link_to_reactor()
+
+/obj/machinery/computer/reactor/attack_hand(mob/living/user)
 	. = ..()
 	ui_interact(user)
 
-/obj/machinery/computer/reactor/control_rods/ui_state(mob/user)
-	return GLOB.default_state
-
-/obj/machinery/computer/reactor/control_rods/ui_interact(mob/user, datum/tgui/ui)
+/obj/machinery/computer/reactor/ui_interact(mob/user, datum/tgui/ui)
 	. = ..()
 	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, "ReactorControlRods")
+		ui = new(user, src, "ReactorComputer")
 		ui.open()
 		ui.set_autoupdate(TRUE)
 
-/obj/machinery/computer/reactor/control_rods/ui_act(action, params)
+/obj/machinery/computer/reactor/ui_act(action, params)
 	if(..())
 		return
 	if(!reactor)
 		return
-	if(action == "input")
-		var/input = text2num(params["target"])
-		reactor.desired_k = clamp(input, 0, 3)
+	switch(action)
+		if("power")
+			if(reactor.on)
+				if(reactor.K <= 0 && reactor.temperature <= REACTOR_TEMPERATURE_OPERATING)
+					reactor.shut_down()
+			else if(reactor.fuel_rods.len)
+				reactor.start_up()
+				message_admins("Reactor started up by [ADMIN_LOOKUPFLW(usr)] in [ADMIN_VERBOSEJMP(src)]")
+				investigate_log("Reactor started by [key_name(usr)] at [AREACOORD(src)]", INVESTIGATE_ENGINE)
+		if("input")
+			var/input = text2num(params["target"])
+			reactor.last_user = usr
+			reactor.desired_k = reactor.on ? clamp(input, 0, REACTOR_MAX_CRITICALITY) : 0
+		if("eject")
+			if(reactor?.temperature > REACTOR_TEMPERATURE_OPERATING)
+				return
+			if(reactor?.slagged)
+				return
+			var/rod_index = text2num(params["rod_index"])
+			if(rod_index < 1 || rod_index > reactor.fuel_rods.len)
+				return
+			var/obj/item/fuel_rod/rod = reactor.fuel_rods[rod_index]
+			if(!rod)
+				return
+			playsound(src, pick('monkestation/sound/effects/reactor/switch.ogg','monkestation/sound/effects/reactor/switch2.ogg','monkestation/sound/effects/reactor/switch3.ogg'), 100, FALSE)
+			playsound(reactor, 'monkestation/sound/effects/reactor/crane_1.wav', 100, FALSE)
+			rod.forceMove(get_turf(reactor))
+			reactor.fuel_rods.Remove(rod)
 
-/obj/machinery/computer/reactor/control_rods/ui_data(mob/user)
+/obj/machinery/computer/reactor/ui_data(mob/user)
 	var/list/data = list()
 	data["control_rods"] = 0
 	data["k"] = 0
@@ -60,59 +106,43 @@
 	if(reactor)
 		data["k"] = reactor.K
 		data["desiredK"] = reactor.desired_k
-		data["control_rods"] = 100 - (reactor.desired_k / 3 * 100) //Rod insertion is extrapolated as a function of the percentage of K
+		data["control_rods"] = 100 - (100 * reactor.desired_k / REACTOR_MAX_CRITICALITY) //Rod insertion is extrapolated as a function of the percentage of K
+		data["integrity"] = reactor.get_integrity()
+	data["pressureData"] = reactor.pressureData
+	data["tempCoreData"] = reactor.tempCoreData
+	data["tempInputData"] =  reactor.tempInputData
+	data["tempOutputData"] = reactor.tempOutputData
+	data["coreTemp"] = round(reactor.temperature)
+	data["coolantInput"] = reactor ? round(reactor.last_coolant_temperature) : T20C
+	data["coolantOutput"] = reactor ? round(reactor.last_output_temperature) : T20C
+	data["kpa"] = reactor ? reactor.pressure : 0
+	data["active"] = reactor ? reactor.on : FALSE
+	data["shutdownTemp"] = REACTOR_TEMPERATURE_OPERATING
+	var/list/rod_data = list()
+	if(reactor)
+		var/cur_index = 0
+		for(var/obj/item/fuel_rod/rod in reactor.fuel_rods)
+			cur_index++
+			rod_data.Add(
+				list(
+					"name" = rod.name,
+					"depletion" = rod.depletion,
+					"rod_index" = cur_index
+				)
+			)
+	data["rods"] = rod_data
 	return data
 
-/obj/machinery/computer/reactor/stats
-	name = "Reactor Statistics Console"
-	desc = "A console for monitoring the statistics of a nuclear reactor."
-	icon_screen = "reactor_stats"
-	var/next_stat_interval = 0
-	var/list/pressureData = list()
-	var/list/powerData = list()
-	var/list/tempInputData = list()
-	var/list/tempOutputdata = list()
+/obj/machinery/computer/reactor/wrench_act(mob/living/user, obj/item/I)
+	to_chat(user, span_notice("You start [anchored ? "un" : ""]securing [name]..."))
+	if(I.use_tool(src, user, 40, volume=75))
+		to_chat(user, span_notice("You [anchored ? "un" : ""]secure [name]."))
+		set_anchored(!anchored)
+		return TRUE
+	return FALSE
 
-/obj/machinery/computer/reactor/stats/attack_hand(mob/living/user)
-	. = ..()
-	ui_interact(user)
 
-/obj/machinery/computer/reactor/stats/ui_state(mob/user)
-	return GLOB.default_state
-
-/obj/machinery/computer/reactor/stats/ui_interact(mob/user, datum/tgui/ui)
-	. = ..()
-	ui = SStgui.try_update_ui(user, src, ui)
-	if(!ui)
-		ui = new(user, src, "ReactorStats")
-		ui.open()
-		ui.set_autoupdate(TRUE)
-
-/obj/machinery/computer/reactor/stats/process()
-	if(world.time >= next_stat_interval)
-		next_stat_interval = world.time + 1 SECONDS //You only get a slow tick.
-		pressureData += (reactor) ? reactor.pressure : 0
-		if(pressureData.len > 100) //Only lets you track over a certain timeframe.
-			pressureData.Cut(1, 2)
-		tempInputData += (reactor) ? reactor.last_coolant_temperature : 0 //We scale up the figure for a consistent:tm: scale
-		if(tempInputData.len > 100) //Only lets you track over a certain timeframe.
-			tempInputData.Cut(1, 2)
-		tempOutputdata += (reactor) ? reactor.last_output_temperature : 0 //We scale up the figure for a consistent:tm: scale
-		if(tempOutputdata.len > 100) //Only lets you track over a certain timeframe.
-			tempOutputdata.Cut(1, 2)
-
-/obj/machinery/computer/reactor/stats/ui_data(mob/user)
-	var/list/data = list()
-	data["powerData"] = powerData
-	data["pressureData"] = pressureData
-	data["tempInputData"] = tempInputData
-	data["tempOutputdata"] = tempOutputdata
-	data["coolantInput"] = reactor ? reactor.last_coolant_temperature : 0
-	data["coolantOutput"] = reactor ? reactor.last_output_temperature : 0
-	data["reactorPressure"] = reactor ? reactor.pressure : 0
-	data["pressureMax"] = REACTOR_PRESSURE_CRITICAL
-	data["temperatureMax"] = reactor.temp_limit
-	return data
+#define FREQ_REACTOR_CONTROL 1439.69
 
 //Preset pumps for mappers. You can also set the id tags yourself.
 /obj/machinery/atmospherics/components/binary/pump/reactor_input
@@ -186,6 +216,9 @@
 		))
 	radio_connection.post_signal(src, signal, filter=RADIO_CHANNEL_ENGINEERING)
 
+#undef FREQ_REACTOR_CONTROL
+
+
 //Preset subtypes for mappers
 /obj/machinery/computer/reactor/pump/reactor_input
 	name = "Reactor inlet valve computer"
@@ -202,6 +235,7 @@
 	icon_screen = "reactor_moderator"
 	id = "reactor_moderator"
 
+
 //Monitoring programs
 /datum/computer_file/program/reactor_monitor
 	filename = "reactormonitor"
@@ -216,12 +250,7 @@
 	tgui_id = "NtosReactorStats"
 	program_icon = "radiation"
 	alert_able = TRUE
-	var/active = TRUE //Easy process throttle
-	var/next_stat_interval = 0
-	var/list/pressureData = list()
-	var/list/powerData = list()
-	var/list/tempInputData = list()
-	var/list/tempOutputdata = list()
+
 	var/last_status = REACTOR_INACTIVE
 	/// List of reactors that we are going to send the data of
 	var/list/obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactors = list()
@@ -351,5 +380,3 @@
 		program_icon_state = "smmon_[last_status]"
 		if(istype(computer))
 			computer.update_appearance()
-
-#undef FREQ_REACTOR_CONTROL

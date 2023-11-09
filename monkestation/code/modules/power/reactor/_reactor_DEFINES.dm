@@ -10,12 +10,12 @@
 
 #define REACTOR_COUNTDOWN_TIME (30 SECONDS)
 
-// Minimum temperature (400K) needed to run normally
-#define REACTOR_TEMPERATURE_OPERATING 400
+// Minimum temperature (300K) needed to run normally
+#define REACTOR_TEMPERATURE_OPERATING 300
 //Critical threshold of Reactor pressure (1000).
 #define REACTOR_PRESSURE_CRITICAL 10000
 
-#define REACTOR_HEAT_PENALTY_THRESHOLD 100 //Higher == Reactor safe operational temperature is higher.
+#define REACTOR_HEAT_PENALTY_THRESHOLD 600 //Higher == Reactor safe operational temperature is higher.
 
 #define REACTOR_HEAT_CAPACITY 6000 //How much thermal energy it takes to cool the reactor
 #define REACTOR_ROD_HEAT_CAPACITY 400 //How much thermal energy it takes to cool each reactor rod

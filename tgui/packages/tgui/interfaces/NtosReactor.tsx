@@ -13,7 +13,7 @@ export const NtosReactor = (props, context) => {
     (reactor) => reactor.uid === activeUID
   );
   return (
-    <NtosWindow height={400} width={700}>
+    <NtosWindow height={500} width={700}>
       <NtosWindow.Content>
         {activeREACTOR ? (
           <ReactorContent

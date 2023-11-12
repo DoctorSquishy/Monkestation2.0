@@ -3,10 +3,11 @@ import { flow } from 'common/fp';
 import { toFixed } from 'common/math';
 import { BooleanLike } from 'common/react';
 import { InfernoNode } from 'inferno';
-import { useBackend, useLocalState } from 'tgui/backend';
-import { Box, Button, LabeledList, ProgressBar, Section, Stack } from 'tgui/components';
-import { getGasFromPath } from 'tgui/constants';
-import { Window } from 'tgui/layouts';
+import { useBackend, useLocalState } from '../backend';
+import { Box, Button, Chart, LabeledList, ProgressBar, Section, Stack, Tabs } from '../components';
+import { getGasFromPath } from '../constants';
+import { Window } from '../layouts';
+import { formatSiUnit } from '../format';
 
 const logScale = (value) => Math.log2(16 + Math.max(0, value)) - 4;
 
@@ -21,32 +22,47 @@ type ReactorGasMetadata = {
   };
 };
 
+type ReactorStatProps = {
+  integrity: number;
+  temp_limit: any;
+  gas_composition: { [gas_path: string]: number };
+  k: number;
+  coreTemp: number;
+  pressure: number;
+  coolantInput: number;
+  coolantOutput: number;
+  pressureData: any;
+  tempCoreData: any;
+  tempInputData: any;
+  tempOutputData: any;
+};
+
 type ReactorProps = {
   sectionButton?: InfernoNode;
   uid: number;
   area_name: string;
-  active: number;
   integrity: number;
   integrity_factors: { name: string; amount: number }[];
-  k: number;
-  desiredK: number;
-  coreTemp: number;
-  rods: { name: string; depletion: number; rod_index: number }[];
-  pressureData: number;
-  tempCoreData: number;
-  tempInputData: number;
-  tempOutputData: number;
-  temp_limit: number;
+  temp_limit: any;
   temp_limit_factors: { name: string; amount: number }[];
   waste_multiplier: number;
   waste_multiplier_factors: { name: string; amount: number }[];
-  shutdownTemp: number;
   absorbed_ratio: number;
   gas_composition: { [gas_path: string]: number };
   gas_temperature: number;
   gas_total_moles: number;
   reactor_gas_metadata: ReactorGasMetadata;
+  k: number;
+  coreTemp: number;
+  pressure: number;
+  coolantInput: number;
+  coolantOutput: number;
+  pressureData: any;
+  tempCoreData: any;
+  tempInputData: any;
+  tempOutputData: any;
 };
+
 // LabeledList but stack and with a chevron dropdown.
 type ReactorEntryProps = {
   title: string;
@@ -54,6 +70,7 @@ type ReactorEntryProps = {
   detail?: InfernoNode;
   alwaysShowChevron?: boolean;
 };
+
 const ReactorEntry = (props: ReactorEntryProps, context) => {
   const { title, content, detail, alwaysShowChevron } = props;
   if (!alwaysShowChevron && !detail) {
@@ -89,7 +106,179 @@ const ReactorEntry = (props: ReactorEntryProps, context) => {
     </>
   );
 };
+
 export const ReactorContent = (props: ReactorProps, context) => {
+  const [currentTab, setTab] = useLocalState(context, 'currentTab', 1);
+  const { sectionButton, uid, area_name } = props;
+  const { act, data } = useBackend<ReactorData>(context);
+  const { reactor_data, reactor_gas_metadata } = data;
+  return (
+    <Stack vertical fill>
+      <Section
+        height="6%"
+        align="center"
+        title={uid + '. ' + area_name}
+        buttons={sectionButton}
+      />
+      <Stack.Item>
+        <Tabs textAlign="center" fluid>
+          <Tabs.Tab
+            icon="radiation"
+            selected={currentTab === 1}
+            onClick={() => setTab(1)}>
+            Reactor Status
+          </Tabs.Tab>
+          <Tabs.Tab
+            icon="info"
+            selected={currentTab === 2}
+            onClick={() => setTab(2)}>
+            Moderator Gases
+          </Tabs.Tab>
+        </Tabs>
+      </Stack.Item>
+      <Stack.Item grow>
+        {currentTab === 1 && <ReactorStatContent {...reactor_data[0]} />}
+        {currentTab === 2 && (
+          <ReactorModeratorContent
+            {...reactor_data[0]}
+            reactor_gas_metadata={reactor_gas_metadata}
+          />
+        )}
+      </Stack.Item>
+    </Stack>
+  );
+};
+
+export const ReactorStatContent = (props: ReactorStatProps, context) => {
+  const {
+    integrity,
+    temp_limit,
+    k,
+    coreTemp,
+    pressure,
+    coolantInput,
+    coolantOutput,
+    pressureData,
+    tempCoreData,
+    tempInputData,
+    tempOutputData,
+  } = props;
+  const pressureMapData = pressureData.map((amount, i) => [i, amount]);
+  const tempCoreMapData = tempCoreData.map((amount, i) => [i, amount]);
+  const tempInputMapData = tempInputData.map((amount, i) => [i, amount]);
+  const tempOutputMapData = tempOutputData.map((amount, i) => [i, amount]);
+  const [allGasActive, setAllGasActive] = useLocalState(
+    context,
+    'allGasActive',
+    false
+  );
+  const gas_composition: [gas_path: string, amount: number][] = flow([
+    !allGasActive && filter(([gas_path, amount]) => amount !== 0),
+    sortBy(([gas_path, amount]) => -amount),
+  ])(Object.entries(props.gas_composition));
+  return (
+    <Stack height="100%">
+      <Stack.Item grow>
+        <Box height="100%">
+          <Section title="Legend:" fill>
+            Integrity:
+            <ProgressBar
+              value={integrity / 100}
+              ranges={{
+                good: [0.9, Infinity],
+                average: [0.5, 0.9],
+                bad: [-Infinity, 0.5],
+              }}>
+              {integrity}%
+            </ProgressBar>
+            Reactor Pressure:
+            <ProgressBar
+              value={pressure}
+              minValue={0}
+              maxValue={10000}
+              color="white">
+              {formatSiUnit(pressure * 1000, 1, 'Pa')}
+            </ProgressBar>
+            Coolant temperature:
+            <ProgressBar
+              value={coolantInput}
+              minValue={0}
+              maxValue={1500}
+              color="blue">
+              {coolantInput} K
+            </ProgressBar>
+            Outlet temperature:
+            <ProgressBar
+              value={coolantOutput}
+              minValue={0}
+              maxValue={1500}
+              color="orange">
+              {coolantOutput} K
+            </ProgressBar>
+            Core temperature:
+            <ProgressBar
+              value={coreTemp}
+              minValue={0}
+              maxValue={1500}
+              color="bad">
+              {coreTemp} K
+            </ProgressBar>
+            Neutrons per generation (K):
+            <ProgressBar
+              value={k / 5}
+              ranges={{
+                good: [-Infinity, 0.4],
+                average: [0.4, 0.6],
+                bad: [0.6, Infinity],
+              }}>
+              {k}
+            </ProgressBar>
+          </Section>
+        </Box>
+      </Stack.Item>
+      <Stack.Item grow>
+        <Section title="Pressure Statistics:" height="140px">
+          <Chart.Line
+            height="60px"
+            data={pressureMapData}
+            rangeX={[0, pressureData.length - 1]}
+            rangeY={[0, Math.max(10000, ...pressureMapData)]}
+            strokeColor="rgba(255,250,250, 1)"
+            fillColor="rgba(255,250,250, 0.1)"
+          />
+        </Section>
+        <Section title="Temperature Statistics:" height="160px">
+          <Chart.Line
+            height="80x"
+            data={tempCoreMapData}
+            rangeX={[0, tempCoreData.length - 1]}
+            rangeY={[0, Math.max(1800, ...temp_limit)]}
+            strokeColor="rgba(255, 0, 0 , 1)"
+            fillColor="rgba(255, 0, 0 , 0.1)"
+          />
+          <Chart.Line
+            fillPositionedParent
+            data={tempInputMapData}
+            rangeX={[0, tempInputData.length - 1]}
+            rangeY={[0, Math.max(1800, ...tempInputData)]}
+            strokeColor="rgba(127, 179, 255 , 1)"
+            fillColor="rgba(127, 179, 255 , 0.1)"
+          />
+          <Chart.Line
+            fillPositionedParent
+            data={tempOutputMapData}
+            rangeX={[0, tempOutputData.length - 1]}
+            rangeY={[0, Math.max(1800, ...tempOutputData)]}
+            strokeColor="rgba(255, 129, 25 , 1)"
+            fillColor="rgba(255, 129, 25 , 0.1)"
+          />
+        </Section>
+      </Stack.Item>
+    </Stack>
+  );
+};
+
+export const ReactorModeratorContent = (props: ReactorProps, context) => {
   const {
     sectionButton,
     uid,
@@ -104,6 +293,15 @@ export const ReactorContent = (props: ReactorProps, context) => {
     gas_temperature,
     gas_total_moles,
     reactor_gas_metadata,
+    k,
+    coreTemp,
+    pressure,
+    coolantInput,
+    coolantOutput,
+    pressureData,
+    tempCoreData,
+    tempInputData,
+    tempOutputData,
   } = props;
   const [allGasActive, setAllGasActive] = useLocalState(
     context,
@@ -124,7 +322,7 @@ export const ReactorContent = (props: ReactorProps, context) => {
           buttons={sectionButton}>
           <Stack vertical>
             <ReactorEntry
-              title="Integrity"
+              title="Reactor Integrity"
               alwaysShowChevron
               content={
                 <ProgressBar
@@ -155,7 +353,7 @@ export const ReactorContent = (props: ReactorProps, context) => {
               }
             />
             <ReactorEntry
-              title="Absorbed Moles"
+              title="Moderator Absorbed Moles"
               content={
                 <ProgressBar
                   value={gas_total_moles}
@@ -171,7 +369,7 @@ export const ReactorContent = (props: ReactorProps, context) => {
               }
             />
             <ReactorEntry
-              title="Temperature"
+              title="Moderator Temperature"
               content={
                 <ProgressBar
                   value={logScale(gas_temperature)}
@@ -206,7 +404,7 @@ export const ReactorContent = (props: ReactorProps, context) => {
               }
             />
             <ReactorEntry
-              title="Waste Multiplier"
+              title="Fuel Waste Multiplier"
               alwaysShowChevron
               content={
                 <ProgressBar
@@ -246,7 +444,7 @@ export const ReactorContent = (props: ReactorProps, context) => {
         <Section
           fill
           scrollable
-          title="Gases"
+          title="Moderator Gases"
           buttons={
             <Button
               icon={allGasActive ? 'times' : 'book-open'}
@@ -317,7 +515,6 @@ export const ReactorContent = (props: ReactorProps, context) => {
     </Stack>
   );
 };
-
 export type ReactorData = {
   reactor_data: Omit<ReactorProps, 'sectionButton' | 'reactor_gas_metadata'>[];
   reactor_gas_metadata: ReactorGasMetadata;
@@ -327,7 +524,7 @@ export const Reactor = (props, context) => {
   const { act, data } = useBackend<ReactorData>(context);
   const { reactor_data, reactor_gas_metadata } = data;
   return (
-    <Window width={700} height={400} theme="ntos">
+    <Window width={700} height={500} theme="ntos">
       <Window.Content>
         <ReactorContent
           {...reactor_data[0]}

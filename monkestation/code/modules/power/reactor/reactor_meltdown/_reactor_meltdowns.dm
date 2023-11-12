@@ -48,27 +48,23 @@ GLOBAL_LIST_INIT(reactor_meltdown_list, list(
 				reactor.meltdown_alarm = new(reactor, TRUE)
 		if(REACTOR_EMERGENCY)
 			playsound(reactor, 'sound/machines/engine_alert2.ogg', 100, FALSE, 30, 30, falloff_distance = 10)
-			if(reactor.meltdown_alarm)
-				QDEL_NULL(reactor.meltdown_alarm)
 		if(REACTOR_DANGER)
 			playsound(reactor, 'sound/machines/engine_alert1.ogg', 100, FALSE, 30, 30, falloff_distance = 10)
 			playsound(reactor, 'monkestation/sound/effects/reactor/reactor_alert_2.ogg', 100, FALSE, 30, 30, falloff_distance = 10)
-			if(reactor.meltdown_alarm)
-				QDEL_NULL(reactor.meltdown_alarm)
 		if(REACTOR_WARNING)
 			playsound(reactor, 'sound/machines/terminal_alert.ogg', 75)
 			playsound(reactor, 'monkestation/sound/effects/reactor/reactor_alert_1.ogg', 75)
-			if(reactor.meltdown_alarm)
-				QDEL_NULL(reactor.meltdown_alarm)
-	if(reactor.damage < reactor.damage_archived) // Healing
+	if(reactor.damage < reactor.damage_archived) // For active Healium
 		reactor.radio.talk_into(reactor,"Reactor returning to safe operating parameters. Integrity: [round(reactor.get_integrity_percent(), 0.01)]%", reactor.damage_archived >= reactor.emergency_point ? reactor.emergency_channel : reactor.warning_channel)
+		if(reactor.meltdown_alarm)
+			QDEL_NULL(reactor.meltdown_alarm)
 		return FALSE
 
 	if(reactor.damage >= reactor.emergency_point) // Taking damage, in emergency
 		reactor.radio.talk_into(reactor, "REACTOR MELTDOWN IMMINENT Integrity: [round(reactor.get_integrity_percent(), 0.01)]%", reactor.emergency_channel)
 		reactor.lastwarning = REALTIMEOFDAY - (REACTOR_WARNING_DELAY / 2) // Cut the time to next announcement in half.
 	else // Taking damage, in warning
-		reactor.radio.talk_into(reactor, "Danger! Reactor structural integrity faltering! Integrity: [round(reactor.get_integrity_percent(), 0.01)]%", reactor.warning_channel)
+		reactor.radio.talk_into(reactor, "Danger! Reactor vessel integrity faltering! Integrity: [round(reactor.get_integrity_percent(), 0.01)]%", reactor.warning_channel)
 
 	SEND_SIGNAL(reactor, COMSIG_REACTOR_MELTDOWN_ALARM)
 	return TRUE
@@ -99,7 +95,7 @@ GLOBAL_LIST_INIT(reactor_meltdown_list, list(
 	reactor.set_light(
 		l_outer_range = ROUND_UP(clamp(reactor.temperature / 500, 4, 10)),
 		l_power = ROUND_UP(clamp(reactor.temperature / 1000, 1, 5)),
-		l_color = reactor.gas_heat_mod > 0.8 ? LIGHT_COLOR_ORANGE : LIGHT_COLOR_CYAN,
+		l_color = reactor.temperature > (reactor.temp_limit*0.8) ? LIGHT_COLOR_FLARE : LIGHT_COLOR_CYAN,
 		l_on = reactor.temperature > REACTOR_TEMPERATURE_OPERATING
 	)
 
@@ -107,7 +103,7 @@ GLOBAL_LIST_INIT(reactor_meltdown_list, list(
 /// First message is start of count down, second message is quitting of count down (if reactor healed), third is 5 second intervals
 /datum/reactor_meltdown/proc/count_down_messages(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	var/list/messages = list()
-	messages += "REACTOR MELTDOWN IMMINENT. The reactor integrity has reached critical failure point. Engaging EPIS systems. Please engage SCARM protocols"
+	messages += "REACTOR MELTDOWN IMMINENT. The reactor integrity has reached critical failure point."
 	messages += "Reactor returning to safe operating parameters. EPIS systems have been disengaged."
 	messages += "remain before meltdown."
 	return messages

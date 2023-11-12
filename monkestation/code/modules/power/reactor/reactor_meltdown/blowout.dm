@@ -12,8 +12,8 @@
 		"WARNING: Reactor vessel pressure over safe operation point.",
 		reactor.damage >= reactor.emergency_point ? reactor.emergency_channel : reactor.warning_channel
 	)
-
-	effect_gas_leak_small(reactor)
+	if(prob(10))
+		effect_gas_leak_small(reactor)
 
 	return TRUE
 
@@ -21,12 +21,12 @@
 	message_admins("Reactor [reactor] at [ADMIN_VERBOSEJMP(reactor)] triggered a nuclear reactor blowout.")
 	reactor.investigate_log("triggered a nuclear reactor blowout.", INVESTIGATE_ENGINE)
 	playsound(src, 'monkestation/sound/effects/reactor/explode.ogg', 80, FALSE, 50, 50, falloff_distance = 30)
+	effect_gas_leak_all(reactor)
 	effect_irradiate(reactor)
 	effect_nuclear_particles(reactor)
 	effect_emp(reactor)
 	effect_explosion(reactor)
 	effect_corium_meltthrough(reactor)
-	effect_gas_leak_all(reactor)
 	return ..()
 
 /datum/reactor_meltdown/core_meltdown/overlays(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)

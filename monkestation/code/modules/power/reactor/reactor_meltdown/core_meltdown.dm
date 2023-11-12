@@ -15,7 +15,6 @@
 		"A flash of blue light appeared in your peripherals...",
 		"You hear a high-pitched ringing sound.",
 		"You feel a warm tingling throughout your body.",
-		"Something feels very off.",
 		"A intense sense of dread washes over you.",
 	)
 	for(var/mob/victim as anything in GLOB.player_list)

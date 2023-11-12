@@ -6,10 +6,10 @@
 	var/turf/reactor_turf = get_turf(reactor)
 	//Dear mappers, balance the reactor max explosion radius to 17.5, 37, 39, 41
 	explosion(origin = reactor_turf,
-		devastation_range = explosion_power * max(power_scaling, 0.205) * 0.5,
-		heavy_impact_range = explosion_power * max(power_scaling, 0),
-		light_impact_range = explosion_power * max(power_scaling, 0.205) + 4,
-		flash_range = explosion_power * max(power_scaling, 0.205) + 6,
+		devastation_range = explosion_power * max(power_scaling, 0.205) * 0.1,
+		heavy_impact_range = explosion_power * max(power_scaling, 0) * 0.1,
+		light_impact_range = explosion_power * max(power_scaling, 0.205) * 0.1,
+		flash_range = explosion_power * max(power_scaling, 0.205) * 0.1,
 		adminlog = TRUE,
 		ignorecap = TRUE
 	)
@@ -50,16 +50,24 @@
 // Seems some gas connections are leaking
 /datum/reactor_meltdown/proc/effect_gas_leak_small(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	var/turf/reactor_turf = get_turf(reactor)
-	reactor.Shake(3, 3, 2 SECONDS)
+	reactor.Shake(1, 1, 2 SECONDS)
 	playsound(reactor, 'sound/machines/clockcult/steam_whoosh.ogg', 100, TRUE)
 
 	var/datum/gas_mixture/coolant_input = reactor.airs[1]
 	var/datum/gas_mixture/moderator_input = reactor.airs[2]
 	var/datum/gas_mixture/coolant_output = reactor.airs[3]
+	var/datum/gas_mixture/reactor_env = reactor_turf.return_air()
 
-	reactor_turf.assume_air(coolant_input.gases*0.1)
-	reactor_turf.assume_air(moderator_input.gases*0.1)
-	reactor_turf.assume_air(coolant_output.gases*0.1)
+	coolant_input = coolant_input?.remove_ratio(0.01)
+	reactor_env.merge(coolant_input)
+
+	moderator_input = moderator_input?.remove_ratio(0.01)
+	reactor_env.merge(moderator_input)
+
+	coolant_output = coolant_output?.remove_ratio(0.01)
+	reactor_env.merge(coolant_output)
+
+	reactor.air_update_turf(FALSE, FALSE)
 
 // Leak all the gas from the pipes
 /datum/reactor_meltdown/proc/effect_gas_leak_all(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
@@ -70,10 +78,12 @@
 	var/datum/gas_mixture/coolant_input = reactor.airs[1]
 	var/datum/gas_mixture/moderator_input = reactor.airs[2]
 	var/datum/gas_mixture/coolant_output = reactor.airs[3]
+	var/datum/gas_mixture/reactor_env = reactor_turf.return_air()
 
-	reactor_turf.assume_air(coolant_input)
-	reactor_turf.assume_air(moderator_input)
-	reactor_turf.assume_air(coolant_output)
+	reactor_env.merge(coolant_input)
+	reactor_env.merge(moderator_input)
+	reactor_env.merge(coolant_output)
+	reactor.air_update_turf(FALSE, FALSE)
 
 /datum/reactor_meltdown/proc/effect_corium_meltthrough(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	var/turf/reactor_turf = get_turf(reactor)

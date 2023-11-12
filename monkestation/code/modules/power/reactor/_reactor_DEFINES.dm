@@ -12,7 +12,7 @@
 
 // Minimum temperature (300K) needed to run normally
 #define REACTOR_TEMPERATURE_OPERATING 300
-//Critical threshold of Reactor pressure (1000).
+//Critical threshold of Reactor pressure (10000).
 #define REACTOR_PRESSURE_CRITICAL 10000
 
 #define REACTOR_HEAT_PENALTY_THRESHOLD 600 //Higher == Reactor safe operational temperature is higher.

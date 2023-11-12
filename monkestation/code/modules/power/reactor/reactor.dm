@@ -44,14 +44,15 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 	icon_state = "reactor_map"
 	pixel_x = -32
 	pixel_y = -32
-	pipe_flags = PIPING_ONE_PER_TURF | PIPING_ALL_LAYER
+	pipe_flags = PIPING_ONE_PER_TURF
 	density = FALSE //It burns you if you're stupid enough to walk over it
 	anchored = TRUE
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF | FREEZE_PROOF
 	flags_1 = PREVENT_CONTENTS_EXPLOSION_1
 	critical_machine = TRUE
+	override_naming = FALSE //Prevents the omni name that comes from pipes
 	light_color = LIGHT_COLOR_CYAN
-	dir = 8 //Less headache inducing
+	dir = 8
 
 	///The id of our reactor
 	var/uid = 1
@@ -70,12 +71,12 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 	///The point at which we consider the reactor to be [REACTOR_STATUS_EMERGENCY]
 	var/emergency_point = 75
 	var/emergency_channel = null // Need null to actually broadcast
-	///The point at which we delam [REACTOR_STATUS_DELAMINATING]
+	///The point at which we delam [REACTOR_STATUS_MELTINGDOWN]
 	var/explosion_point = 100
 	///Are we exploding?
 	var/final_countdown = FALSE
 	///A scaling value that affects the severity of explosions
-	var/explosion_power = 35
+	var/explosion_power = 5
 	///Time in 1/10th of seconds since the last sent warning
 	var/lastwarning = 0
 
@@ -197,7 +198,7 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 	var/list/tempOutputData = list()
 
 	///Reactor soundloops
-	var/datum/looping_sound/nuclear_reactor_hum/reactor_hum
+	var/datum/looping_sound/reactor_hum/reactor_hum
 	var/datum/looping_sound/reactor_meltdown_alarm/meltdown_alarm
 
 	//Grilling soundloop
@@ -210,10 +211,9 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 		COMSIG_ATOM_ENTERED = PROC_REF(reactor_crossed),
 	)
 
-
-//Use this in your maps if you want everything to be preset.
-/obj/machinery/atmospherics/components/trinary/nuclear_reactor/preset
-	uid = "default_reactor_for_mappers"
+//Use Normal Nuclear Reactor as main engine
+/obj/machinery/atmospherics/components/trinary/nuclear_reactor/engine
+	is_main_engine = TRUE
 
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/Initialize(mapload)
 	. = ..()
@@ -459,16 +459,17 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 
 	// OUTPUT MODIFIER AND WASTE GASSES
 	var/datum/gas_mixture/merged_gasmix = moderator_gasmix.copy()
-	merged_gasmix.temperature += waste_multiplier / K
-	merged_gasmix.temperature = clamp(merged_gasmix.temperature, TCMB, gas_heat_mod * 1000)
+	merged_gasmix.temperature += (waste_multiplier * K)
+	merged_gasmix.temperature = clamp(merged_gasmix.temperature, TCMB, gas_heat_mod + T0C)
 	if(merged_gasmix)
 		merged_gasmix.garbage_collect()
 		coolant_output.merge(merged_gasmix)
 	coolant_output.merge(coolant_input)
+	last_output_temperature = coolant_output.return_temperature()
 	pressure = coolant_output.return_pressure()
 
 	// RADIATION
-	var/particle_chance = min(gas_radioactivity_mod * K, 1000)
+	var/particle_chance = min(gas_radioactivity_mod, 1000)
 	while(particle_chance >= 100)
 		fire_nuclear_particle()
 		particle_chance -= 100
@@ -478,6 +479,7 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 
 	// EXTRA BEHAVIOUR
 	collect_data()
+	processing_sound()
 	update_appearance()
 	meltdown_strategy.lights(src)
 	return TRUE
@@ -519,13 +521,13 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 	. = ..()
 	icon_state = "[base_icon_state]_off"
 	switch(get_temperature_percent())
-		if(1 to 40)
+		if(1 to 60)
 			icon_state = "[base_icon_state]_on"
-		if(50 to 60)
+		if(60 to 70)
 			icon_state = "[base_icon_state]_hot"
-		if(60 to 80)
+		if(70 to 80)
 			icon_state = "[base_icon_state]_veryhot"
-		if(80 to 90)
+		if(90 to 100)
 			icon_state = "[base_icon_state]_overheat"
 		if(100 to INFINITY)
 			icon_state = "[base_icon_state]_meltdown"

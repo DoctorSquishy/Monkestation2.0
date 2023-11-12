@@ -1,4 +1,4 @@
-/datum/looping_sound/nuclear_reactor_hum
+/datum/looping_sound/reactor_hum
 	mid_sounds = list('monkestation/sound/effects/reactor/reactor_hum.ogg' = 1)
 	mid_length = 60
 	volume = 5

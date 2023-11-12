@@ -88,12 +88,12 @@
 		return
 	/// Tell people the heat output in energy. More informative than telling them the heat multiplier.
 	var/additive_waste_multiplier = list()
-	additive_waste_multiplier[REACTOR_WASTE_BASE] = 1
-	additive_waste_multiplier[REACTOR_WASTE_GAS] = (gas_heat_mod + gas_depletion_mod)/2 // Average out from the heat and depletion mods
+	additive_waste_multiplier[REACTOR_WASTE_BASE] = 0.05
+	additive_waste_multiplier[REACTOR_WASTE_GAS] = gas_depletion_mod
 
 	for (var/waste_type in additive_waste_multiplier)
 		waste_multiplier += additive_waste_multiplier[waste_type]
-	waste_multiplier = clamp(waste_multiplier, 0.5, INFINITY)
+	waste_multiplier = clamp(waste_multiplier, 0.05, INFINITY)
 	return additive_waste_multiplier
 
 /**
@@ -104,7 +104,7 @@
  **/
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/calculate_criticality()
 	var/fuel_power = 0 //So that you can't magically generate K with your control rods.
-	K += (gas_depletion_mod + gas_heat_mod)/1000
+	K += gas_heat_mod/10
 	if(!has_fuel())
 		shutdown()
 	else
@@ -173,12 +173,11 @@
 		var/heat_delta = (last_coolant_temperature - temperature) * gas_absorption_effectiveness //Take in the gas as a cooled input, cool the reactor a bit. The optimum, 100% balanced reaction sits at K=1, coolant input temp of 200K / -73 celsius.
 		var/coolant_heat_factor = coolant_input.heat_capacity() / (coolant_input.heat_capacity() + REACTOR_HEAT_CAPACITY + (REACTOR_ROD_HEAT_CAPACITY * has_fuel())) //What percent of the total heat capacity is in the coolant
 		last_heat_delta = heat_delta
-		temperature += heat_delta * coolant_heat_factor + gas_heat_mod
+		temperature += heat_delta * coolant_heat_factor
 		//Heat the coolant output gas that we just had pass through us.
 		var/coolant_heat_transfer = (last_coolant_temperature - (heat_delta * (1 - coolant_heat_factor)))
 		coolant_input.temperature = coolant_heat_transfer
 		coolant_output.merge(coolant_input) //And now, shove the input into the output.
-	last_output_temperature = coolant_output.return_temperature()
 
 /**
  * Perform calculation for the damage taken or healed.
@@ -199,9 +198,8 @@
 	// Only cares about the damage before this proc is run. We ignore soon-to-be-applied damage.
 	additive_damage[REACTOR_DAMAGE_HEAT] = external_damage_immediate * clamp((emergency_point - damage) / emergency_point, 0, 1)
 	external_damage_immediate = 0
-
-	additive_damage[REACTOR_DAMAGE_HEAT] = clamp((temperature - temp_limit) / 10000, 0, 0.15)
-	additive_damage[REACTOR_DAMAGE_PRESSURE] = clamp(pressure/100, 0, 0.1)
+	additive_damage[REACTOR_DAMAGE_HEAT] = clamp((temperature - temp_limit) / 24000, 0, 0.15)
+	additive_damage[REACTOR_DAMAGE_PRESSURE] = clamp((pressure - REACTOR_PRESSURE_CRITICAL)/10000, 0, 0.1)
 
 	var/total_damage = 0
 	for (var/damage_type in additive_damage)
@@ -248,7 +246,7 @@
 		return REACTOR_WARNING
 	if(temperature > temp_limit * 0.8 || pressure > pressure_limit * 0.8)
 		return REACTOR_NOTIFY
-	if(temperature < temp_limit * 0.8 || pressure < pressure_limit * 0.8)
+	if(temperature > REACTOR_TEMPERATURE_OPERATING)
 		return REACTOR_NORMAL
 	return REACTOR_INACTIVE
 
@@ -264,28 +262,57 @@
 	temperature_percent = temperature_percent < 0 ? 0 : temperature_percent
 	return temperature_percent
 
+// Any heat past this number will be clamped down
+#define MAX_ACCEPTED_HEAT_OUTPUT 5000
+
+// At the highest heat output, assuming no integrity changes, the threshold will be 0.
+#define THRESHOLD_EQUATION_SLOPE (-1 / MAX_ACCEPTED_HEAT_OUTPUT)
+#define CHANCE_EQUATION_SLOPE (RADIATION_CHANCE_AT_ZERO_INTEGRITY - RADIATION_CHANCE_AT_FULL_INTEGRITY)
+
+// The higher this number, the faster low integrity will drop threshold
+#define INTEGRITY_EXPONENTIAL_DEGREE 2
+#define RADIATION_CHANCE_AT_FULL_INTEGRITY 0.03
+#define RADIATION_CHANCE_AT_ZERO_INTEGRITY 0.4
+
 //Calculates radiation levels that emit from the reactor
 //Emits low radiation under normal operating conditions with full integrity
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/emit_radiation(seconds_per_tick)
+	// As heat goes up, rads go up.
+	// A standard N2 SM seems to produce a value of around 1,500.
+	var/power_factor = min(temperature, MAX_ACCEPTED_HEAT_OUTPUT)
+
+	var/integrity = 1 - CLAMP01(damage / explosion_point)
+
 	// At the "normal" output (with max integrity), this is 0.7, which is enough to be stopped
 	// by the walls or the radation shutters.
 	// As integrity does down, rads go up
-	var/threshold = get_integrity_percent()
-	var/rad_chance_full_integrity = 0.03
-	var/rad_chance_zero_integrity = 0.4
-	var/chance_equation_slope = rad_chance_zero_integrity - rad_chance_full_integrity
+	var/threshold
+	switch(integrity)
+		if(0)
+			threshold = power_factor ? 0 : 1
+		if(1)
+			threshold = (THRESHOLD_EQUATION_SLOPE * power_factor + 1)
+		else
+			threshold = (THRESHOLD_EQUATION_SLOPE * power_factor + 1) ** ((1 / integrity) ** INTEGRITY_EXPONENTIAL_DEGREE)
+
 	// Calculating chance is done entirely on integrity, so that actively damaged reactors feel more dangerous
-	var/chance = (chance_equation_slope * threshold) + rad_chance_full_integrity
-	var/max_range = (gas_radioactivity_mod/chance)
-	var/rad_intensity = (K*temperature*gas_radioactivity_mod*has_fuel()/(REACTOR_MAX_CRITICALITY*REACTOR_MAX_FUEL_RODS))
+	var/chance = (CHANCE_EQUATION_SLOPE * (1 - integrity)) + RADIATION_CHANCE_AT_FULL_INTEGRITY
+	var/rad_intensity = (gas_radioactivity_mod*K*temperature*has_fuel()/(REACTOR_MAX_CRITICALITY*REACTOR_MAX_FUEL_RODS))
 
 	radiation_pulse(
 		src,
-		max_range = max_range,
+		max_range = (4 + gas_radioactivity_mod),
 		threshold = threshold,
 		chance = chance * 100,
 		intensity = rad_intensity
 	)
+
+#undef MAX_ACCEPTED_HEAT_OUTPUT
+#undef THRESHOLD_EQUATION_SLOPE
+#undef INTEGRITY_EXPONENTIAL_DEGREE
+#undef RADIATION_CHANCE_AT_FULL_INTEGRITY
+#undef RADIATION_CHANCE_AT_ZERO_INTEGRITY
+
 
 /**
  * Count down, spout some messages, and then execute the meltdown itself.
@@ -376,6 +403,10 @@
 	meltdown_strategy = new_meltdown
 	meltdown_strategy.on_select(src)
 	return TRUE
+
+/obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/processing_sound()
+	if(temperature > REACTOR_TEMPERATURE_OPERATING)
+		reactor_hum.volume = clamp((50 + (temperature / 50)), 50, 100)
 
 
 //Timestop Effects

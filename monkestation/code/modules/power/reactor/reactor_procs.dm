@@ -42,6 +42,7 @@
  * [/var/gas_radioactivity_mod]
  * [/var/gas_control_mod]
  * [/var/gas_permeability_mod]
+ * [/var/gas_depletion_mod]
  *
  * Returns: null
  **/
@@ -89,7 +90,8 @@
 	/// Tell people the heat output in energy. More informative than telling them the heat multiplier.
 	var/additive_waste_multiplier = list()
 	additive_waste_multiplier[REACTOR_WASTE_BASE] = 0.05
-	additive_waste_multiplier[REACTOR_WASTE_GAS] = gas_depletion_mod
+	additive_waste_multiplier[REACTOR_WASTE_GAS] = gas_heat_mod/10
+	additive_waste_multiplier[REACTOR_WASTE_TEMP] = (temperature/temp_limit)
 
 	for (var/waste_type in additive_waste_multiplier)
 		waste_multiplier += additive_waste_multiplier[waste_type]
@@ -198,8 +200,10 @@
 	// Only cares about the damage before this proc is run. We ignore soon-to-be-applied damage.
 	additive_damage[REACTOR_DAMAGE_HEAT] = external_damage_immediate * clamp((emergency_point - damage) / emergency_point, 0, 1)
 	external_damage_immediate = 0
+
 	additive_damage[REACTOR_DAMAGE_HEAT] = clamp((temperature - temp_limit) / 24000, 0, 0.15)
 	additive_damage[REACTOR_DAMAGE_PRESSURE] = clamp((pressure - REACTOR_PRESSURE_CRITICAL)/10000, 0, 0.1)
+	additive_damage[REACTOR_HEALIUM] -= integrity_restoration
 
 	var/total_damage = 0
 	for (var/damage_type in additive_damage)

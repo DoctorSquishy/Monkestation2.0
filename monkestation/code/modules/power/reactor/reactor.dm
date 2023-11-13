@@ -438,6 +438,7 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 		for (var/gas_path in moderator_gasmix.gases)
 			var/datum/reactor_gas/reactor_gas = GLOB.reactor_gas_behavior[gas_path]
 			reactor_gas?.extra_effects(src)
+		moderator_gasmix.garbage_collect()
 
 	// CRITICALITY (K)
 	calculate_criticality()

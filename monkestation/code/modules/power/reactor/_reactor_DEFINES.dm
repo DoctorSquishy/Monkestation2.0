@@ -73,11 +73,15 @@
 #define REACTOR_DAMAGE_PRESSURE "Pressure Damage"
 /// How many damage do we take from external factors.
 #define REACTOR_DAMAGE_EXTERNAL "External Damage"
+/// How much damage is healed through healium gas as a moderator
+#define REACTOR_HEALIUM "Healium Healing"
 
 /// How much waste multiplier we get just from existing.
 #define REACTOR_WASTE_BASE "Base Waste Multiplier"
 /// How much waste multiplier we get because of the gases around us.
 #define REACTOR_WASTE_GAS "Gas Waste Multiplier"
+/// How much waste multiplier we get because of the core temperature reaching higher levels.
+#define REACTOR_WASTE_TEMP "Temperature Waste Multiplier"
 
 /// How many kelvins we get before taking damage, Given by god.
 #define REACTOR_TEMP_LIMIT_BASE "Base Heat Resistance"

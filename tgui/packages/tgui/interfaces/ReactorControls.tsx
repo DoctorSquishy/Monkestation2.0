@@ -43,6 +43,7 @@ type ReactorControlProps = {
 type FuelRodData = {
   name: string;
   depletion: number;
+  depletion_threshold: number;
   rod_index: number;
 };
 
@@ -210,11 +211,7 @@ export const ReactorControlRodControl = (
           </LabeledControls>
         </Section>
 
-        <Section
-          title="Control Rod Management:"
-          align="center"
-          scrollable
-          height="35%">
+        <Section title="Control Rod Management:" align="center" height="30%">
           Control Rod Insertion:
           <ProgressBar
             value={(control_rods / 100) * 100 * 0.01}
@@ -256,8 +253,8 @@ export const ReactorControlRodControl = (
         <Section
           title="Fuel Rod Management"
           align="center"
-          scrollable
-          height="35%">
+          height="35%"
+          scrollable>
           {rods.length > 0 ? (
             <Box>
               <Stack direction="column">
@@ -278,13 +275,19 @@ export const ReactorControlRodControl = (
                       }
                     />
                     <ProgressBar
-                      value={100 - rod.depletion}
+                      value={rod.depletion_threshold - rod.depletion}
                       minValue={0}
-                      maxValue={100}
+                      maxValue={rod.depletion_threshold}
                       ranges={{
-                        good: [75, Infinity],
-                        average: [40, 75],
-                        bad: [-Infinity, 40],
+                        good: [
+                          rod.depletion_threshold * 0.75,
+                          rod.depletion_threshold,
+                        ],
+                        average: [
+                          rod.depletion_threshold * 0.4,
+                          rod.depletion_threshold * 0.75,
+                        ],
+                        bad: [0, rod.depletion_threshold * 0.4],
                       }}
                     />
                   </Box>

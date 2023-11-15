@@ -2,20 +2,21 @@
 /// Explodes
 /datum/reactor_meltdown/proc/effect_explosion(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor, avoid)
 	var/explosion_power = reactor.explosion_power
-	var/power_scaling = reactor.pressure
+	var/power_scaling = min(reactor.pressure, 80000)/10000
 	var/turf/reactor_turf = get_turf(reactor)
 	//Dear mappers, balance the reactor max explosion radius to 17.5, 37, 39, 41
 	explosion(origin = reactor_turf,
-		devastation_range = explosion_power * max(power_scaling, 0.205) * 0.1,
-		heavy_impact_range = explosion_power * max(power_scaling, 0) * 0.1,
-		light_impact_range = explosion_power * max(power_scaling, 0.205) * 0.1,
-		flash_range = explosion_power * max(power_scaling, 0.205) * 0.1,
+		devastation_range = explosion_power * max(power_scaling, 0.205),
+		heavy_impact_range = 0,
+		light_impact_range = explosion_power * max(power_scaling, 0.205),
+		flash_range = explosion_power * max(power_scaling, 0.205),
+		smoke = TRUE,
 		adminlog = TRUE,
 		ignorecap = TRUE
 	)
 	return TRUE
 
-/// Scatters nuclear waste over the event spawns as long as they are at least 30 tiles away from whatever we want to avoid.
+/// Scatters nuclear waste over the event spawns as long as they are at least 20 tiles away from whatever we want to avoid.
 /datum/reactor_meltdown/proc/effect_nuclear_waste(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor, avoid)
 	new /obj/effect/decal/nuclear_waste(get_turf(reactor))
 	var/list/possible_spawns = GLOB.generic_event_spawns.Copy()
@@ -23,7 +24,7 @@
 		var/spawn_location
 		do
 			spawn_location = pick_n_take(possible_spawns)
-		while(get_dist(spawn_location, avoid) < 30)
+		while(get_dist(spawn_location, avoid) < 10)
 		new /obj/effect/decal/nuclear_waste(get_turf(spawn_location))
 
 /// Irradiates mobs around 20 tiles of the reactor.

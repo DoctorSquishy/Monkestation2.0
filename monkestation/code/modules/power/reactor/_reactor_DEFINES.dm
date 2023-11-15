@@ -25,9 +25,6 @@
 #define REACTOR_MAX_CRITICALITY 5 //No more criticality than N for now.
 #define REACTOR_MAX_FUEL_RODS 5 //Maximum number of fuel rods that can fit in the reactor
 
-#define REACTOR_PERMEABILITY_FACTOR 500 // How effective permeability-type moderators are
-#define REACTOR_CONTROL_FACTOR 250 // How effective control-type moderators are
-
 /// Means it's not forced, reactor decides itself by checking the [/datum/reactor_meltdown/proc/can_select]
 #define REACTOR_MELTDOWN_PRIO_NONE 0
 /// Purged when Reactor heals to 100
@@ -58,7 +55,7 @@
 #define REACTOR_NOTIFY 2
 /// Integrity below [/obj/machinery/power/supermatter_crystal/var/warning_point]. Start complaining on comms.
 #define REACTOR_WARNING 3
-/// Integrity below [/obj/machinery/power/supermatter_crystal/var/danger_point]. Start spawning anomalies.
+/// Integrity below [/obj/machinery/power/supermatter_crystal/var/danger_point]. Start showing some dangerous behaviors.
 #define REACTOR_DANGER 4
 /// Integrity below [/obj/machinery/power/supermatter_crystal/var/emergency_point]. Start complaining to more people.
 #define REACTOR_EMERGENCY 5
@@ -78,7 +75,7 @@
 
 /// How much waste multiplier we get just from existing.
 #define REACTOR_WASTE_BASE "Base Waste Multiplier"
-/// How much waste multiplier we get because of the gases around us.
+/// How much waste multiplier we get because of the gases interacting with the cores.
 #define REACTOR_WASTE_GAS "Gas Waste Multiplier"
 /// How much waste multiplier we get because of the core temperature reaching higher levels.
 #define REACTOR_WASTE_TEMP "Temperature Waste Multiplier"

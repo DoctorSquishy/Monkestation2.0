@@ -38,7 +38,7 @@
 	///Are we exploding?
 	var/final_countdown = FALSE
 	///A scaling value that affects the severity of explosions
-	var/explosion_power = 5
+	var/explosion_power = 3
 	///Time in 1/10th of seconds since the last sent warning
 	var/lastwarning = 0
 
@@ -103,9 +103,6 @@
 	/// The temperature at which we start taking damage
 	var/temp_limit = T0C + REACTOR_HEAT_PENALTY_THRESHOLD
 	var/list/temp_limit_factors
-	/// The temperature at which we start taking damage
-	var/pressure_limit = 10000
-	var/list/pressure_limit_factors
 	/// Multiplies our waste gas amount
 	var/waste_multiplier = 0
 	var/list/waste_multiplier_factors
@@ -387,14 +384,13 @@
 	gas_absorption_effectiveness = gas_absorption_constant
 
 	// MODERATOR GASSES
-	if(moderator_input.total_moles() >= minimum_coolant_level)
-		moderator_gasmix = moderator_input?.remove_ratio(gas_absorption_constant) || new()
-		moderator_gasmix.volume = (moderator_input?.volume || CELL_VOLUME) * gas_absorption_constant // To match the pressure
-		calculate_moderators() //updates moderator variables
-		waste_multiplier_factors = calculate_waste_multiplier()
-		var/control_bonus = gas_control_mod / REACTOR_CONTROL_FACTOR
-		control_rod_effectiveness = initial(control_rod_effectiveness) + control_bonus
-		gas_absorption_effectiveness = clamp(gas_absorption_constant + (gas_permeability_mod / REACTOR_PERMEABILITY_FACTOR), 0, 1)
+	moderator_gasmix = moderator_input?.remove_ratio(gas_absorption_constant) || new()
+	moderator_gasmix.volume = (moderator_input?.volume || CELL_VOLUME) * gas_absorption_constant // To match the pressure
+	calculate_moderators() //updates moderator variables
+	waste_multiplier_factors = calculate_waste_multiplier()
+	var/control_bonus = gas_control_mod
+	control_rod_effectiveness = initial(control_rod_effectiveness) + control_bonus
+	gas_absorption_effectiveness = clamp(gas_absorption_constant + gas_permeability_mod, 0, 1)
 
 	// CRITICALITY (K)
 	calculate_criticality()

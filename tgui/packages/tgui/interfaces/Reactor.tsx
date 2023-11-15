@@ -24,11 +24,12 @@ type ReactorGasMetadata = {
 
 type ReactorStatProps = {
   integrity: number;
+  integrity_factors: { name: string; amount: number }[];
   temp_limit: any;
-  gas_composition: { [gas_path: string]: number };
   k: number;
   coreTemp: number;
   pressure: number;
+  pressureMax: number;
   coolantInput: number;
   coolantOutput: number;
   pressureData: any;
@@ -55,6 +56,7 @@ type ReactorProps = {
   k: number;
   coreTemp: number;
   pressure: number;
+  pressureMax: number;
   coolantInput: number;
   coolantOutput: number;
   pressureData: any;
@@ -77,9 +79,7 @@ const ReactorEntry = (props: ReactorEntryProps, context) => {
     return (
       <Stack.Item>
         <Stack align="center">
-          <Stack.Item color="grey" width="125px">
-            {title + ':'}
-          </Stack.Item>
+          <Stack.Item width="125px">{title + ':'}</Stack.Item>
           <Stack.Item grow>{content}</Stack.Item>
         </Stack>
       </Stack.Item>
@@ -90,9 +90,7 @@ const ReactorEntry = (props: ReactorEntryProps, context) => {
     <>
       <Stack.Item>
         <Stack align="center">
-          <Stack.Item color="grey" width="125px">
-            {title + ':'}
-          </Stack.Item>
+          <Stack.Item width="125px">{title + ':'}</Stack.Item>
           <Stack.Item grow>{content}</Stack.Item>
           <Stack.Item>
             <Button
@@ -109,7 +107,7 @@ const ReactorEntry = (props: ReactorEntryProps, context) => {
 
 export const ReactorContent = (props: ReactorProps, context) => {
   const [currentTab, setTab] = useLocalState(context, 'currentTab', 1);
-  const { sectionButton, uid, area_name } = props;
+  const { sectionButton, uid, area_name, integrity, k } = props;
   const { act, data } = useBackend<ReactorData>(context);
   const { reactor_data, reactor_gas_metadata } = data;
   return (
@@ -120,6 +118,40 @@ export const ReactorContent = (props: ReactorProps, context) => {
         title={uid + '. ' + area_name}
         buttons={sectionButton}
       />
+      <Section>
+        <Stack.Item height="40px">
+          <ReactorEntry
+            title="Reactor Integrity"
+            content={
+              <ProgressBar
+                value={integrity / 100}
+                ranges={{
+                  good: [0.9, Infinity],
+                  average: [0.5, 0.9],
+                  bad: [-Infinity, 0.5],
+                }}>
+                {toFixed(integrity, 2) + ' %'}
+              </ProgressBar>
+            }
+          />
+        </Stack.Item>
+        <Stack.Item height="40px">
+          <ReactorEntry
+            title="Neutrons per generation (K)"
+            content={
+              <ProgressBar
+                value={k / 5}
+                ranges={{
+                  good: [-Infinity, 0.4],
+                  average: [0.4, 0.6],
+                  bad: [0.6, Infinity],
+                }}>
+                {k}
+              </ProgressBar>
+            }
+          />
+        </Stack.Item>
+      </Section>
       <Stack.Item>
         <Tabs textAlign="center" fluid>
           <Tabs.Tab
@@ -152,10 +184,12 @@ export const ReactorContent = (props: ReactorProps, context) => {
 export const ReactorStatContent = (props: ReactorStatProps, context) => {
   const {
     integrity,
+    integrity_factors,
     temp_limit,
     k,
     coreTemp,
     pressure,
+    pressureMax,
     coolantInput,
     coolantOutput,
     pressureData,
@@ -167,35 +201,17 @@ export const ReactorStatContent = (props: ReactorStatProps, context) => {
   const tempCoreMapData = tempCoreData.map((amount, i) => [i, amount]);
   const tempInputMapData = tempInputData.map((amount, i) => [i, amount]);
   const tempOutputMapData = tempOutputData.map((amount, i) => [i, amount]);
-  const [allGasActive, setAllGasActive] = useLocalState(
-    context,
-    'allGasActive',
-    false
-  );
-  const gas_composition: [gas_path: string, amount: number][] = flow([
-    !allGasActive && filter(([gas_path, amount]) => amount !== 0),
-    sortBy(([gas_path, amount]) => -amount),
-  ])(Object.entries(props.gas_composition));
+
   return (
     <Stack height="100%">
       <Stack.Item grow>
-        <Box height="100%">
-          <Section title="Legend:" fill>
-            Integrity:
-            <ProgressBar
-              value={integrity / 100}
-              ranges={{
-                good: [0.9, Infinity],
-                average: [0.5, 0.9],
-                bad: [-Infinity, 0.5],
-              }}>
-              {integrity}%
-            </ProgressBar>
+        <Stack.Item height="100%">
+          <Section title="Statistics Legend:" height="250px">
             Reactor Pressure:
             <ProgressBar
               value={pressure}
               minValue={0}
-              maxValue={10000}
+              maxValue={pressureMax}
               color="white">
               {formatSiUnit(pressure * 1000, 1, 'Pa')}
             </ProgressBar>
@@ -203,7 +219,7 @@ export const ReactorStatContent = (props: ReactorStatProps, context) => {
             <ProgressBar
               value={coolantInput}
               minValue={0}
-              maxValue={1500}
+              maxValue={temp_limit}
               color="blue">
               {coolantInput} K
             </ProgressBar>
@@ -211,7 +227,7 @@ export const ReactorStatContent = (props: ReactorStatProps, context) => {
             <ProgressBar
               value={coolantOutput}
               minValue={0}
-              maxValue={1500}
+              maxValue={temp_limit}
               color="orange">
               {coolantOutput} K
             </ProgressBar>
@@ -219,58 +235,51 @@ export const ReactorStatContent = (props: ReactorStatProps, context) => {
             <ProgressBar
               value={coreTemp}
               minValue={0}
-              maxValue={1500}
+              maxValue={temp_limit}
               color="bad">
               {coreTemp} K
             </ProgressBar>
-            Neutrons per generation (K):
-            <ProgressBar
-              value={k / 5}
-              ranges={{
-                good: [-Infinity, 0.4],
-                average: [0.4, 0.6],
-                bad: [0.6, Infinity],
-              }}>
-              {k}
-            </ProgressBar>
           </Section>
-        </Box>
+        </Stack.Item>
       </Stack.Item>
       <Stack.Item grow>
-        <Section title="Pressure Statistics:" height="140px">
+        <Stack.Item />
+        <Section fill title="Reactor Statistics:" height="250px">
           <Chart.Line
-            height="60px"
+            fillPositionedParent
             data={pressureMapData}
-            rangeX={[0, pressureData.length - 1]}
-            rangeY={[0, Math.max(10000, ...pressureMapData)]}
+            rangeX={[0, pressureMapData.length - 1]}
+            rangeY={[0, Math.max(pressureMax, ...pressureData)]}
             strokeColor="rgba(255,250,250, 1)"
             fillColor="rgba(255,250,250, 0.1)"
+            strokeWidth="3"
           />
-        </Section>
-        <Section title="Temperature Statistics:" height="160px">
           <Chart.Line
-            height="80x"
+            fillPositionedParent
             data={tempCoreMapData}
-            rangeX={[0, tempCoreData.length - 1]}
-            rangeY={[0, Math.max(1800, ...temp_limit)]}
+            rangeX={[0, tempCoreMapData.length - 1]}
+            rangeY={[0, Math.max(temp_limit, ...tempCoreData)]}
             strokeColor="rgba(255, 0, 0 , 1)"
             fillColor="rgba(255, 0, 0 , 0.1)"
+            strokeWidth="3"
           />
           <Chart.Line
             fillPositionedParent
             data={tempInputMapData}
-            rangeX={[0, tempInputData.length - 1]}
-            rangeY={[0, Math.max(1800, ...tempInputData)]}
+            rangeX={[0, tempInputMapData.length - 1]}
+            rangeY={[0, Math.max(temp_limit, ...tempInputData)]}
             strokeColor="rgba(127, 179, 255 , 1)"
             fillColor="rgba(127, 179, 255 , 0.1)"
+            strokeWidth="3"
           />
           <Chart.Line
             fillPositionedParent
             data={tempOutputMapData}
             rangeX={[0, tempOutputData.length - 1]}
-            rangeY={[0, Math.max(1800, ...tempOutputData)]}
+            rangeY={[0, Math.max(temp_limit, ...tempOutputData)]}
             strokeColor="rgba(255, 129, 25 , 1)"
             fillColor="rgba(255, 129, 25 , 0.1)"
+            strokeWidth="3"
           />
         </Section>
       </Stack.Item>
@@ -296,6 +305,7 @@ export const ReactorModeratorContent = (props: ReactorProps, context) => {
     k,
     coreTemp,
     pressure,
+    pressureMax,
     coolantInput,
     coolantOutput,
     pressureData,
@@ -315,130 +325,128 @@ export const ReactorModeratorContent = (props: ReactorProps, context) => {
   return (
     <Stack height="100%">
       <Stack.Item grow>
-        <Section
-          fill
-          scrollable
-          title={uid + '. ' + area_name}
-          buttons={sectionButton}>
-          <Stack vertical>
-            <ReactorEntry
-              title="Reactor Integrity"
-              alwaysShowChevron
-              content={
-                <ProgressBar
-                  value={integrity / 100}
-                  ranges={{
-                    good: [0.9, Infinity],
-                    average: [0.5, 0.9],
-                    bad: [-Infinity, 0.5],
-                  }}>
-                  {toFixed(integrity, 2) + ' %'}
-                </ProgressBar>
-              }
-              detail={
-                !!integrity_factors.length && (
-                  <LabeledList>
-                    {integrity_factors.map(({ name, amount }) => (
-                      <LabeledList.Item
-                        key={name}
-                        label={name + ' (∆)'}
-                        labelWrap>
-                        <Box color={amount > 0 ? 'green' : 'red'}>
-                          {toFixed(amount, 2) + ' %'}
-                        </Box>
-                      </LabeledList.Item>
-                    ))}
-                  </LabeledList>
-                )
-              }
-            />
-            <ReactorEntry
-              title="Moderator Absorbed Moles"
-              content={
-                <ProgressBar
-                  value={gas_total_moles}
-                  minValue={0}
-                  maxValue={2000}
-                  ranges={{
-                    good: [0, 900],
-                    average: [900, 1800],
-                    bad: [1800, Infinity],
-                  }}>
-                  {toFixed(gas_total_moles, 2) + ' Moles'}
-                </ProgressBar>
-              }
-            />
-            <ReactorEntry
-              title="Moderator Temperature"
-              content={
-                <ProgressBar
-                  value={logScale(gas_temperature)}
-                  minValue={0}
-                  maxValue={logScale(10000)}
-                  ranges={{
-                    teal: [-Infinity, logScale(100)],
-                    good: [logScale(100), logScale(300)],
-                    average: [logScale(300), logScale(temp_limit)],
-                    bad: [logScale(temp_limit), Infinity],
-                  }}>
-                  {toFixed(gas_temperature, 2) + ' K'}
-                </ProgressBar>
-              }
-            />
-            <ReactorEntry
-              title="Temperature Limit"
-              alwaysShowChevron
-              content={temp_limit + ' K'}
-              detail={
-                !!temp_limit_factors.length && (
-                  <LabeledList>
-                    {temp_limit_factors.map(({ name, amount }) => (
-                      <LabeledList.Item key={name} label={name} labelWrap>
-                        <Box color={amount > 0 ? 'green' : 'red'}>
-                          {toFixed(amount, 2) + ' K'}
-                        </Box>
-                      </LabeledList.Item>
-                    ))}
-                  </LabeledList>
-                )
-              }
-            />
-            <ReactorEntry
-              title="Fuel Waste Multiplier"
-              alwaysShowChevron
-              content={
-                <ProgressBar
-                  value={waste_multiplier}
-                  minValue={0}
-                  maxValue={20}
-                  ranges={{
-                    good: [-Infinity, 0.8],
-                    average: [0.8, 2],
-                    bad: [2, Infinity],
-                  }}>
-                  {toFixed(waste_multiplier, 2) + ' x'}
-                </ProgressBar>
-              }
-              detail={
-                !!waste_multiplier_factors.length && (
-                  <LabeledList>
-                    {waste_multiplier_factors.map(({ name, amount }) => (
-                      <LabeledList.Item key={name} label={name} labelWrap>
-                        <Box color={amount < 0 ? 'green' : 'red'}>
-                          {toFixed(amount, 2) + ' x'}
-                        </Box>
-                      </LabeledList.Item>
-                    ))}
-                  </LabeledList>
-                )
-              }
-            />
-            <ReactorEntry
-              title="Absorption Ratio"
-              content={absorbed_ratio * 100 + '%'}
-            />
-          </Stack>
-        </Section>
+        <Box height="100%">
+          <Section title="Moderator Stats" fill>
+            <Stack vertical>
+              <ReactorEntry
+                title="Reactor Integrity"
+                alwaysShowChevron
+                content={
+                  <ProgressBar
+                    value={integrity / 100}
+                    ranges={{
+                      good: [0.9, Infinity],
+                      average: [0.5, 0.9],
+                      bad: [-Infinity, 0.5],
+                    }}>
+                    {toFixed(integrity, 2) + ' %'}
+                  </ProgressBar>
+                }
+                detail={
+                  !!integrity_factors.length && (
+                    <LabeledList>
+                      {integrity_factors.map(({ name, amount }) => (
+                        <LabeledList.Item
+                          key={name}
+                          label={name + ' (∆)'}
+                          labelWrap>
+                          <Box color={amount > 0 ? 'green' : 'red'}>
+                            {toFixed(amount, 2) + ' %'}
+                          </Box>
+                        </LabeledList.Item>
+                      ))}
+                    </LabeledList>
+                  )
+                }
+              />
+              <ReactorEntry
+                title="Moderator Absorbed Moles"
+                content={
+                  <ProgressBar
+                    value={gas_total_moles}
+                    minValue={0}
+                    maxValue={2000}
+                    ranges={{
+                      good: [0, 900],
+                      average: [900, 1800],
+                      bad: [1800, Infinity],
+                    }}>
+                    {toFixed(gas_total_moles, 2) + ' Moles'}
+                  </ProgressBar>
+                }
+              />
+              <ReactorEntry
+                title="Moderator Temperature"
+                content={
+                  <ProgressBar
+                    value={logScale(gas_temperature)}
+                    minValue={0}
+                    maxValue={logScale(10000)}
+                    ranges={{
+                      teal: [-Infinity, logScale(100)],
+                      good: [logScale(100), logScale(300)],
+                      average: [logScale(300), logScale(temp_limit)],
+                      bad: [logScale(temp_limit), Infinity],
+                    }}>
+                    {toFixed(gas_temperature, 2) + ' K'}
+                  </ProgressBar>
+                }
+              />
+              <ReactorEntry
+                title="Temperature Limit"
+                alwaysShowChevron
+                content={temp_limit + ' K'}
+                detail={
+                  !!temp_limit_factors.length && (
+                    <LabeledList>
+                      {temp_limit_factors.map(({ name, amount }) => (
+                        <LabeledList.Item key={name} label={name} labelWrap>
+                          <Box color={amount > 0 ? 'green' : 'red'}>
+                            {toFixed(amount, 2) + ' K'}
+                          </Box>
+                        </LabeledList.Item>
+                      ))}
+                    </LabeledList>
+                  )
+                }
+              />
+              <ReactorEntry
+                title="Fuel Waste Multiplier"
+                alwaysShowChevron
+                content={
+                  <ProgressBar
+                    value={waste_multiplier}
+                    minValue={0}
+                    maxValue={20}
+                    ranges={{
+                      good: [-Infinity, 0.8],
+                      average: [0.8, 2],
+                      bad: [2, Infinity],
+                    }}>
+                    {toFixed(waste_multiplier, 2) + ' x'}
+                  </ProgressBar>
+                }
+                detail={
+                  !!waste_multiplier_factors.length && (
+                    <LabeledList>
+                      {waste_multiplier_factors.map(({ name, amount }) => (
+                        <LabeledList.Item key={name} label={name} labelWrap>
+                          <Box color={amount < 0 ? 'green' : 'red'}>
+                            {toFixed(amount, 2) + ' x'}
+                          </Box>
+                        </LabeledList.Item>
+                      ))}
+                    </LabeledList>
+                  )
+                }
+              />
+              <ReactorEntry
+                title="Absorption Ratio"
+                content={absorbed_ratio * 100 + '%'}
+              />
+            </Stack>
+          </Section>
+        </Box>
       </Stack.Item>
       <Stack.Item grow>
         <Section
@@ -481,6 +489,15 @@ export const ReactorModeratorContent = (props: ReactorProps, context) => {
                                 effect.amount !== 0 && (
                                   <LabeledList.Item
                                     key={gas_path + effect.name}
+                                    labelColor={
+                                      effect.positive
+                                        ? effect.amount > 0
+                                          ? 'green'
+                                          : 'red'
+                                        : effect.amount < 0
+                                          ? 'green'
+                                          : 'red'
+                                    }
                                     label={effect.name}
                                     color={
                                       effect.positive
@@ -524,7 +541,7 @@ export const Reactor = (props, context) => {
   const { act, data } = useBackend<ReactorData>(context);
   const { reactor_data, reactor_gas_metadata } = data;
   return (
-    <Window width={700} height={500} theme="ntos">
+    <Window width={700} height={500}>
       <Window.Content>
         <ReactorContent
           {...reactor_data[0]}

@@ -45,7 +45,7 @@
 
 /datum/computer_file/program/reactor_monitor/ui_static_data(mob/user)
 	var/list/data = list()
-	data["gas_metadata"] = reactor_gas_data()
+	data["reactor_gas_metadata"] = reactor_gas_data()
 	return data
 
 /datum/computer_file/program/reactor_monitor/ui_data(mob/user)

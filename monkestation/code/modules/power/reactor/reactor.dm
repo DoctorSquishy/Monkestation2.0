@@ -420,15 +420,13 @@
 	for (var/gas_path in moderator_gasmix.gases)
 		var/datum/reactor_gas/reactor_gas = GLOB.reactor_gas_behavior[gas_path]
 		reactor_gas?.extra_effects(src)
+	moderator_gasmix.temperature += (waste_multiplier * K)
 	moderator_gasmix.garbage_collect() //recommended after using assert_gasses in extra effects
 
-	var/datum/gas_mixture/merged_gasmix = moderator_gasmix.copy()
-	merged_gasmix.temperature += (waste_multiplier * K)
-	merged_gasmix.temperature = clamp(merged_gasmix.temperature, TCMB, gas_heat_mod + T0C)
-	if(merged_gasmix)
-		merged_gasmix.garbage_collect()
-		coolant_output.merge(merged_gasmix)
-	coolant_output.merge(coolant_input)
+	// Higher Pressured inputs means faster flow
+	moderator_gasmix.pump_gas_to(coolant_output, moderator_gasmix.return_pressure())
+	coolant_input.pump_gas_to(coolant_output, coolant_input.return_pressure())
+
 	last_output_temperature = coolant_output.return_temperature()
 	pressure = coolant_output.return_pressure()
 

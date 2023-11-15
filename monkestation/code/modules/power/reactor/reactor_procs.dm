@@ -165,7 +165,6 @@
 
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/calculate_reactor_temp()
 	var/datum/gas_mixture/coolant_input = airs[COOLANT_INPUT_GATE]
-	var/datum/gas_mixture/coolant_output = airs[COOLANT_OUTPUT_GATE]
 	if(has_fuel())
 		temperature += REACTOR_HEAT_FACTOR * has_fuel() * ((REACTOR_HEAT_EXPONENT**K) - 1) // heating from K has to be exponential to make higher K more dangerous
 	var/input_moles = coolant_input.total_moles() //Firstly. Do we have enough moles of coolant?
@@ -179,7 +178,6 @@
 		//Heat the coolant output gas that we just had pass through us.
 		var/coolant_heat_transfer = (last_coolant_temperature - (heat_delta * (1 - coolant_heat_factor)))
 		coolant_input.temperature = coolant_heat_transfer
-		coolant_output.merge(coolant_input) //And now, shove the input into the output.
 
 /**
  * Perform calculation for the damage taken or healed.
@@ -213,7 +211,17 @@
 	damage = max(damage, 0)
 	return additive_damage
 
-/obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/collect_data()
+/**
+ * Collects Reactor statistical data for graphs on the tgui interface
+ *
+ * Updates:
+ * [/obj/machinery/atmospherics/components/trinary/nuclear_reactor/var/list/pressureData]
+ * [/obj/machinery/atmospherics/components/trinary/nuclear_reactor/var/list/tempCoreData]
+ * [/obj/machinery/atmospherics/components/trinary/nuclear_reactor/var/list/tempInputData]
+ * [/obj/machinery/atmospherics/components/trinary/nuclear_reactor/var/list/tempOutputData]
+ *
+ * Returns: pressure and core, input, and output temperature data lists
+ *//obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/collect_data()
 	pressureData += pressure
 	if(pressureData.len > 100) //Only lets you track over a certain timeframe.
 		pressureData.Cut(1, 2)
@@ -410,7 +418,7 @@
 
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/processing_sound()
 	if(temperature > REACTOR_TEMPERATURE_OPERATING)
-		reactor_hum.volume = clamp((50 + (temperature / 50)), 50, 100)
+		reactor_hum.volume = clamp(((temperature / 100)), 5, 100)
 
 
 //Timestop Effects

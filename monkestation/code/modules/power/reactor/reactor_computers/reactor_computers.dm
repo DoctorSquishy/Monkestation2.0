@@ -93,8 +93,6 @@
 			rod.forceMove(get_turf(reactor))
 			reactor.fuel_rods.Remove(rod)
 
-
-
 /obj/machinery/computer/reactor/wrench_act(mob/living/user, obj/item/I)
 	to_chat(user, span_notice("You start [anchored ? "un" : ""]securing [name]..."))
 	if(I.use_tool(src, user, 40, volume=75))

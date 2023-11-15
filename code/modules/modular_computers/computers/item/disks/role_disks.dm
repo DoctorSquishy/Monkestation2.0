@@ -61,6 +61,7 @@
 	desc = "Removable disk used to download essential CE tablet apps."
 	starting_programs = list(
 		/datum/computer_file/program/supermatter_monitor,
+		/datum/computer_file/program/reactor_monitor, // MONKESTAION EDIT
 		/datum/computer_file/program/atmosscan,
 		/datum/computer_file/program/alarm_monitor,
 	)
@@ -121,6 +122,7 @@
 	icon_state = "datadisk6"
 	starting_programs = list(
 		/datum/computer_file/program/supermatter_monitor,
+		/datum/computer_file/program/reactor_monitor, // MONKESTAION EDIT
 	)
 
 /obj/item/computer_disk/atmos

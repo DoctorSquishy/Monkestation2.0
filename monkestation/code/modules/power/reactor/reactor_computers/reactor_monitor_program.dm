@@ -1,11 +1,11 @@
 //Monitoring programs
 /datum/computer_file/program/reactor_monitor
-	filename = "reactormonitor"
-	filedesc = "Nuclear Reactor Monitoring"
+	filename = "NT NRMS"
+	filedesc = "NT NRMS"
 	category = PROGRAM_CATEGORY_ENGI
 	ui_header = "smmon_0.gif"
 	program_icon_state = "smmon_0"
-	extended_desc = "This program connects to specially calibrated sensors to provide information on the status of nuclear reactors."
+	extended_desc = "Advanced Gas-Cooled Nuclear Reactor Monitoring System, connects to calibrated sensors to provide information on the status of nuclear reactors."
 	requires_ntnet = TRUE
 	transfer_access = list(ACCESS_CONSTRUCTION)
 	size = 5
@@ -25,14 +25,14 @@
 
 /// Apparently destroy calls this [/datum/computer_file/Destroy]. Here just to clean our references.
 /datum/computer_file/program/reactor_monitor/kill_program(forced = FALSE)
-	for(var/rbmk in reactors)
-		clear_reactor(rbmk)
+	for(var/nuclear_reactor in reactors)
+		clear_reactor(nuclear_reactor)
 	return ..()
 
 /// Refreshes list of active reactors
 /datum/computer_file/program/reactor_monitor/proc/refresh()
-	for(var/rbmk in reactors)
-		clear_reactor(rbmk)
+	for(var/nuclear_reactor in reactors)
+		clear_reactor(nuclear_reactor)
 	var/turf/user_turf = get_turf(computer.ui_host())
 	if(!user_turf)
 		return
@@ -56,6 +56,22 @@
 	data["focus_uid"] = focused_reactor?.uid
 	return data
 
+/datum/computer_file/program/reactor_monitor/ui_act(action, params)
+	. = ..()
+	if(.)
+		return
+	switch(action)
+		if("PRG_refresh")
+			refresh()
+			return TRUE
+		if("PRG_focus")
+			for (var/obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor in reactors)
+				if(reactor.uid == params["focus_uid"])
+					if(focused_reactor == reactor)
+						unfocus_reactor(reactor)
+					else
+						focus_reactor(reactor)
+					return TRUE
 
 /// Sends an Reactor warning alert to the computer if our focused reactor is reaching critical levels
 /// [var/obj/machinery/atmospherics/components/trinary/nuclear_reactor/focused_reactor].

@@ -91,3 +91,5 @@
 /// How many extra kelvins we get before taking damage because our moles are low.
 /// Order matters, depends on base resistance.
 #define REACTOR_TEMP_LIMIT_LOW_MOLES "Low Moles Heat Resistance"
+/// For connecting pumps with a control computer
+#define RADIO_ATMOSIA "atmosia"

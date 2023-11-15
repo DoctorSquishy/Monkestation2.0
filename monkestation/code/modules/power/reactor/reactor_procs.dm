@@ -528,20 +528,22 @@
 	data["coolantInput"] = round(last_coolant_temperature)
 	data["coolantOutput"] = round(last_output_temperature)
 	data["pressure"] = pressure
+	data["pressureMax"] = REACTOR_PRESSURE_CRITICAL
 	data["active"] = on
 	data["shutdownTemp"] = REACTOR_TEMPERATURE_OPERATING
+
+	data["rods"] = list()
 	var/list/rod_data = list()
-	var/cur_index = 0
+	var/index
 	for(var/obj/item/fuel_rod/rod in fuel_rods)
-		cur_index++
-		rod_data.Add(
-			list(
-				"name" = rod.name,
-				"depletion" = rod.depletion,
-				"rod_index" = cur_index
-			)
-		)
-	data["rods"] = rod_data
+		index += (rod in fuel_rods)
+		rod_data = list(list(
+			"name" = rod.name,
+			"depletion" = rod.depletion,
+			"rod_index" = index,
+			))
+		data["rods"] += rod_data
+
 	data["absorbed_ratio"] = gas_absorption_constant
 	var/list/formatted_gas_percentage = list()
 	for (var/datum/gas/gas_path as anything in subtypesof(/datum/gas))

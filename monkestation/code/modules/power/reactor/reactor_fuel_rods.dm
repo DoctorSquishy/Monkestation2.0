@@ -1,5 +1,5 @@
 /obj/item/fuel_rod
-	name = "uranium-238 fuel rod"
+	name = "Uranium-238 Fuel Rod"
 	desc = "A titanium sheathed rod containing a measure of enriched uranium-dioxide powder inside, and a breeding blanket of uranium-238 around it, used to kick off a fission reaction and breed plutonium fuel respectivly."
 	icon = 'monkestation/icons/obj/machines/reactor/control_rod.dmi'
 	icon_state = "irradiated"
@@ -82,7 +82,7 @@
 
 /obj/item/fuel_rod/plutonium
 	fuel_power = 0.20
-	name = "plutonium-239 fuel rod"
+	name = "Plutonium-239 Fuel Rod"
 	desc = "A highly energetic titanium sheathed rod containing a sizeable measure of weapons grade plutonium, it's highly efficient as nuclear fuel, but will cause the reaction to get out of control if not properly utilised."
 	icon_state = "inferior"
 	rad_strength = 1500
@@ -95,7 +95,7 @@
 
 /obj/item/fuel_rod/depleted
 	fuel_power = 0.05
-	name = "depleted fuel rod"
+	name = "Depleted Fuel Rod"
 	desc = "A highly radioactive fuel rod which has expended most of it's useful energy."
 	icon_state = "normal"
 	rad_strength = 6000 // smelly
@@ -208,7 +208,7 @@
 	. += "<span class='disarm'>[initial_amount]/[max_initial_amount] of the slots for [material_name] are full.</span>"
 
 /obj/item/fuel_rod/material/bananium
-	name = "bananium fuel rod"
+	name = "Bananium Fuel Rod"
 	desc = "A hilarious heavy-duty fuel rod which fissiles a bit slower than its cowardly counterparts. However, its cutting-edge cosmic clown technology allows rooms for extraordinarily exhilarating extraterrestrial element called bananium to menacingly multiply."
 	icon_state = "bananium"
 	fuel_power = 0.15

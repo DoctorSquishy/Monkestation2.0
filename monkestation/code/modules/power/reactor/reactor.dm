@@ -1,41 +1,3 @@
-/**
-Moderator Inputs:
-	Fuel Type:
-	Oxygen: Power production multiplier. Allows you to run a low plasma, high oxy mix, and still get a lot of power.
-	Plasma: Power production gas. More plasma -> more power, but it enriches your fuel and makes the reactor much, much harder to control.
-	Tritium: Extremely efficient power production gas. Will cause chernobyl if used improperly.
-
-	Moderation Type:
-	N2: Helps you regain control of the reaction by increasing control rod effectiveness, will massively boost the rad production of the reactor.
-	CO2: Super effective shutdown gas for runaway reactions. MASSIVE RADIATION PENALTY!
-	Pluoxium: Same as N2, but no cancer-rads!
-
-	Permeability Type (Coolant loop speed):
-	BZ: Increases your reactor's ability to transfer its heat to the coolant, thus letting you cool it down faster (but your output will get hotter)
-	Water Vapour: More efficient permeability modifier
-	Hyper Noblium: Extremely efficient permeability increase. (10x as efficient as bz)
-
-	Depletion type:
-	Nitryl: When you need weapons grade plutonium yesterday. Causes your fuel to deplete much, much faster. Not a huge amount of use outside of sabotage.
-
-Sabotage:
-	Meltdown:
-	Flood reactor moderator with plasma, they won't be able to mitigate the reaction with control rods.
-	Shut off coolant entirely. Raise control rods.
-	Swap all fuel out with spent fuel, as it's way stronger.
-
-	Blowout:
-	Shut off exit valve for quick overpressure.
-	Cause a pipefire in the coolant line (LETHAL).
-	Tack heater onto coolant line (can also cause straight meltdown)
-
-Tips:
-Be careful to not exhaust your plasma supply. I recommend you DON'T max out the moderator input when youre running plasma + o2, or you're at a tangible risk of running out of those gasses from atmos.
-The reactor CHEWS through moderator. It does not do this slowly. Be very careful with that!
-
-If the reactor itself is not physically powered by an APC, it cannot shove coolant in!
-*/
-
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor
 	name = "Advanced Gas-Cooled Nuclear Reactor"
 	desc = "A tried and tested design which can output stable power at an acceptably low risk. The moderator can be changed to provide different effects."
@@ -211,7 +173,7 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 		COMSIG_ATOM_ENTERED = PROC_REF(reactor_crossed),
 	)
 
-//Use Normal Nuclear Reactor as main engine
+//Normal Nuclear Reactor as main engine
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/engine
 	is_main_engine = TRUE
 
@@ -238,7 +200,7 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 	RegisterSignal(src, COMSIG_ATOM_BSA_BEAM, PROC_REF(force_meltdown))
 	RegisterSignal(src, COMSIG_ATOM_TIMESTOP_FREEZE, PROC_REF(time_frozen))
 	RegisterSignal(src, COMSIG_ATOM_TIMESTOP_UNFREEZE, PROC_REF(time_unfrozen))
-	if (!moveable)
+	if(!moveable)
 		move_resist = MOVE_FORCE_OVERPOWERING // Avoid being moved by statues or other memes
 
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/Destroy()
@@ -433,12 +395,6 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 		var/control_bonus = gas_control_mod / REACTOR_CONTROL_FACTOR
 		control_rod_effectiveness = initial(control_rod_effectiveness) + control_bonus
 		gas_absorption_effectiveness = clamp(gas_absorption_constant + (gas_permeability_mod / REACTOR_PERMEABILITY_FACTOR), 0, 1)
-		// Extra effects should always fire after the compositions are all finished
-		// Handles Waste Gas and Extra Effects such as with Healium repairing reactor integrity
-		for (var/gas_path in moderator_gasmix.gases)
-			var/datum/reactor_gas/reactor_gas = GLOB.reactor_gas_behavior[gas_path]
-			reactor_gas?.extra_effects(src)
-		moderator_gasmix.garbage_collect()
 
 	// CRITICALITY (K)
 	calculate_criticality()
@@ -459,6 +415,13 @@ If the reactor itself is not physically powered by an APC, it cannot shove coola
 	calculate_reactor_temp()
 
 	// OUTPUT MODIFIER AND WASTE GASSES
+	// Extra effects should always fire after the compositions are all finished
+	// Handles Waste Gas and Extra Effects such as with Healium repairing reactor integrity
+	for (var/gas_path in moderator_gasmix.gases)
+		var/datum/reactor_gas/reactor_gas = GLOB.reactor_gas_behavior[gas_path]
+		reactor_gas?.extra_effects(src)
+	moderator_gasmix.garbage_collect() //recommended after using assert_gasses in extra effects
+
 	var/datum/gas_mixture/merged_gasmix = moderator_gasmix.copy()
 	merged_gasmix.temperature += (waste_multiplier * K)
 	merged_gasmix.temperature = clamp(merged_gasmix.temperature, TCMB, gas_heat_mod + T0C)

@@ -84,6 +84,7 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 	return
 
 // TIER 1 GASSES
+// Main Waste Gas: Tritium
 /datum/reactor_gas/oxygen
 	gas_path = /datum/gas/oxygen
 	heat_mod = 0.1
@@ -154,6 +155,7 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 
 // TIER 2 GASSES
+// Main Waste Gas: BZ
 /datum/reactor_gas/water_vapor
 	gas_path = /datum/gas/water_vapor
 	heat_mod = 0.4
@@ -167,13 +169,14 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 	var/consumed_water_vapor = reactor.moderator_gasmix.gases[/datum/gas/water_vapor][MOLES] * reactor.waste_multiplier
 	if(!consumed_water_vapor)
 		return
-	reactor.moderator_gasmix.assert_gases(/datum/gas/water_vapor,
-		/datum/gas/tritium,
+	reactor.moderator_gasmix.assert_gases(
+		/datum/gas/water_vapor,
+		/datum/gas/bz,
 		/datum/gas/hydrogen,
 		/datum/gas/oxygen
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/water_vapor][MOLES] -= consumed_water_vapor
-	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += (consumed_water_vapor * 0.1)
+	reactor.moderator_gasmix.gases[/datum/gas/bz][MOLES] += (consumed_water_vapor * 0.1)
 	reactor.moderator_gasmix.gases[/datum/gas/hydrogen][MOLES] += (consumed_water_vapor * 0.55)
 	reactor.moderator_gasmix.gases[/datum/gas/oxygen][MOLES] += (consumed_water_vapor * 0.35)
 
@@ -192,12 +195,12 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 		return
 	reactor.moderator_gasmix.assert_gases(
 		/datum/gas/nitrous_oxide,
-		/datum/gas/tritium,
+		/datum/gas/bz,
 		/datum/gas/nitrogen,
 		/datum/gas/oxygen
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/nitrous_oxide][MOLES] -= consumed_nitrous_oxide
-	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += (consumed_nitrous_oxide * 0.1)
+	reactor.moderator_gasmix.gases[/datum/gas/bz][MOLES] += (consumed_nitrous_oxide * 0.1)
 	reactor.moderator_gasmix.gases[/datum/gas/nitrogen][MOLES] += (consumed_nitrous_oxide * 0.35)
 	reactor.moderator_gasmix.gases[/datum/gas/oxygen][MOLES] += (consumed_nitrous_oxide * 0.55)
 
@@ -217,15 +220,18 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 		return
 	reactor.moderator_gasmix.assert_gases(
 		/datum/gas/tritium,
+		/datum/gas/bz,
 		/datum/gas/plasma,
 		/datum/gas/water_vapor
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] -= consumed_tritium
-	reactor.moderator_gasmix.gases[/datum/gas/plasma][MOLES] += (consumed_tritium * 0.4)
+	reactor.moderator_gasmix.gases[/datum/gas/bz][MOLES] += (consumed_tritium * 0.05)
+	reactor.moderator_gasmix.gases[/datum/gas/plasma][MOLES] += (consumed_tritium * 0.35)
 	reactor.moderator_gasmix.gases[/datum/gas/water_vapor][MOLES] += (consumed_tritium * 0.6)
 
 
 // TIER 3 GASSES
+// Main Waste Gas: Nitrium
 /datum/reactor_gas/bz
 	gas_path = /datum/gas/bz
 	heat_mod = 0.5
@@ -241,12 +247,12 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 		return
 	reactor.moderator_gasmix.assert_gases(
 		/datum/gas/bz,
-		/datum/gas/tritium,
+		/datum/gas/nitrium,
 		/datum/gas/plasma,
 		/datum/gas/nitrous_oxide
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/bz][MOLES] -= consumed_bz
-	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] -= (consumed_bz * 0.1)
+	reactor.moderator_gasmix.gases[/datum/gas/nitrium][MOLES] -= (consumed_bz * 0.1)
 	reactor.moderator_gasmix.gases[/datum/gas/plasma][MOLES] += (consumed_bz * 0.45)
 	reactor.moderator_gasmix.gases[/datum/gas/nitrous_oxide][MOLES] += (consumed_bz * 0.45)
 
@@ -265,11 +271,13 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 		return
 	reactor.moderator_gasmix.assert_gases(
 		/datum/gas/hydrogen,
+		/datum/gas/nitrium,
 		/datum/gas/tritium
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/hydrogen][MOLES] -= consumed_hydrogen
+	reactor.moderator_gasmix.gases[/datum/gas/nitrium][MOLES] += (consumed_hydrogen * 0.05)
 	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += (consumed_hydrogen * 0.8)
-	reactor.moderator_gasmix.gases[/datum/gas/helium][MOLES] += (consumed_hydrogen * 0.2) //Hydrogen gains two neutrons from the reaction turning into tritium which decays into helium-3 through magic science.
+	reactor.moderator_gasmix.gases[/datum/gas/helium][MOLES] += (consumed_hydrogen * 0.15) //Hydrogen gains two neutrons from the reaction turning into tritium which decays into helium-3 through magic science.
 
 /datum/reactor_gas/miasma
 	gas_path = /datum/gas/miasma
@@ -286,14 +294,14 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 		return
 	reactor.moderator_gasmix.assert_gases(
 		/datum/gas/miasma,
-		/datum/gas/tritium,
+		/datum/gas/bz,
 		/datum/gas/water_vapor,
 		/datum/gas/oxygen,
 		/datum/gas/hydrogen,
 		/datum/gas/carbon_dioxide
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/miasma][MOLES] -= consumed_miasma
-	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += (consumed_miasma * 0.1)
+	reactor.moderator_gasmix.gases[/datum/gas/nitrium][MOLES] += (consumed_miasma * 0.1)
 	reactor.moderator_gasmix.gases[/datum/gas/water_vapor][MOLES] += (consumed_miasma * 0.5)
 	reactor.moderator_gasmix.gases[/datum/gas/oxygen][MOLES] += (consumed_miasma * 0.2)
 	reactor.moderator_gasmix.gases[/datum/gas/hydrogen][MOLES] -= (consumed_miasma * 0.1)
@@ -340,17 +348,18 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 		return
 	reactor.moderator_gasmix.assert_gases(
 		/datum/gas/pluoxium,
-		/datum/gas/tritium,
+		/datum/gas/nitrium,
 		/datum/gas/oxygen,
 		/datum/gas/carbon_dioxide
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/pluoxium][MOLES] -= consumed_pluoxium
-	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += (consumed_pluoxium * 0.1)
+	reactor.moderator_gasmix.gases[/datum/gas/nitrium][MOLES] += (consumed_pluoxium * 0.1)
 	reactor.moderator_gasmix.gases[/datum/gas/oxygen][MOLES] += (consumed_pluoxium * 0.6)
 	reactor.moderator_gasmix.gases[/datum/gas/carbon_dioxide][MOLES] += (consumed_pluoxium * 0.3)
 
 
 // TIER 4 GASSES
+// Main Waste Gas: Pluoxium
 /datum/reactor_gas/freon
 	gas_path = /datum/gas/freon
 	heat_mod = -1
@@ -366,13 +375,13 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 		return
 	reactor.moderator_gasmix.assert_gases(
 		/datum/gas/freon,
-		/datum/gas/tritium,
+		/datum/gas/pluoxium,
 		/datum/gas/plasma,
 		/datum/gas/carbon_dioxide,
 		/datum/gas/bz
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/freon][MOLES] -= consumed_freon
-	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += (consumed_freon * 0.1)
+	reactor.moderator_gasmix.gases[/datum/gas/pluoxium][MOLES] += (consumed_freon * 0.1)
 	reactor.moderator_gasmix.gases[/datum/gas/plasma][MOLES] += (consumed_freon * 0.4)
 	reactor.moderator_gasmix.gases[/datum/gas/carbon_dioxide][MOLES] += (consumed_freon * 0.2)
 	reactor.moderator_gasmix.gases[/datum/gas/bz][MOLES] += (consumed_freon * 0.1)
@@ -393,12 +402,12 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 		return
 	reactor.moderator_gasmix.assert_gases(
 		/datum/gas/halon,
-		/datum/gas/tritium,
+		/datum/gas/pluoxium,
 		/datum/gas/carbon_dioxide,
 		/datum/gas/nitrous_oxide
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/halon][MOLES] -= consumed_halon
-	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += (consumed_halon * 0.1)
+	reactor.moderator_gasmix.gases[/datum/gas/pluoxium][MOLES] += (consumed_halon * 0.1)
 	reactor.moderator_gasmix.gases[/datum/gas/carbon_dioxide][MOLES] += (consumed_halon * 0.6)
 	reactor.moderator_gasmix.gases[/datum/gas/nitrous_oxide][MOLES] += (consumed_halon * 0.3)
 
@@ -417,17 +426,18 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 		return
 	reactor.moderator_gasmix.assert_gases(
 		/datum/gas/helium,
-		/datum/gas/tritium,
+		/datum/gas/pluoxium,
 		/datum/gas/carbon_dioxide,
 		/datum/gas/nitrous_oxide
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/helium][MOLES] -= consumed_helium
-	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += (consumed_helium * 0.1)
+	reactor.moderator_gasmix.gases[/datum/gas/pluoxium][MOLES] += (consumed_helium * 0.1)
 	reactor.moderator_gasmix.gases[/datum/gas/proto_nitrate][MOLES] += (consumed_helium * 0.45)
 	reactor.moderator_gasmix.gases[/datum/gas/bz][MOLES] += (consumed_helium * 0.45)
 
 
 // TIER 5 GASSES
+// Main Waste Gas: Proto-Nitrate
 /datum/reactor_gas/antinoblium
 	gas_path = /datum/gas/antinoblium
 	heat_mod = 1.5
@@ -445,13 +455,12 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 		return
 	reactor.moderator_gasmix.assert_gases(
 		/datum/gas/antinoblium,
-		/datum/gas/tritium,
-		/datum/gas/hypernoblium,
-		/datum/gas/nitrous_oxide
+		/datum/gas/proto_nitrate,
+		/datum/gas/hypernoblium
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/antinoblium][MOLES] -= consumed_antinoblium
-	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += (consumed_antinoblium * 0.2)
-	reactor.moderator_gasmix.gases[/datum/gas/hypernoblium][MOLES] += (consumed_antinoblium * 0.8)
+	reactor.moderator_gasmix.gases[/datum/gas/proto_nitrate][MOLES] += (consumed_antinoblium * 0.1)
+	reactor.moderator_gasmix.gases[/datum/gas/hypernoblium][MOLES] += (consumed_antinoblium * 0.9)
 
 /datum/reactor_gas/healium
 	gas_path = /datum/gas/healium
@@ -471,13 +480,13 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 		return
 	reactor.moderator_gasmix.assert_gases(
 		/datum/gas/healium,
-		/datum/gas/tritium,
+		/datum/gas/proto_nitrate,
 		/datum/gas/hypernoblium,
 		/datum/gas/nitrous_oxide
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/healium][MOLES] -= consumed_healium
-	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += (consumed_healium * 0.2)
-	reactor.moderator_gasmix.gases[/datum/gas/hypernoblium][MOLES] += (consumed_healium * 0.8)
+	reactor.moderator_gasmix.gases[/datum/gas/proto_nitrate][MOLES] += (consumed_healium * 0.1)
+	reactor.moderator_gasmix.gases[/datum/gas/hypernoblium][MOLES] += (consumed_healium * 0.9)
 
 /datum/reactor_gas/hypernoblium
 	gas_path = /datum/gas/hypernoblium
@@ -494,13 +503,15 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 		return
 	reactor.moderator_gasmix.assert_gases(
 		/datum/gas/hypernoblium,
+		/datum/gas/proto_nitrate,
 		/datum/gas/tritium,
 		/datum/gas/nitrogen,
 		/datum/gas/bz
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/hypernoblium][MOLES] -= consumed_hypernoblium
+	reactor.moderator_gasmix.gases[/datum/gas/proto_nitrate][MOLES] += (consumed_hypernoblium * 0.1)
 	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += (consumed_hypernoblium * 0.4)
-	reactor.moderator_gasmix.gases[/datum/gas/nitrogen][MOLES] += (consumed_hypernoblium * 0.3)
+	reactor.moderator_gasmix.gases[/datum/gas/nitrogen][MOLES] += (consumed_hypernoblium * 0.2)
 	reactor.moderator_gasmix.gases[/datum/gas/bz][MOLES] += (consumed_hypernoblium * 0.3)
 
 /datum/reactor_gas/proto_nitrate
@@ -545,12 +556,14 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 	if(!consumed_zauker)
 		return
 	reactor.moderator_gasmix.assert_gases(
+		/datum/gas/zauker,
 		/datum/gas/proto_nitrate,
 		/datum/gas/tritium,
 		/datum/gas/hypernoblium,
 		/datum/gas/nitrium
 		)
 	reactor.moderator_gasmix.gases[/datum/gas/zauker][MOLES] -= consumed_zauker
-	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += (consumed_zauker * 0.5)
+	reactor.moderator_gasmix.gases[/datum/gas/proto_nitrate][MOLES] += (consumed_zauker * 0.1)
+	reactor.moderator_gasmix.gases[/datum/gas/tritium][MOLES] += (consumed_zauker * 0.4)
 	reactor.moderator_gasmix.gases[/datum/gas/hypernoblium][MOLES] += (consumed_zauker * 0.1)
 	reactor.moderator_gasmix.gases[/datum/gas/nitrium][MOLES] += (consumed_zauker * 0.4)

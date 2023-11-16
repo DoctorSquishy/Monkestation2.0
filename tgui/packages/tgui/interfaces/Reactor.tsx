@@ -113,7 +113,8 @@ export const ReactorContent = (props: ReactorProps, context) => {
   return (
     <Stack vertical fill>
       <Section
-        height="6%"
+        height="40px"
+        fontSize="12px"
         align="center"
         title={uid + '. ' + area_name}
         buttons={sectionButton}

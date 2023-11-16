@@ -69,11 +69,9 @@ export const ReactorControls = (props: ReactorProps, context) => {
   const { act, data } = useBackend<ReactorData>(context);
   const { reactor_data } = data;
   return (
-    <Window resizable width={360} height={600} theme="ntos">
+    <Window resizable width={360} height={600} theme="ntOS95">
       <Window.Content>
-        <Stack vertical fill>
-          <ReactorControlRodControl {...reactor_data[0]} />
-        </Stack>
+        <ReactorControlRodControl {...reactor_data[0]} />
       </Window.Content>
     </Window>
   );
@@ -167,14 +165,19 @@ export const ReactorControlRodControl = (
   const { act, data } = useBackend<ReactorData>(context);
   const { reactor_data } = data;
   return (
-    <Stack height="100%">
-      <Stack.Item grow>
-        <Section height="6%" align="center" title={uid + '. ' + area_name} />
-        <Section align="center">
+    <Stack height="100%" vertical fill>
+      <Section height="40px" align="center" title={uid + '. ' + area_name} />
+      <Stack.Item height="100%" width="100%">
+        <Section title="Power Controls" align="center" height="130px">
           <LabeledControls mx={2}>
-            <LabeledControls.Item label="Power Switch">
+            <LabeledControls.Item
+              bold
+              labelColor={active ? 'danger' : 'caution'}
+              label="Power Switch"
+              color={active ? 'danger' : 'caution'}>
               <Button
-                width="100px"
+                bold
+                width="120px"
                 lineHeight={4}
                 disabled={
                   (coreTemp > shutdownTemp && active) ||
@@ -189,11 +192,10 @@ export const ReactorControlRodControl = (
               />
             </LabeledControls.Item>
             <LabeledControls.Item
-              label={
-                coreTemp > shutdownTemp
-                  ? 'UnSafe Shutdown Temperature'
-                  : 'Safe Shutdown Temperature'
-              }>
+              bold
+              label="Shutdown Temperature"
+              color={coreTemp > shutdownTemp ? 'danger' : 'green'}
+              labelColor={coreTemp > shutdownTemp ? 'danger' : 'green'}>
               <RoundGauge
                 value={coreTemp}
                 minValue={0}
@@ -210,20 +212,23 @@ export const ReactorControlRodControl = (
             </LabeledControls.Item>
           </LabeledControls>
         </Section>
-
-        <Section title="Control Rod Management:" align="center" height="30%">
-          Control Rod Insertion:
-          <ProgressBar
-            value={(control_rods / 100) * 100 * 0.01}
-            ranges={{
-              good: [0.7, Infinity],
-              average: [0.4, 0.7],
-              bad: [-Infinity, 0.4],
-            }}
-          />
-          <br />
+        <Section
+          title="Control Rod Management:"
+          align="left"
+          height="160px"
+          bold>
+          <Stack.Item>
+            Control Rod Insertion:
+            <ProgressBar
+              value={(control_rods / 100) * 100 * 0.01}
+              ranges={{
+                good: [0.7, Infinity],
+                average: [0.4, 0.7],
+                bad: [-Infinity, 0.4],
+              }}
+            />
+          </Stack.Item>
           Neutrons per generation (K):
-          <br />
           <ProgressBar
             value={(k / 5) * 100 * 0.01}
             ranges={{
@@ -233,67 +238,67 @@ export const ReactorControlRodControl = (
             }}>
             {k}
           </ProgressBar>
-          <br />
-          Target criticality:
-          <br />
-          <Slider
-            value={Math.round(desiredK * 10) / 10}
-            fillValue={Math.round(k * 10) / 10}
-            minValue={0}
-            maxValue={5}
-            step={0.1}
-            stepPixelSize={5}
-            onDrag={(e, value) =>
-              act('input', {
-                target: value,
-              })
-            }
-          />
+          <Stack.Item>
+            {' '}
+            Target criticality:
+            <Slider
+              value={Math.round(desiredK * 10) / 10}
+              fillValue={Math.round(k * 10) / 10}
+              minValue={0}
+              maxValue={5}
+              step={0.1}
+              stepPixelSize={5}
+              onDrag={(e, value) =>
+                act('input', {
+                  target: value,
+                })
+              }
+            />
+          </Stack.Item>
         </Section>
-        <Section
-          title="Fuel Rod Management"
-          align="center"
-          height="35%"
-          scrollable>
+        <Section title="Fuel Rods" height="40%" fill scrollable>
           {rods.length > 0 ? (
-            <Box>
-              <Stack direction="column">
-                {rods.map((rod) => (
-                  <Box key={rod.name}>
-                    <Stack.Item inline mr={'3rem'} my={'0.5rem'}>
-                      {rod.rod_index}.{rod.name}
+            <Stack direction="column">
+              {rods.map((rod) => (
+                <Box key={rod.name} height="60px" bold>
+                  <Stack direction="vertical">
+                    <Stack.Item grow>
+                      {rod.rod_index + '. ' + rod.name}
                     </Stack.Item>
-                    <Button
-                      inline
-                      icon={'times'}
-                      content={'Eject'}
-                      disabled={coreTemp > shutdownTemp}
-                      onClick={() =>
-                        act('eject', {
-                          rod_index: rod.rod_index,
-                        })
-                      }
-                    />
-                    <ProgressBar
-                      value={rod.depletion_threshold - rod.depletion}
-                      minValue={0}
-                      maxValue={rod.depletion_threshold}
-                      ranges={{
-                        good: [
-                          rod.depletion_threshold * 0.75,
-                          rod.depletion_threshold,
-                        ],
-                        average: [
-                          rod.depletion_threshold * 0.4,
-                          rod.depletion_threshold * 0.75,
-                        ],
-                        bad: [0, rod.depletion_threshold * 0.4],
-                      }}
-                    />
-                  </Box>
-                ))}
-              </Stack>
-            </Box>
+                    <Stack.Item>
+                      <Button
+                        color="red"
+                        icon={'times'}
+                        content={'Eject'}
+                        disabled={coreTemp > shutdownTemp}
+                        onClick={() =>
+                          act('eject', {
+                            rod_index: rod.rod_index,
+                          })
+                        }
+                      />
+                    </Stack.Item>
+                  </Stack>
+
+                  <ProgressBar
+                    value={rod.depletion_threshold - rod.depletion}
+                    minValue={0}
+                    maxValue={rod.depletion_threshold}
+                    ranges={{
+                      good: [
+                        rod.depletion_threshold * 0.75,
+                        rod.depletion_threshold,
+                      ],
+                      average: [
+                        rod.depletion_threshold * 0.4,
+                        rod.depletion_threshold * 0.75,
+                      ],
+                      bad: [0, rod.depletion_threshold * 0.4],
+                    }}
+                  />
+                </Box>
+              ))}
+            </Stack>
           ) : (
             <Box fontSize={1}>No rods found.</Box>
           )}

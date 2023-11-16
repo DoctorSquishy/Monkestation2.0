@@ -86,10 +86,9 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 // TIER 1 GASSES
 /datum/reactor_gas/oxygen
 	gas_path = /datum/gas/oxygen
-	heat_mod = 1
-	permeability_mod = 2
-	radioactivity_mod = 0.05
-	desc ="Slightly increases heat and coolant efficiency. Byproducts: Tritium."
+	heat_mod = 0.1
+	radioactivity_mod = 0.02
+	desc ="Slightly increases heat and radiation. Byproducts: Tritium."
 
 /datum/reactor_gas/oxygen/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/oxygen])
@@ -103,12 +102,11 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/nitrogen
 	gas_path = /datum/gas/nitrogen
-	heat_mod = -2
-	heat_resistance = 1
-	permeability_mod = 2
+	heat_mod = -0.2
+	heat_resistance = 0.1
 	radioactivity_mod = 0.02
-	control_mod = 50
-	desc ="Increases the control of criticality (K) and the effectiveness of the control rods. Byproducts: Tritium."
+	control_mod = 0.2
+	desc ="Slightly increases the control of criticality (K) in exchange for lower heat. Byproducts: Tritium."
 
 /datum/reactor_gas/nitrogen/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/nitrogen])
@@ -122,11 +120,11 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/carbon_dioxide
 	gas_path = /datum/gas/carbon_dioxide
-	heat_mod = -4
-	heat_resistance = 3
+	heat_mod = -0.4
+	heat_resistance = 0.3
 	radioactivity_mod = 0.08
-	control_mod = 100
-	desc ="Helps suppress and control reactor reactions in exchange for increased radiation and less heat. Byproducts: Tritium."
+	control_mod = 0.4
+	desc ="Good for shutting down the reactor. Suppresses and controls reactor reactions in exchange for increased radiation and less heat. Byproducts: Tritium."
 
 /datum/reactor_gas/carbon_dioxide/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/carbon_dioxide])
@@ -140,9 +138,9 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/plasma
 	gas_path = /datum/gas/plasma
-	heat_mod = 2
-	radioactivity_mod = 0.06
-	desc ="Basic heat output. Byproducts: Tritium."
+	heat_mod = 0.2
+	radioactivity_mod = 0.04
+	desc ="Gives a slight increase to heat and radiation output. Byproducts: Tritium."
 
 /datum/reactor_gas/plasma/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/plasma])
@@ -158,10 +156,10 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 // TIER 2 GASSES
 /datum/reactor_gas/water_vapor
 	gas_path = /datum/gas/water_vapor
-	heat_mod = 6
-	heat_resistance = 2
-	permeability_mod = 20
-	desc ="Increases coolant efficiency and heat output. Byproducts: Tritium, Hydrogen, Oxygen."
+	heat_mod = 0.4
+	heat_resistance = 0.2
+	permeability_mod = 0.04
+	desc ="Increases coolant efficiency, heat output, and temperature limits. Byproducts: Tritium, Hydrogen, Oxygen."
 
 /datum/reactor_gas/water_vapor/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/water_vapor])
@@ -181,9 +179,8 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/nitrous_oxide
 	gas_path = /datum/gas/nitrous_oxide
-	heat_mod = -1
-	heat_resistance = 5
-	permeability_mod = 4
+	heat_mod = -0.1
+	heat_resistance = 0.3
 	radioactivity_mod = 0.02
 	desc ="Reduces heat ouput, increaes coolant efficiency, and slightly increases temperature limits. Byproducts: Tritium, Nitrogen, Oxygen."
 
@@ -206,10 +203,10 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/tritium
 	gas_path = /datum/gas/tritium
-	heat_mod = 12
+	heat_mod = 1.2
 	radioactivity_mod = 0.2
 	control_mod = -50
-	depletion_mod = 0.08
+	depletion_mod = 0.04
 	desc ="Significantly increases heat and radiation output while making criticality (K) harder to control and depleting fuel rods slightly faster. Byproducts: Plasma, Water Vapor."
 
 /datum/reactor_gas/tritium/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
@@ -231,11 +228,10 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 // TIER 3 GASSES
 /datum/reactor_gas/bz
 	gas_path = /datum/gas/bz
-	heat_mod = 5
-	heat_resistance = 2
-	permeability_mod = 10
+	heat_mod = 0.5
+	heat_resistance = 0.2
 	radioactivity_mod = 0.15
-	desc ="Increases heat and radiation output, temperature limits, and coolant efficiency. Byproducts: Plasma, Nitrous Oxide."
+	desc ="Increases heat and radiation output and temperature limits. Byproducts: Plasma, Nitrous Oxide."
 
 /datum/reactor_gas/bz/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/bz])
@@ -256,11 +252,10 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/hydrogen
 	gas_path = /datum/gas/hydrogen
-	heat_mod = 10
-	heat_resistance = 1
-	radioactivity_mod = 0.06
-	depletion_mod = 0.3
-	desc ="Significantly increases heat output and control rod depletion. Byproducts: Tritium, Helium."
+	heat_mod = 1
+	radioactivity_mod = 0.1
+	permeability_mod = -0.04
+	desc ="Significantly increases heat and radiation output in exchange for reduced coolant efficiency. Byproducts: Tritium, Helium."
 
 /datum/reactor_gas/hydrogen/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/hydrogen])
@@ -278,10 +273,10 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/miasma
 	gas_path = /datum/gas/miasma
-	heat_mod = 5
+	heat_mod = 0.5
 	radioactivity_mod = 0.3
-	control_mod = -20
-	desc ="Increases heat and radiation output. Slightly reduces control of criticality (K). Byproducts: Tritium, Water Vapor, Oxygen, Hydrogen, CO2."
+	control_mod = -0.08
+	desc ="Stink'n hot, radical with the radiation, and out of control. Also smells funny. Byproducts: Tritium, Water Vapor, Oxygen, Hydrogen, CO2."
 
 /datum/reactor_gas/miasma/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/miasma])
@@ -306,11 +301,11 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/nitrium
 	gas_path = /datum/gas/nitrium
-	heat_mod = 6
-	heat_resistance = 2
+	heat_mod = 0.6
+	heat_resistance = 0.2
 	radioactivity_mod = 0.1
-	control_mod = -30
-	permeability_mod = 20
+	control_mod = -0.1
+	permeability_mod = 0.04
 	depletion_mod = 0.1
 	desc ="Increases heat, radiation output, heat resistance, and fuel rod depletion inexchange for reduced control of criticality (K). Byproducts: Tritium, Nitrogen, BZ."
 
@@ -333,9 +328,8 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/pluoxium
 	gas_path = /datum/gas/pluoxium
-	heat_mod = -2
-	heat_resistance = 1
-	control_mod = 150
+	heat_mod = -0.3
+	control_mod = 0.6
 	desc ="Gives a strong control of criticality (K) in exchange for less heat output. Byproducts: Tritium, Oxygen, CO2."
 
 /datum/reactor_gas/pluoxium/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
@@ -359,10 +353,10 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 // TIER 4 GASSES
 /datum/reactor_gas/freon
 	gas_path = /datum/gas/freon
-	heat_mod = -10
-	heat_resistance = 6
-	permeability_mod = 40
-	desc ="Improves heat resistance and coolant efficiency in exchange for significantly reduced heat output. Byproducts: Tritium, Plasma, CO2, BZ."
+	heat_mod = -1
+	heat_resistance = 0.4
+	permeability_mod = 0.08
+	desc ="Chill those reactions down while improving heat resistance and cooling. Byproducts: Tritium, Plasma, CO2, BZ."
 
 /datum/reactor_gas/freon/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/freon])
@@ -385,11 +379,11 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/halon
 	gas_path = /datum/gas/halon
-	heat_mod = 4
-	heat_resistance = 2
-	radioactivity_mod = 0.10
-	control_mod = 100
-	desc ="Gives a better control of criticality (K) and an increase of heat and radiation output. Byproducts: Tritium, Plasma, CO2, BZ."
+	heat_resistance = 0.2
+	permeability_mod = 0.06
+	control_mod = -0.08
+	depletion_mod = 0.02
+	desc ="Nice and chill until it meets your fuel rod . Byproducts: Tritium, Plasma, CO2, BZ."
 
 /datum/reactor_gas/halon/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/halon])
@@ -410,10 +404,10 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/helium
 	gas_path = /datum/gas/helium
-	heat_mod = -6
-	heat_resistance = 5
-	control_mod = 75
-	desc ="Increases heat resistance and control of criticality (K) in exchange for a loss of heat output. Byproducts: Tritium, Proto-Nitrate, BZ."
+	heat_mod = -0.6
+	heat_resistance = 0.5
+	control_mod = 0.3
+	desc ="Stable and able to take the heat. Byproducts: Tritium, Proto-Nitrate, BZ."
 
 /datum/reactor_gas/helium/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/helium])
@@ -436,12 +430,12 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 // TIER 5 GASSES
 /datum/reactor_gas/antinoblium
 	gas_path = /datum/gas/antinoblium
-	heat_mod = 15
-	heat_resistance = 10
-	permeability_mod = 50
+	heat_mod = 1.5
+	heat_resistance = 1
 	radioactivity_mod = 0.5
-	control_mod = -50
-	desc ="Vastly increases coolant efficiency, heat output, and temperature resistance in exchange for a loss of control of criticality (K). Byproducts: Tritium, Hyper-noblium."
+	control_mod = -0.2
+	permeability_mod = 0.5
+	desc ="When you want it extra spicy and well hydrated. Perfect for grilling! Byproducts: Tritium, Hyper-noblium."
 
 /datum/reactor_gas/antinoblium/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/antinoblium])
@@ -461,12 +455,11 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/healium
 	gas_path = /datum/gas/healium
-	heat_mod = 5
-	heat_resistance = 5
-	radioactivity_mod = 1
-	control_mod = 100
+	heat_mod = 0.5
+	heat_resistance = 0.5
+	radioactivity_mod = 0.3
 	depletion_mod = 0.2
-	desc ="Very effective control gas with the ability heal the reactor in exchange for signicant increase in radiation and fuel rod depletion. Byproducts: Tritium, Freon, BZ."
+	desc ="Like giving the reactor a shot of adrenaline laced creatine with a scoop of pure radiation. Watch those blemishes just melt away!  Byproducts: Tritium, Freon, BZ."
 
 /datum/reactor_gas/healium/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/healium])
@@ -488,10 +481,10 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/hypernoblium
 	gas_path = /datum/gas/hypernoblium
-	heat_mod = -15
+	heat_mod = -1
 	radioactivity_mod = 10
-	control_mod = 50
-	desc ="Significantly reduces heat output in exhange for an insane amount of radiation output. Byproducts: Tritium, Nitrogen, BZ."
+	control_mod = 0.2
+	desc ="Every radioactive disaster bundled into one reactor! Byproducts: Tritium, Nitrogen, BZ."
 
 /datum/reactor_gas/hypernoblium/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/hypernoblium])
@@ -513,11 +506,11 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 /datum/reactor_gas/proto_nitrate
 	gas_path = /datum/gas/proto_nitrate
 	heat_mod = 5
-	radioactivity_mod = 10
-	control_mod = -150
+	radioactivity_mod = 3
+	control_mod = -0.3
 	depletion_mod = 0.3
-	permeability_mod = 50
-	desc ="Reactions go fast! Deplete the hell out of those fuel rods if you can control it that is. Byproducts: Tritium, Pluoxium, Hydrogen."
+	permeability_mod = 0.1
+	desc ="Reactions go fast! Those fuel rods won't know what it them and neither will you when you lose control of this reactor. Byproducts: Tritium, Pluoxium, Hydrogen."
 
 /datum/reactor_gas/proto_nitrate/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	if(!reactor.gas_percentage[/datum/gas/proto_nitrate])
@@ -538,12 +531,11 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/zauker
 	gas_path = /datum/gas/zauker
-	heat_mod = 66.6
-	heat_resistance = 66.6
+	heat_mod = 6.66
+	heat_resistance = 6.66
 	radioactivity_mod = 6.66
-	control_mod = -66.6
-	permeability_mod = 6.66
-	depletion_mod = 0.666
+	control_mod = -0.666
+	permeability_mod = -0.666
 	desc = "Hope your ready for a divine journey through hell. Byproducts: Tritium, Hyper-Noblium, Nitrium."
 
 /datum/reactor_gas/zauker/extra_effects(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)

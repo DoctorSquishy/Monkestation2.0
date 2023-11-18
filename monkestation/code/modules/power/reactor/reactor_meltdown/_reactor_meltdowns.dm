@@ -93,9 +93,9 @@ GLOBAL_LIST_INIT(reactor_meltdown_list, list(
 /// [/obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/process_atmos]
 /datum/reactor_meltdown/proc/lights(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	reactor.set_light(
-		l_outer_range = ROUND_UP(clamp(reactor.temperature / 500, 4, 10)),
+		l_outer_range = ROUND_UP(clamp(reactor.temperature / 400, 2, 10)),
 		l_power = ROUND_UP(clamp(reactor.temperature / 1000, 1, 5)),
-		l_color = reactor.temperature > (reactor.temp_limit*0.8) ? LIGHT_COLOR_FLARE : LIGHT_COLOR_CYAN,
+		l_color = 900 > reactor.temperature ? LIGHT_COLOR_CYAN : LIGHT_COLOR_FLARE,
 		l_on = reactor.temperature > REACTOR_TEMPERATURE_OPERATING
 	)
 

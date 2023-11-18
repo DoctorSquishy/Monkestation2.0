@@ -12,7 +12,6 @@
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF | FREEZE_PROOF
 	flags_1 = PREVENT_CONTENTS_EXPLOSION_1
 	critical_machine = TRUE
-	override_naming = FALSE //Prevents the omni name that comes from pipes
 	light_color = LIGHT_COLOR_CYAN
 	dir = 8
 
@@ -25,7 +24,7 @@
 	var/is_main_engine = FALSE
 
 	///The point at which we consider the reactor to be [REACTOR_STATUS_WARNING]
-	var/warning_point = 5
+	var/warning_point = 40
 	var/warning_channel = RADIO_CHANNEL_ENGINEERING
 	///The point at which we consider the reactor to be [REACTOR_STATUS_DANGER]
 	///Spawns anomalies when more damaged than this too.
@@ -86,10 +85,12 @@
 	/// We refer to this one as it's set on init, randomized.
 	var/gas_absorption_constant = 0.5
 
-	/// The minimum coolant level
+	/// The minimum coolant level: 5 Moles
 	var/minimum_coolant_level = 5
-	/// Integrity restoration amount via moderator Healium gas
+	/// Integrity restoration amount general repairs
 	var/integrity_restoration = 0
+	/// Integrity restoration amount via moderator Healium gas
+	var/healium_restoration = 0
 	/// External damage that are added to the reactor on next [/obj/machinery/atmospherics/components/trinary/nuclear_reactor/process_atmos] call.
 	/// Reactor will not take damage if it's health is lower than emergency point.
 	var/external_damage_immediate = 0
@@ -255,10 +256,10 @@
 		if(get_integrity_percent() <= 60) //Heavily damaged.
 			to_chat(user, span_warning("[src]'s reactor vessel is cracked and worn, you need to repair the cracks with a welder before you can repair the seals."))
 			return FALSE
-		while(do_after(user, 1 SECONDS, target=src))
+		while(do_after(user, 5 SECONDS, target=src))
 			playsound(src, 'sound/effects/spray2.ogg', 50, 1, -6)
-			damage -= 10
-			damage = clamp(damage, 0, initial(damage))
+			integrity_restoration += 10
+			integrity_restoration = clamp(integrity_restoration, 0, initial(integrity_restoration))
 			update_appearance()
 			if(get_integrity_percent() >= 100) // Check if it's done
 				to_chat(user, span_warning("[src]'s seals are already in-tact, repairing them further would require a new set of seals."))
@@ -276,27 +277,6 @@
 	if(istype(A, /obj/item/fuel_rod))
 		try_insert_fuel(A, user)
 
-/obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/try_insert_fuel(obj/item/fuel_rod/rod, mob/user)
-	if(!istype(rod))
-		return FALSE
-	if(slagged)
-		to_chat(user, span_warning("The reactor has been critically damaged"))
-		return FALSE
-	if(temperature > REACTOR_TEMPERATURE_OPERATING)
-		to_chat(user, span_warning("You cannot insert fuel into [src] with the core temperature above [REACTOR_TEMPERATURE_OPERATING] kelvin."))
-		return FALSE
-	if(fuel_rods.len >= REACTOR_MAX_FUEL_RODS)
-		to_chat(user, span_warning("[src] is already at maximum fuel load."))
-		return FALSE
-	to_chat(user, span_notice("You start to insert [rod] into [src]..."))
-	radiation_pulse(src, temperature)
-	if(do_after(user, 2 SECONDS, target=src))
-		fuel_rods += rod
-		rod.forceMove(src)
-		radiation_pulse(src, temperature) //Wear protective equipment when even breathing near a reactor!
-		investigate_log("Rod added to reactor by [key_name(user)] at [AREACOORD(src)]", INVESTIGATE_ENGINE)
-	return TRUE
-
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/crowbar_act(mob/living/user, obj/item/tool)
 	if(slagged)
 		to_chat(user, span_warning("The fuel rods have melted into a radioactive lump."))
@@ -310,15 +290,24 @@
 	if(!has_fuel())
 		to_chat(user, span_notice("The reactor has no fuel rods!"))
 		return TRUE
+
 	var/obj/item/fuel_rod/rod = tgui_input_list(usr, "Select a fuel rod to remove", "Fuel Rods", fuel_rods)
 	if(rod && istype(rod) && tool.use_tool(src, user, removal_time))
 		if(temperature > REACTOR_TEMPERATURE_OPERATING)
-			var/turf/src_turf = get_turf(src)
-			src_turf.atmos_spawn_air("water_vapor=[pressure/100];TEMP=[temperature]")
+			rod_removal_gas()
 		user.rad_act(rod.fuel_power * 1000)
+		playsound(src, 'monkestation/sound/effects/reactor/switch2.ogg', 100, TRUE)
+		playsound(src, 'monkestation/sound/effects/reactor/crane_1.wav', 100, TRUE)
+		var/obj/effect/fuel_rod/eject/rod_effect = new(get_turf(src))
+		rod.moveToNullspace()
 		fuel_rods.Remove(rod)
+		sleep(3 SECONDS)
 		if(!user.put_in_hands(rod))
 			rod.forceMove(user.loc)
+		playsound(src, 'monkestation/sound/effects/reactor/crane_return.ogg', 100, TRUE)
+		playsound(src, pick('monkestation/sound/effects/reactor/switch.ogg','monkestation/sound/effects/reactor/switch2.ogg','monkestation/sound/effects/reactor/switch3.ogg'), 100, FALSE)
+		sleep(5 SECONDS)
+		qdel(rod_effect)
 	return TRUE
 
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/welder_act(mob/living/user, obj/item/tool)
@@ -331,8 +320,9 @@
 	if(get_integrity() > 50)
 		to_chat(user, span_warning("[src] is free from cracks. Further repairs must be carried out with flexi-seal sealant."))
 		return TRUE
-	while(tool.use_tool(src, user, 1 SECONDS, volume=40))
-		damage -= 20
+	while(tool.use_tool(src, user, 2 SECONDS, volume=40))
+		integrity_restoration += 20
+		calculate_damage()
 		if(get_integrity() > 50)
 			to_chat(user, span_warning("[src] is free from cracks. Further repairs must be carried out with flexi-seal sealant."))
 			return TRUE
@@ -355,7 +345,7 @@
 //Processes the temperature effects from standing on top of the reactor such as grilling
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/process(seconds_per_tick)
 	// Meltdown this, blowout that, I just wanna grill for god's sake!
-	for(var/atom/movable/atom_on_reactor in orange(2, src))
+	for(var/atom/movable/atom_on_reactor in orange(1, src))
 		if(isliving(atom_on_reactor))
 			var/mob/living/living_mob = atom_on_reactor
 			if(temperature > living_mob.bodytemperature)
@@ -384,9 +374,10 @@
 	gas_absorption_effectiveness = gas_absorption_constant
 
 	// MODERATOR GASSES
-	moderator_gasmix = moderator_input?.remove_ratio(gas_absorption_constant) || new()
-	moderator_gasmix.volume = (moderator_input?.volume || CELL_VOLUME) * gas_absorption_constant // To match the pressure
-	calculate_moderators() //updates moderator variables
+	if(moderator_input > 0)
+		moderator_gasmix = moderator_input?.remove_ratio(gas_absorption_constant) || new()
+		moderator_gasmix.volume = (moderator_input?.volume || CELL_VOLUME) * gas_absorption_constant // To match the pressure
+		calculate_moderators() //updates moderator variables
 	waste_multiplier_factors = calculate_waste_multiplier()
 	var/control_bonus = gas_control_mod
 	control_rod_effectiveness = initial(control_rod_effectiveness) + control_bonus
@@ -407,10 +398,7 @@
 	if(damage > explosion_point && !final_countdown)
 		count_down()
 
-	// REACTOR TEMPERATURE
-	calculate_reactor_temp()
-
-	// OUTPUT MODIFIER AND WASTE GASSES
+	// WASTE GASSES + EXTRA EFFECTS
 	// Extra effects should always fire after the compositions are all finished
 	// Handles Waste Gas and Extra Effects such as with Healium repairing reactor integrity
 	for (var/gas_path in moderator_gasmix.gases)
@@ -419,7 +407,10 @@
 	moderator_gasmix.temperature += (waste_multiplier * K)
 	moderator_gasmix.garbage_collect() //recommended after using assert_gasses in extra effects
 
-	// Higher Pressured inputs means faster flow
+	// REACTOR TEMPERATURE
+	calculate_reactor_temp()
+
+	// Higher Pressured inputs means faster flow, basically limited to your pipe setup for output
 	moderator_gasmix.pump_gas_to(coolant_output, moderator_gasmix.return_pressure())
 	coolant_input.pump_gas_to(coolant_output, coolant_input.return_pressure())
 
@@ -465,9 +456,9 @@
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/update_overlays()
 	. = ..()
 	switch(get_integrity_percent())
-		if(0 to 10)
+		if(0 to 20)
 			. += mutable_appearance(icon = icon, icon_state ="[base_icon_state]_damaged_4")
-		if(10 to 40)
+		if(20 to 40)
 			. += mutable_appearance(icon = icon, icon_state ="[base_icon_state]_damaged_3")
 		if(40 to 60)
 			. += mutable_appearance(icon = icon, icon_state ="[base_icon_state]_damaged_2")
@@ -479,11 +470,11 @@
 	. = ..()
 	icon_state = "[base_icon_state]_off"
 	switch(get_temperature_percent())
-		if(1 to 60)
+		if(10 to 60)
 			icon_state = "[base_icon_state]_on"
-		if(60 to 70)
+		if(60 to 75)
 			icon_state = "[base_icon_state]_hot"
-		if(70 to 80)
+		if(75 to 90)
 			icon_state = "[base_icon_state]_veryhot"
 		if(90 to 100)
 			icon_state = "[base_icon_state]_overheat"

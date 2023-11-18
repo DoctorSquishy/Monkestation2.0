@@ -31,6 +31,35 @@
 	disable_process = REACTOR_PROCESS_DISABLED
 	update_appearance()
 
+//Insert fuel rod manually into reactor
+/obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/try_insert_fuel(obj/item/fuel_rod/rod, mob/user)
+	if(!istype(rod))
+		return FALSE
+	if(slagged)
+		to_chat(user, span_warning("The reactor has been critically damaged"))
+		return FALSE
+	if(temperature > REACTOR_TEMPERATURE_OPERATING)
+		to_chat(user, span_warning("You cannot insert fuel into [src] with the core temperature above [REACTOR_TEMPERATURE_OPERATING] kelvin."))
+		return FALSE
+	if(fuel_rods.len >= REACTOR_MAX_FUEL_RODS)
+		to_chat(user, span_warning("[src] is already at maximum fuel load."))
+		return FALSE
+	to_chat(user, span_notice("You engage the crane switch to begin inserting [rod] into [src]..."))
+	radiation_pulse(src, temperature)
+	playsound(src, 'monkestation/sound/effects/reactor/switch2.ogg', 100, TRUE)
+	playsound(src, 'monkestation/sound/effects/reactor/crane_1.wav', 100, TRUE)
+	var/obj/effect/fuel_rod/insert/rod_effect = new(get_turf(src))
+	if(do_after(user, 3 SECONDS, target=src))
+		fuel_rods += rod
+		rod.forceMove(src)
+		radiation_pulse(src, temperature) //Wear protective equipment when even breathing near a reactor!
+		investigate_log("Rod added to reactor by [key_name(user)] at [AREACOORD(src)]", INVESTIGATE_ENGINE)
+		playsound(src, 'monkestation/sound/effects/reactor/crane_return.ogg', 100, TRUE)
+		playsound(src, pick('monkestation/sound/effects/reactor/switch.ogg','monkestation/sound/effects/reactor/switch2.ogg','monkestation/sound/effects/reactor/switch3.ogg'), 100, FALSE)
+		sleep(5 SECONDS)
+		qdel(rod_effect)
+	return TRUE
+
 // All the calculate procs should only update variables
 // Move the actual real-world effects to [/obj/machinery/atmospherics/components/trinary/nuclear_reactor/process_atmos]
 /**
@@ -90,7 +119,7 @@
 
 	var/additive_waste_multiplier = list()
 	additive_waste_multiplier[REACTOR_WASTE_BASE] = 0.05
-	additive_waste_multiplier[REACTOR_WASTE_GAS] = clamp(gas_heat_mod, 0, 0.9)
+	additive_waste_multiplier[REACTOR_WASTE_GAS] = gas_heat_mod
 
 	for (var/waste_type in additive_waste_multiplier)
 		waste_multiplier += additive_waste_multiplier[waste_type]
@@ -164,6 +193,9 @@
 	var/datum/gas_mixture/coolant_input = airs[COOLANT_INPUT_GATE]
 	if(has_fuel())
 		temperature += REACTOR_HEAT_FACTOR * has_fuel() * ((REACTOR_HEAT_EXPONENT**K) - 1) // heating from K has to be exponential to make higher K more dangerous
+	var/moderator_moles = moderator_gasmix.total_moles()
+	if(moderator_moles >= minimum_coolant_level) // Add some influence from the moderator inputs
+		temperature +=  (moderator_gasmix.return_temperature() * 0.25) // 25% as effective than the coolant inputs
 	var/input_moles = coolant_input.total_moles() //Firstly. Do we have enough moles of coolant?
 	if(input_moles >= minimum_coolant_level)
 		last_coolant_temperature = coolant_input.return_temperature()
@@ -193,12 +225,13 @@
 
 	// We dont let external factors deal more damage than the emergency point.
 	// Only cares about the damage before this proc is run. We ignore soon-to-be-applied damage.
-	additive_damage[REACTOR_DAMAGE_HEAT] = external_damage_immediate * clamp((emergency_point - damage) / emergency_point, 0, 1)
+	additive_damage[REACTOR_DAMAGE_EXTERNAL] = external_damage_immediate * clamp((emergency_point - damage) / emergency_point, 0, 1)
 	external_damage_immediate = 0
 
 	additive_damage[REACTOR_DAMAGE_HEAT] = clamp((temperature - temp_limit) / 24000, 0, 0.15)
 	additive_damage[REACTOR_DAMAGE_PRESSURE] = clamp((pressure - REACTOR_PRESSURE_CRITICAL)/10000, 0, 0.1)
-	additive_damage[REACTOR_HEALIUM] -= integrity_restoration
+	additive_damage[REACTOR_HEALIUM] -= healium_restoration
+	additive_damage[REACTOR_REPAIRS] -= integrity_restoration
 
 	var/total_damage = 0
 	for (var/damage_type in additive_damage)
@@ -251,9 +284,9 @@
 		return REACTOR_EMERGENCY
 	if(damage >= danger_point)
 		return REACTOR_DANGER
-	if(damage >= warning_point)
+	if(damage >= warning_point || temperature > temp_limit)
 		return REACTOR_WARNING
-	if(temperature > temp_limit * 0.8 || pressure > pressure_limit * 0.8)
+	if(temperature > temp_limit * 0.8 || pressure > REACTOR_PRESSURE_CRITICAL * 0.8)
 		return REACTOR_NOTIFY
 	if(temperature > REACTOR_TEMPERATURE_OPERATING)
 		return REACTOR_NORMAL
@@ -267,7 +300,7 @@
 
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/get_temperature_percent()
 	var/temperature_percent = temperature / temp_limit
-	temperature_percent = 100 - (temperature_percent * 100)
+	temperature_percent = (temperature_percent * 100)
 	temperature_percent = temperature_percent < 0 ? 0 : temperature_percent
 	return temperature_percent
 
@@ -321,6 +354,22 @@
 #undef INTEGRITY_EXPONENTIAL_DEGREE
 #undef RADIATION_CHANCE_AT_FULL_INTEGRITY
 #undef RADIATION_CHANCE_AT_ZERO_INTEGRITY
+
+// Seems some gas connections are leaking
+/obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/rod_removal_gas()
+	playsound(src, 'sound/machines/clockcult/steam_whoosh.ogg', 100, TRUE)
+
+	var/datum/gas_mixture/coolant_input = airs[1]
+	var/datum/gas_mixture/moderator_input = airs[2]
+	var/datum/gas_mixture/reactor_env = src.return_air()
+
+	var/datum/gas_mixture/reactor_leak = coolant_input*0.01 + moderator_input*0.01
+	coolant_input = coolant_input?.remove_ratio(0.01)
+	moderator_input = moderator_input?.remove_ratio(0.01)
+
+	reactor_env.merge(reactor_leak)
+
+	src.air_update_turf(FALSE, FALSE)
 
 
 /**
@@ -448,7 +497,6 @@
 	if(isliving(atom_movable) && temperature > T0C)
 		var/mob/living/living_mob = atom_movable
 		living_mob.adjust_bodytemperature(clamp(temperature, BODYTEMP_COOLING_MAX, BODYTEMP_HEATING_MAX)) //If you're on fire, you heat up!
-
 
 
 /// Returns data that are exclusively about this reactor

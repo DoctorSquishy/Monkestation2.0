@@ -14,8 +14,8 @@
 #define REACTOR_TEMPERATURE_OPERATING 300
 //Critical threshold of Reactor pressure (10000).
 #define REACTOR_PRESSURE_CRITICAL 10000
-
-#define REACTOR_HEAT_PENALTY_THRESHOLD 600 //Higher == Reactor safe operational temperature is higher.
+//Higher == Reactor safe operational temperature is higher.
+#define REACTOR_HEAT_PENALTY_THRESHOLD 600
 
 #define REACTOR_HEAT_CAPACITY 6000 //How much thermal energy it takes to cool the reactor
 #define REACTOR_ROD_HEAT_CAPACITY 400 //How much thermal energy it takes to cool each reactor rod
@@ -23,7 +23,7 @@
 #define REACTOR_HEAT_FACTOR (20 / (REACTOR_HEAT_EXPONENT**2)) //How much heat from K
 
 #define REACTOR_MAX_CRITICALITY 5 //No more criticality than N for now.
-#define REACTOR_MAX_FUEL_RODS 5 //Maximum number of fuel rods that can fit in the reactor
+#define REACTOR_MAX_FUEL_RODS 10 //Maximum number of fuel rods that can fit in the reactor
 
 /// Means it's not forced, reactor decides itself by checking the [/datum/reactor_meltdown/proc/can_select]
 #define REACTOR_MELTDOWN_PRIO_NONE 0
@@ -72,6 +72,8 @@
 #define REACTOR_DAMAGE_EXTERNAL "External Damage"
 /// How much damage is healed through healium gas as a moderator
 #define REACTOR_HEALIUM "Healium Healing"
+/// How much damage is healed through general repairs on the reactor
+#define REACTOR_REPAIRS "Reactor Repairs"
 
 /// How much waste multiplier we get just from existing.
 #define REACTOR_WASTE_BASE "Base Waste Multiplier"

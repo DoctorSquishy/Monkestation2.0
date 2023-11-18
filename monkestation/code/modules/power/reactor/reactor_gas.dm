@@ -474,7 +474,7 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 	if(!reactor.gas_percentage[/datum/gas/healium])
 		return
 
-	reactor.integrity_restoration = max((2400 - max(TCMB, reactor.temperature))/300) //At 1800K integrity_restoration should be around 1
+	reactor.healium_restoration = max((2400 - max(TCMB, reactor.temperature))/300) //At 1800K integrity_restoration should be around 1
 	var/consumed_healium = reactor.moderator_gasmix.gases[/datum/gas/healium][MOLES] * reactor.waste_multiplier
 	if(!consumed_healium)
 		return

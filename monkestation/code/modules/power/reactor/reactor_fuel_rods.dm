@@ -239,7 +239,32 @@
 	if(..())
 		return TRUE
 	fuel_power = 0.3 // Be warned
-	name = "fully grown bananium fuel rod"
+	name = "Fully Grown Bananium Fuel Rod"
 	desc = "A hilarious heavy-duty fuel rod which fissiles a bit slower than it cowardly counterparts. Its greatly grimacing growth stage is now over, and bananium outgrowth hums as if it's blatantly honking bike horns."
 	icon_state = "bananium_used"
 	return FALSE
+
+/obj/effect/fuel_rod
+	layer = ABOVE_OBJ_LAYER
+	name = "Reactor Fuel Rod Receptacle"
+	icon = 'monkestation/icons/obj/machines/reactor/reactor.dmi'
+	icon_state = "fuelrod_eject"
+	pixel_x = -32
+	pixel_y = -32
+
+/obj/effect/fuel_rod/Initialize(mapload)
+	. = ..()
+	var/new_location_x = pick(5,10,15,20) * pick(-1, 1)
+	var/new_location_y = pick(5,10,15,20) * pick(-1, 1)
+	pixel_x += new_location_x
+	pixel_y += new_location_y
+
+/obj/effect/fuel_rod/eject
+	name = "Reactor Fuel Rod Receptacle"
+	icon = 'monkestation/icons/obj/machines/reactor/reactor.dmi'
+	icon_state = "fuelrod_eject"
+
+/obj/effect/fuel_rod/insert
+	name = "Reactor Fuel Rod Receptacle"
+	icon = 'monkestation/icons/obj/machines/reactor/reactor.dmi'
+	icon_state = "fuelrod_insert"

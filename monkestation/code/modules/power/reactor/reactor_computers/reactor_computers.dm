@@ -88,10 +88,18 @@
 			var/obj/item/fuel_rod/rod = reactor.fuel_rods[rod_index]
 			if(!rod)
 				return
-			playsound(src, pick('monkestation/sound/effects/reactor/switch.ogg','monkestation/sound/effects/reactor/switch2.ogg','monkestation/sound/effects/reactor/switch3.ogg'), 100, FALSE)
-			playsound(reactor, 'monkestation/sound/effects/reactor/crane_1.wav', 100, FALSE)
-			rod.forceMove(get_turf(reactor))
+
+			playsound(reactor, pick('monkestation/sound/effects/reactor/switch.ogg','monkestation/sound/effects/reactor/switch2.ogg','monkestation/sound/effects/reactor/switch3.ogg'), 100, FALSE)
+			playsound(reactor, 'monkestation/sound/effects/reactor/crane_1.wav', 100, TRUE)
+			var/obj/effect/fuel_rod/eject/rod_effect = new(get_turf(reactor))
+			rod.moveToNullspace()
 			reactor.fuel_rods.Remove(rod)
+			sleep(3 SECONDS)
+			rod.forceMove(get_turf(rod_effect))
+			playsound(reactor, 'monkestation/sound/effects/reactor/crane_return.ogg', 100, TRUE)
+			playsound(reactor, pick('monkestation/sound/effects/reactor/switch.ogg','monkestation/sound/effects/reactor/switch2.ogg','monkestation/sound/effects/reactor/switch3.ogg'), 100, FALSE)
+			sleep(5 SECONDS)
+			qdel(rod_effect)
 
 /obj/machinery/computer/reactor/wrench_act(mob/living/user, obj/item/I)
 	to_chat(user, span_notice("You start [anchored ? "un" : ""]securing [name]..."))
@@ -111,14 +119,17 @@
 
 //Preset pumps for mappers. You can also set the id tags yourself.
 /obj/machinery/atmospherics/components/binary/pump/reactor_input
+	name = "Coolant Input"
 	pump_id = "reactor_input"
 	frequency = FREQ_REACTOR_CONTROL
 
 /obj/machinery/atmospherics/components/binary/pump/reactor_output
+	name = "Reactor Output"
 	pump_id = "reactor_output"
 	frequency = FREQ_REACTOR_CONTROL
 
 /obj/machinery/atmospherics/components/binary/pump/reactor_moderator
+	name = "Moderator Input"
 	pump_id = "reactor_moderator"
 	frequency = FREQ_REACTOR_CONTROL
 

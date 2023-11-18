@@ -16,7 +16,7 @@
 			grilled_item.AddElement(/datum/element/grilled_item, grill_time)
 		UnregisterSignal(grilled_item, COMSIG_ITEM_GRILLED)
 		switch(get_temperature_percent())
-			if(10 to 60)
+			if(10 to 50)
 				grilled_item.name = "grilled [initial(grilled_item.name)]"
 				grilled_item.desc = "[initial(grilled_item.desc)] It's been grilled over a nuclear reactor."
 			if(60 to 80)

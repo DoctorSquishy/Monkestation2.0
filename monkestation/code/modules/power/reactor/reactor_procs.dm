@@ -26,8 +26,8 @@
 	if(meltdown_alarm)
 		QDEL_NULL(meltdown_alarm)
 	if(fuel_rods.len <= 1)
-		playsound(loc, 'monkestation/sound/effects/reactor/switch.ogg', 100, TRUE)
-		radio.talk_into(src, "Insufficient Fuel Rod Count. Unable to reach sustainable fission chain reaction." , engi_channel)
+		playsound(src, 'monkestation/sound/effects/reactor/switch.ogg', 100, TRUE)
+		radio.talk_into(src, "Insufficient Fuel Rod Count. Unable to reach sustainable fission chain reaction. REACTOR SHUTDOWN INITIATED." , engi_channel)
 	else
 		radio.talk_into(src, "REACTOR SHUTDOWN INITIATED at [pressure] kPa and [temperature] K." , engi_channel)
 	investigate_log("Reactor shutdown at [pressure] kPa and [temperature] K.", INVESTIGATE_ENGINE)

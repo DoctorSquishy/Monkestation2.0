@@ -280,7 +280,7 @@
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/crowbar_act(mob/living/user, obj/item/tool)
 	if(slagged)
 		to_chat(user, span_warning("The fuel rods have melted into a radioactive lump."))
-	var/removal_time = 5 SECONDS
+	var/removal_time = 6 SECONDS
 	if(temperature > REACTOR_TEMPERATURE_OPERATING)
 		if(istype(tool, /obj/item/crowbar/power)) // Snatch the reactor from the jaws of death!
 			removal_time *= 2

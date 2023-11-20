@@ -54,20 +54,11 @@
 	reactor.Shake(1, 1, 2 SECONDS)
 	playsound(reactor, 'sound/machines/clockcult/steam_whoosh.ogg', 100, TRUE)
 
-	var/datum/gas_mixture/coolant_input = reactor.airs[1]
-	var/datum/gas_mixture/moderator_input = reactor.airs[2]
 	var/datum/gas_mixture/coolant_output = reactor.airs[3]
 	var/datum/gas_mixture/reactor_env = reactor_turf.return_air()
+	var/datum/gas_mixture/gas_leak = coolant_output?.remove_ratio(0.01) || new()
 
-	coolant_input = coolant_input?.remove_ratio(0.01)
-	reactor_env.merge(coolant_input)
-
-	moderator_input = moderator_input?.remove_ratio(0.01)
-	reactor_env.merge(moderator_input)
-
-	coolant_output = coolant_output?.remove_ratio(0.01)
-	reactor_env.merge(coolant_output)
-
+	reactor_env.merge(gas_leak)
 	reactor.air_update_turf(FALSE, FALSE)
 
 // Leak all the gas from the pipes

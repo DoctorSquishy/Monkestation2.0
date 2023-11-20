@@ -180,6 +180,9 @@
 	var/times_lost = 0
 	for(var/i in 1 to device_type)
 		var/datum/gas_mixture/air = airs[i]
+		if(!air.temperature) //MONKESTATION EDIT: Prevents division by zero on empty air nodes
+			air.temperature = TCMB
+			continue
 		lost += pressures*environment.volume/(air.temperature * R_IDEAL_GAS_EQUATION)
 		times_lost++
 	var/shared_loss = lost/times_lost

@@ -25,8 +25,12 @@
 		QDEL_NULL(reactor_hum)
 	if(meltdown_alarm)
 		QDEL_NULL(meltdown_alarm)
+	if(fuel_rods.len <= 1)
+		playsound(loc, 'monkestation/sound/effects/reactor/switch.ogg', 100, TRUE)
+		radio.talk_into(src, "Insufficient Fuel Rod Count. Unable to reach sustainable fission chain reaction." , engi_channel)
+	else
+		radio.talk_into(src, "REACTOR SHUTDOWN INITIATED at [pressure] kPa and [temperature] K." , engi_channel)
 	investigate_log("Reactor shutdown at [pressure] kPa and [temperature] K.", INVESTIGATE_ENGINE)
-	radio.talk_into(src, "REACTOR SHUTDOWN INITIATED at [pressure] kPa and [temperature] K." , engi_channel)
 	on = FALSE
 	disable_process = REACTOR_PROCESS_DISABLED
 	update_appearance()
@@ -59,6 +63,35 @@
 		sleep(5 SECONDS)
 		qdel(rod_effect)
 	return TRUE
+
+//Remove fuel rod
+/obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/try_eject_fuel(obj/item/fuel_rod/rod, mob/user)
+	if(!rod)
+		return FALSE
+	playsound(src, 'monkestation/sound/effects/reactor/switch2.ogg', 100, TRUE)
+	playsound(src, 'monkestation/sound/effects/reactor/crane_1.wav', 100, TRUE)
+	var/obj/effect/fuel_rod/eject/rod_effect = new(get_turf(src))
+	rod.moveToNullspace()
+	fuel_rods.Remove(rod)
+	sleep(3 SECONDS)
+	rod.forceMove(get_turf(src))
+	playsound(src, 'monkestation/sound/effects/reactor/crane_return.ogg', 100, TRUE)
+	playsound(src, pick('monkestation/sound/effects/reactor/switch.ogg','monkestation/sound/effects/reactor/switch2.ogg','monkestation/sound/effects/reactor/switch3.ogg'), 100, FALSE)
+	sleep(5 SECONDS)
+	qdel(rod_effect)
+
+// High pressure rod removal is dangerous
+/obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/rod_removal_gas(mob/user)
+	var/datum/gas_mixture/coolant_input = airs[COOLANT_INPUT_GATE]
+	var/datum/gas_mixture/moderator_input = airs[MODERATOR_INPUT_GATE]
+	var/datum/gas_mixture/coolant_output = airs[COOLANT_OUTPUT_GATE]
+	var/datum/gas_mixture/reactor_env = src.return_air()
+	var/pressure_difference = (coolant_input.return_pressure() + moderator_input.return_pressure() + coolant_output.return_pressure()) - reactor_env.return_pressure()
+	if(pressure_difference > 2 * ONE_ATMOSPHERE)
+		src.Shake(1, 1, 2 SECONDS)
+		playsound(src, 'sound/machines/clockcult/steam_whoosh.ogg', 100, TRUE)
+		unsafe_pressure_release(user, pressure_difference)
+		air_update_turf(FALSE, FALSE)
 
 // All the calculate procs should only update variables
 // Move the actual real-world effects to [/obj/machinery/atmospherics/components/trinary/nuclear_reactor/process_atmos]
@@ -135,14 +168,11 @@
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/calculate_criticality()
 	var/fuel_power = 0 //So that you can't magically generate K with your control rods.
 	K += gas_heat_mod
-	if(!has_fuel())
-		shutdown()
-	else
-		for(var/obj/item/fuel_rod/rod in fuel_rods)
-			K += rod.fuel_power
-			fuel_power += rod.fuel_power
-			rod.deplete(0.035 + gas_depletion_mod)
-		gas_radioactivity_mod += fuel_power
+	for(var/obj/item/fuel_rod/rod in fuel_rods)
+		K += rod.fuel_power
+		fuel_power += rod.fuel_power
+		rod.deplete(0.015 + gas_depletion_mod)
+	gas_radioactivity_mod += fuel_power
 
 	// Firstly, find the difference between the two numbers.
 	var/difference = abs(K - desired_k)
@@ -313,14 +343,13 @@
 
 // The higher this number, the faster low integrity will drop threshold
 #define INTEGRITY_EXPONENTIAL_DEGREE 2
-#define RADIATION_CHANCE_AT_FULL_INTEGRITY 0.03
-#define RADIATION_CHANCE_AT_ZERO_INTEGRITY 0.4
+#define RADIATION_CHANCE_AT_FULL_INTEGRITY 0.05
+#define RADIATION_CHANCE_AT_ZERO_INTEGRITY 0.5
 
 //Calculates radiation levels that emit from the reactor
 //Emits low radiation under normal operating conditions with full integrity
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/emit_radiation(seconds_per_tick)
 	// As heat goes up, rads go up.
-	// A standard N2 SM seems to produce a value of around 1,500.
 	var/power_factor = min(temperature, MAX_ACCEPTED_HEAT_OUTPUT)
 
 	var/integrity = 1 - CLAMP01(damage / explosion_point)
@@ -340,37 +369,29 @@
 	// Calculating chance is done entirely on integrity, so that actively damaged reactors feel more dangerous
 	var/chance = (CHANCE_EQUATION_SLOPE * (1 - integrity)) + RADIATION_CHANCE_AT_FULL_INTEGRITY
 	var/rad_intensity = (gas_radioactivity_mod*K*temperature*has_fuel()/(REACTOR_MAX_CRITICALITY*REACTOR_MAX_FUEL_RODS))
-
+	var/rad_range = (rad_intensity/4)
 	radiation_pulse(
 		src,
-		max_range = (4 + gas_radioactivity_mod),
+		max_range = rad_range,
 		threshold = threshold,
 		chance = chance * 100,
 		intensity = rad_intensity
 	)
+
+	//Emit Rad Particles
+	if(integrity < 0.95) //
+		var/particle_chance = min(gas_radioactivity_mod, 1000)
+		while(particle_chance >= 200)
+			fire_nuclear_particle()
+			particle_chance -= 200
+		if(prob(particle_chance))
+			fire_nuclear_particle()
 
 #undef MAX_ACCEPTED_HEAT_OUTPUT
 #undef THRESHOLD_EQUATION_SLOPE
 #undef INTEGRITY_EXPONENTIAL_DEGREE
 #undef RADIATION_CHANCE_AT_FULL_INTEGRITY
 #undef RADIATION_CHANCE_AT_ZERO_INTEGRITY
-
-// Seems some gas connections are leaking
-/obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/rod_removal_gas()
-	playsound(src, 'sound/machines/clockcult/steam_whoosh.ogg', 100, TRUE)
-
-	var/datum/gas_mixture/coolant_input = airs[1]
-	var/datum/gas_mixture/moderator_input = airs[2]
-	var/datum/gas_mixture/reactor_env = src.return_air()
-
-	var/datum/gas_mixture/reactor_leak = coolant_input*0.01 + moderator_input*0.01
-	coolant_input = coolant_input?.remove_ratio(0.01)
-	moderator_input = moderator_input?.remove_ratio(0.01)
-
-	reactor_env.merge(reactor_leak)
-
-	src.air_update_turf(FALSE, FALSE)
-
 
 /**
  * Count down, spout some messages, and then execute the meltdown itself.

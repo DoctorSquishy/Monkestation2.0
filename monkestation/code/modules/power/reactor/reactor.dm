@@ -290,24 +290,24 @@
 	if(!has_fuel())
 		to_chat(user, span_notice("The reactor has no fuel rods!"))
 		return TRUE
-
-	var/obj/item/fuel_rod/rod = tgui_input_list(usr, "Select a fuel rod to remove", "Fuel Rods", fuel_rods)
+	var/obj/item/fuel_rod/rod = tgui_input_list(usr, "Select a fuel rod to manually remove", "Fuel Rods", fuel_rods)
+	if(pressure > ONE_ATMOSPHERE)
+		to_chat(user, span_warning("The [src] vessel creaks, as a gush of air blows in your face... maybe you should reconsider?"))
+		playsound(src, 'sound/machines/airlock_alien_prying.ogg', 100, TRUE)
 	if(rod && istype(rod) && tool.use_tool(src, user, removal_time))
-		if(temperature > REACTOR_TEMPERATURE_OPERATING)
-			rod_removal_gas()
-		user.rad_act(rod.fuel_power * 1000)
-		playsound(src, 'monkestation/sound/effects/reactor/switch2.ogg', 100, TRUE)
-		playsound(src, 'monkestation/sound/effects/reactor/crane_1.wav', 100, TRUE)
-		var/obj/effect/fuel_rod/eject/rod_effect = new(get_turf(src))
-		rod.moveToNullspace()
-		fuel_rods.Remove(rod)
-		sleep(3 SECONDS)
-		if(!user.put_in_hands(rod))
-			rod.forceMove(user.loc)
-		playsound(src, 'monkestation/sound/effects/reactor/crane_return.ogg', 100, TRUE)
-		playsound(src, pick('monkestation/sound/effects/reactor/switch.ogg','monkestation/sound/effects/reactor/switch2.ogg','monkestation/sound/effects/reactor/switch3.ogg'), 100, FALSE)
-		sleep(5 SECONDS)
-		qdel(rod_effect)
+		user.visible_message( \
+		"[user] pries open the fuel rod receptacle and pulls it up.", \
+		span_notice("You pry open the fuel rod receptacle, and pull it up"), \
+		span_hear("You hear metal creaking."))
+		if(pressure > ONE_ATMOSPHERE)
+			if(fuel_rods.len <= 1)
+				shut_down()
+			rod_removal_gas(user)
+			user.rad_act(rod.fuel_power * 1000)
+			try_eject_fuel(rod, user)
+		else
+			user.rad_act(rod.fuel_power * 1000)
+			try_eject_fuel(rod, user)
 	return TRUE
 
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/welder_act(mob/living/user, obj/item/tool)
@@ -363,7 +363,9 @@
 	// PRELIMINARIES
 	if(disable_process != REACTOR_PROCESS_ENABLED || !on )
 		return
-
+	if(fuel_rods.len <= 1)
+		shut_down()
+		return
 	update_parents() //Make absolutely sure that pipe connections are updated
 	/// Set pipe inputs and outputs
 	var/datum/gas_mixture/coolant_input = airs[COOLANT_INPUT_GATE]
@@ -374,10 +376,10 @@
 	gas_absorption_effectiveness = gas_absorption_constant
 
 	// MODERATOR GASSES
-	if(moderator_input > 0)
+	if(moderator_input)
 		moderator_gasmix = moderator_input?.remove_ratio(gas_absorption_constant) || new()
 		moderator_gasmix.volume = (moderator_input?.volume || CELL_VOLUME) * gas_absorption_constant // To match the pressure
-		calculate_moderators() //updates moderator variables
+		calculate_moderators()
 	waste_multiplier_factors = calculate_waste_multiplier()
 	var/control_bonus = gas_control_mod
 	control_rod_effectiveness = initial(control_rod_effectiveness) + control_bonus
@@ -401,29 +403,24 @@
 	// WASTE GASSES + EXTRA EFFECTS
 	// Extra effects should always fire after the compositions are all finished
 	// Handles Waste Gas and Extra Effects such as with Healium repairing reactor integrity
-	for (var/gas_path in moderator_gasmix.gases)
-		var/datum/reactor_gas/reactor_gas = GLOB.reactor_gas_behavior[gas_path]
-		reactor_gas?.extra_effects(src)
-	moderator_gasmix.temperature += (waste_multiplier * K)
-	moderator_gasmix.garbage_collect() //recommended after using assert_gasses in extra effects
+	if(moderator_gasmix)
+		for (var/gas_path in moderator_gasmix.gases)
+			var/datum/reactor_gas/reactor_gas = GLOB.reactor_gas_behavior[gas_path]
+			reactor_gas?.extra_effects(src)
+		moderator_gasmix.temperature += (waste_multiplier * K)
+		moderator_gasmix.garbage_collect() //recommended after using assert_gasses in extra effects
 
 	// REACTOR TEMPERATURE
 	calculate_reactor_temp()
 
+	// GAS OUTPUT
 	// Higher Pressured inputs means faster flow, basically limited to your pipe setup for output
 	moderator_gasmix.pump_gas_to(coolant_output, moderator_gasmix.return_pressure())
 	coolant_input.pump_gas_to(coolant_output, coolant_input.return_pressure())
-
 	last_output_temperature = coolant_output.return_temperature()
 	pressure = coolant_output.return_pressure()
 
 	// RADIATION
-	var/particle_chance = min(gas_radioactivity_mod, 1000)
-	while(particle_chance >= 100)
-		fire_nuclear_particle()
-		particle_chance -= 100
-	if(prob(particle_chance))
-		fire_nuclear_particle()
 	emit_radiation(seconds_per_tick)
 
 	// EXTRA BEHAVIOUR

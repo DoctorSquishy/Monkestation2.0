@@ -8,7 +8,7 @@
 	extended_desc = "Advanced Gas-Cooled Nuclear Reactor Monitoring System, connects to calibrated sensors to provide information on the status of nuclear reactors."
 	requires_ntnet = TRUE
 	transfer_access = list(ACCESS_CONSTRUCTION)
-	size = 5
+	size = 1 // So it doesn't have issues being added to tablets and data disks
 	tgui_id = "NtosReactor"
 	program_icon = "radiation"
 	alert_able = TRUE

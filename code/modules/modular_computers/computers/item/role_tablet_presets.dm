@@ -69,7 +69,6 @@
 		/datum/computer_file/program/atmosscan,
 		/datum/computer_file/program/alarm_monitor,
 		/datum/computer_file/program/supermatter_monitor,
-		/datum/computer_file/program/reactor_monitor, // MONKESTAION EDIT
 	)
 
 /obj/item/modular_computer/pda/heads/cmo
@@ -158,7 +157,6 @@
 	greyscale_colors = "#D99A2E#69DBF3#E3DF3D"
 	starting_programs = list(
 		/datum/computer_file/program/supermatter_monitor,
-		/datum/computer_file/program/reactor_monitor, // MONKESTAION EDIT
 	)
 
 /obj/item/modular_computer/pda/atmos

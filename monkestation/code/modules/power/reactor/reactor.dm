@@ -201,6 +201,10 @@
 	if(!moveable)
 		move_resist = MOVE_FORCE_OVERPOWERING // Avoid being moved by statues or other memes
 
+/obj/machinery/atmospherics/components/trinary/nuclear_reactor/LateInitialize()
+	. = ..()
+	upload_reactor_monitor()
+
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/Destroy()
 	SSair.stop_processing_machine(src)
 	color = null

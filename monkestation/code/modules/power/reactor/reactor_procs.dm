@@ -1,7 +1,38 @@
+// Upload Reactor Programs to station
+//// If this causes unforeseen issues go back, simply add the program like the sm_monitor instead
+/obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/upload_reactor_monitor()
+	// Add to starting program lists for midround and late Initialize
+	for(var/obj/machinery/modular_computer/console/preset/engineering/engie_console)
+		engie_console.starting_programs += /datum/computer_file/program/reactor_monitor
+	for(var/obj/item/modular_computer/pda/heads/ce/ce_pda)
+		ce_pda.starting_programs += /datum/computer_file/program/reactor_monitor
+	for(var/obj/item/modular_computer/pda/engineering/engie_pda)
+		engie_pda.starting_programs += /datum/computer_file/program/reactor_monitor
+	for(var/obj/item/computer_disk/command/ce/ce_disk)
+		ce_disk.starting_programs += /datum/computer_file/program/reactor_monitor
+	for(var/obj/item/computer_disk/engineering/engie_disk)
+		engie_disk.starting_programs += /datum/computer_file/program/reactor_monitor
+
+	// Add to current existing machines
+	// Add to engineering computers
+	for(var/obj/machinery/modular_computer/console/preset/engineering/engie_console)
+		engie_console.cpu.store_file(new /datum/computer_file/program/reactor_monitor)
+	// Add to PDAs
+	for(var/obj/item/modular_computer/pda/heads/ce/ce_pda)
+		ce_pda.store_file(new /datum/computer_file/program/reactor_monitor)
+	for(var/obj/item/modular_computer/pda/engineering/engie_pda)
+		engie_pda.store_file(new /datum/computer_file/program/reactor_monitor)
+	// Add to computer disks
+	for(var/obj/item/computer_disk/command/ce/ce_disk)
+		ce_disk.add_file(new /datum/computer_file/program/reactor_monitor)
+	for(var/obj/item/computer_disk/engineering/engie_disk)
+		engie_disk.add_file(new /datum/computer_file/program/reactor_monitor)
+
 //Start up the reactor, enable reactor hum
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/start_up()
 	if(slagged)
 		return //Clear that slag and dispose of the waste
+	upload_reactor_monitor()
 	SSair.start_processing_machine(src)
 	desired_k = 1
 	on = TRUE

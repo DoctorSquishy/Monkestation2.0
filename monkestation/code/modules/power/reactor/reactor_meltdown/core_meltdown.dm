@@ -25,12 +25,12 @@
 /datum/reactor_meltdown/core_meltdown/meltdown_now(obj/machinery/atmospherics/components/trinary/nuclear_reactor/reactor)
 	message_admins("Reactor [reactor] at [ADMIN_VERBOSEJMP(reactor)] triggered a reactor core meltdown.")
 	reactor.investigate_log("triggered a reactor core meltdown.", INVESTIGATE_ENGINE)
-	playsound('monkestation/sound/effects/reactor/meltdown.ogg', 100, extrarange=100, pressure_affected=FALSE, ignore_walls=TRUE)
+	playsound(reactor, 'monkestation/sound/effects/reactor/meltdown.ogg', 100, extrarange=100, pressure_affected=FALSE, ignore_walls=TRUE)
 
 	effect_irradiate(reactor)
 	effect_nuclear_particles(reactor)
 	effect_emp(reactor)
-	effect_explosion(reactor)
+//	effect_explosion(reactor)
 	effect_corium_meltthrough(reactor)
 
 	return ..()

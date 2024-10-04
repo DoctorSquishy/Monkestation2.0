@@ -16,12 +16,8 @@
 	var/datum/lazy_template/virtual_domain/generated_domain
 	/// The loaded safehouse, map_template/safehouse
 	var/datum/map_template/safehouse/generated_safehouse
-	/// The connected console
-	var/datum/weakref/console_ref
 	/// If the current domain was a random selection
 	var/domain_randomized = FALSE
-	/// If any threats were spawned, adds to rewards
-	var/domain_threats = 0
 	/// Prevents multiple user actions. Handled by loading domains and cooldowns
 	var/is_ready = TRUE
 	/// List of available domains
@@ -43,7 +39,7 @@
 	/// Changes how much info is available on the domain
 	var/scanner_tier = 1
 	/// Length of time it takes for the server to cool down after resetting. Here to give runners downtime so their faces don't get stuck like that
-	var/server_cooldown_time = 3 MINUTES
+	var/server_cooldown_time = 90 SECONDS //MONKESTATION EDIT
 	/// Applies bonuses to rewards etc
 	var/servo_bonus = 0
 	/// The turfs we can place a hololadder on.
@@ -57,18 +53,15 @@
 /obj/machinery/quantum_server/LateInitialize()
 	. = ..()
 
-	if(isnull(console_ref))
-		find_console()
-
 	radio = new(src)
-	radio.set_frequency(FREQ_SUPPLY)
+	radio.set_frequency(FREQ_SECURITY) //MONKESTATION EDIT
 	radio.subspace_transmission = TRUE
 	radio.canhear_range = 0
 	radio.recalculateChannels()
 
 	RegisterSignals(src, list(COMSIG_MACHINERY_BROKEN, COMSIG_MACHINERY_POWER_LOST), PROC_REF(on_broken))
-	RegisterSignal(src, COMSIG_PARENT_QDELETING, PROC_REF(on_delete))
-	RegisterSignal(src, COMSIG_PARENT_EXAMINE, PROC_REF(on_examine))
+	RegisterSignal(src, COMSIG_QDELETING, PROC_REF(on_delete))
+	RegisterSignal(src, COMSIG_ATOM_EXAMINE, PROC_REF(on_examine))
 	RegisterSignal(src, COMSIG_BITRUNNER_SPAWN_GLITCH, PROC_REF(on_threat_created))
 
 	// This further gets sorted in the client by cost so it's random and grouped
@@ -147,4 +140,3 @@
 
 	servo_bonus = servo_rating
 
-	SEND_SIGNAL(src, COMSIG_BITRUNNER_SERVER_UPGRADED, servo_rating)

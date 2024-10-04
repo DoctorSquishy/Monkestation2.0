@@ -7,6 +7,9 @@
 	name = "sigil"
 	desc = "It's a sigil that does something."
 	max_integrity = 10
+	break_sound = null
+	debris = null
+	break_message = "The sigil is dispelled."
 	icon = 'monkestation/icons/obj/clock_cult/clockwork_effects.dmi'
 	icon_state = "sigilvitality"
 	density = FALSE
@@ -50,7 +53,8 @@
 
 /obj/structure/destructible/clockwork/sigil/attack_hand(mob/user)
 	. = ..()
-	dispel()
+	if(dispel_check(user))
+		dispel()
 
 
 /// For trap sigils and similar; applies effects when someone/something walks over
@@ -135,6 +139,10 @@
 /obj/structure/destructible/clockwork/sigil/proc/dispel()
 	animate(src, transform = matrix() * 1.5, alpha = 0, time = 3)
 	QDEL_IN(src, 0.3 SECONDS)
+
+/// Put any addtional checks you want to do before dispelling here
+/obj/structure/destructible/clockwork/sigil/proc/dispel_check(mob/user)
+	. = TRUE
 
 #undef SIGIL_INVOCATION_ALPHA
 #undef SIGIL_INVOKED_ALPHA

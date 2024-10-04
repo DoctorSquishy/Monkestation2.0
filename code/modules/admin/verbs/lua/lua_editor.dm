@@ -29,7 +29,7 @@
 		ui.set_autoupdate(FALSE)
 		ui.open()
 
-/datum/lua_editor/Destroy(force, ...)
+/datum/lua_editor/Destroy(force)
 	. = ..()
 	if(current_state)
 		LAZYREMOVEASSOC(SSlua.editors, text_ref(current_state), src)
@@ -103,8 +103,13 @@
 	. = ..()
 	if(.)
 		return
-	if(!check_rights_for(usr.client, R_DEBUG))
+	if(!check_rights_for(usr.client, R_ADMIN))
 		return
+	if(action == "runCodeFile")
+		params["code"] = file2text(input(usr, "Input File") as null|file)
+		if(isnull(params["code"]))
+			return
+		action = "runCode"
 	switch(action)
 		if("newState")
 			var/state_name = params["name"]
@@ -126,6 +131,7 @@
 			return TRUE
 		if("runCode")
 			var/code = params["code"]
+			current_state.ckey_last_runner = usr.ckey
 			var/result = current_state.load_script(code)
 			var/index_with_result = current_state.log_result(result)
 			message_admins("[key_name(usr)] executed [length(code)] bytes of lua code. [ADMIN_LUAVIEW_CHUNK(current_state, index_with_result)]")
@@ -230,7 +236,7 @@
 /client/proc/open_lua_editor()
 	set name = "Open Lua Editor"
 	set category = "Debug"
-	if(!check_rights_for(src, R_DEBUG))
+	if(!check_rights_for(src, R_ADMIN))
 		return
 	var/datum/lua_editor/editor = new()
 	editor.ui_interact(usr)

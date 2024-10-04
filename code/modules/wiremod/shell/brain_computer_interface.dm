@@ -67,13 +67,14 @@
 
 /obj/item/circuit_component/equipment_action/bci/update_action()
 	bci_action.name = button_name.value
-	bci_action.button_icon_state = "bci_[replacetextEx(lowertext(icon_options.value), " ", "_")]"
+	// Change nanite -> bci if we get a set of bci action icons instead of nanite action icons
+	bci_action.button_icon_state = "nanite_[replacetextEx(lowertext(icon_options.value), " ", "_")]"
 
 /datum/action/innate/bci_action
 	name = "Action"
 	button_icon = 'icons/mob/actions/actions_items.dmi'
 	check_flags = AB_CHECK_CONSCIOUS
-	button_icon_state = "bci_power"
+	button_icon_state = "nanite_power"
 
 	var/obj/item/circuit_component/equipment_action/bci/circuit_component
 
@@ -178,12 +179,12 @@
 /obj/item/circuit_component/bci_core/proc/on_organ_implanted(datum/source, mob/living/carbon/owner)
 	SIGNAL_HANDLER
 
-	update_charge_action()
-
 	user_port.set_output(owner)
 	user = WEAKREF(owner)
 
-	RegisterSignal(owner, COMSIG_PARENT_EXAMINE, PROC_REF(on_examine))
+	update_charge_action()
+
+	RegisterSignal(owner, COMSIG_ATOM_EXAMINE, PROC_REF(on_examine))
 	RegisterSignal(owner, COMSIG_PROCESS_BORGCHARGER_OCCUPANT, PROC_REF(on_borg_charge))
 	RegisterSignal(owner, COMSIG_LIVING_ELECTROCUTE_ACT, PROC_REF(on_electrocute))
 
@@ -194,7 +195,7 @@
 	user = null
 
 	UnregisterSignal(owner, list(
-		COMSIG_PARENT_EXAMINE,
+		COMSIG_ATOM_EXAMINE,
 		COMSIG_PROCESS_BORGCHARGER_OCCUPANT,
 		COMSIG_LIVING_ELECTROCUTE_ACT,
 	))

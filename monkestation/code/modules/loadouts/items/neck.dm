@@ -90,6 +90,11 @@ GLOBAL_LIST_INIT(loadout_necks, generate_loadout_items(/datum/loadout_item/neck)
 	name = "Infinity Scarf"
 	item_path = /obj/item/clothing/neck/infinity_scarf
 
+/datum/loadout_item/neck/ascot
+	name = "Ascot"
+	item_path = /obj/item/clothing/neck/ascot
+	requires_purchase = FALSE
+
 /*
 *	NECKTIES
 */
@@ -132,13 +137,63 @@ GLOBAL_LIST_INIT(loadout_necks, generate_loadout_items(/datum/loadout_item/neck)
 	name = "Maid Neck Cover"
 	item_path = /obj/item/clothing/neck/maid
 
+/datum/loadout_item/neck/bowtie_collar
+	name = "Colorable Bowtie Collar"
+	item_path = /obj/item/clothing/neck/tie/bunnytie/tied
+
 /datum/loadout_item/neck/boatcloak
+
 	name = "Boat cloak"
 	item_path = /obj/item/clothing/neck/boatcloak
+
+/datum/loadout_item/neck/ranger_poncho
+	name = "Ranger Poncho"
+	item_path = /obj/item/clothing/neck/ranger_poncho
 
 /datum/loadout_item/neck/polycloak
 	name = "Poly cloak"
 	item_path = /obj/item/clothing/neck/polycloak
+
+
+/datum/loadout_item/neck/trans
+	name = "Trans Pride Cloak"
+	item_path = /obj/item/clothing/neck/trans
+
+/datum/loadout_item/neck/pan
+	name = "Pansexual Pride Cloak"
+	item_path = /obj/item/clothing/neck/pan
+
+/datum/loadout_item/neck/les
+	name = "Lesbian Pride Cloak"
+	item_path = /obj/item/clothing/neck/les
+
+/datum/loadout_item/neck/intersex
+	name = "Intersex Pride Cloak"
+	item_path = /obj/item/clothing/neck/intersex
+
+/datum/loadout_item/neck/gay
+	name = "Gay Pride Cloak"
+	item_path = /obj/item/clothing/neck/gay
+
+/datum/loadout_item/neck/enby
+	name = "Nonbinary Pride Cloak"
+	item_path = /obj/item/clothing/neck/enby
+
+/datum/loadout_item/neck/bi
+	name = "Bisexual Pride Cloak"
+	item_path = /obj/item/clothing/neck/bi
+
+/datum/loadout_item/neck/aro
+	name = "Aro Pride Cloak"
+	item_path = /obj/item/clothing/neck/aro
+
+/datum/loadout_item/neck/ace
+	name = "Asexual Pride Cloak"
+	item_path = /obj/item/clothing/neck/ace
+
+/datum/loadout_item/neck/rainbow_bowtie
+	name = "Rainbow Bow Tie"
+	item_path = /obj/item/clothing/neck/bowtie/rainbow
 
 /*
 *	DONATOR
@@ -157,3 +212,116 @@ GLOBAL_LIST_INIT(loadout_necks, generate_loadout_items(/datum/loadout_item/neck)
 	name = "Hornet Cloak"
 	item_path = /obj/item/clothing/neck/hornetcloak
 
+/// EVERYTHING NOVA RELATED
+
+/datum/loadout_item/neck/gags_cloak //BUYABLE
+	name = "Colourable Cloak"
+	item_path = /obj/item/clothing/neck/cloak/colourable
+
+/datum/loadout_item/neck/gags_veil //BUYABLE
+	name = "Colourable Veil"
+	item_path = /obj/item/clothing/neck/cloak/colourable/veil
+
+/datum/loadout_item/neck/gags_shroud //BUYABLE
+	name = "Colourable Shroud"
+	item_path = /obj/item/clothing/neck/cloak/colourable/shroud
+
+/datum/loadout_item/neck/gags_mantle //BUYABLE
+	name = "Colourable Mantle"
+	item_path = /obj/item/clothing/neck/mantle/recolorable
+
+/datum/loadout_item/neck/long_cape //BUYABLE
+	name = "Long Colourable Cape"
+	item_path = /obj/item/clothing/neck/long_cape
+
+/datum/loadout_item/neck/wide_cape //BUYABLE
+	name = "Wide Colourable Cape"
+	item_path = /obj/item/clothing/neck/wide_cape
+
+/datum/loadout_item/neck/robe_cape //BUYABLE
+	name = "Robed Colourable Cape"
+	item_path = /obj/item/clothing/neck/robe_cape
+
+/datum/loadout_item/neck/maid_neck_cover //BUYABLE
+	name = "Colourable Maid Neck Cover"
+	item_path = /obj/item/clothing/neck/maid_neck_cover
+
+/datum/loadout_item/neck/face_scarf //BUYABLE
+	name = "Colourable Face Scarf"
+	item_path = /obj/item/clothing/neck/face_scarf
+
+/*
+*	MANTLES
+*/
+
+/datum/loadout_item/neck/mantle //BUYABLE
+	name = "Mantle"
+	item_path = /obj/item/clothing/neck/mantle
+
+/datum/loadout_item/neck/mantle_qm
+	name = "Quartermaster's Mantle"
+	item_path = /obj/item/clothing/neck/mantle/qm
+	restricted_roles = list(JOB_QUARTERMASTER)
+	requires_purchase = FALSE
+
+/datum/loadout_item/neck/mantle_hop
+	name = "Head of Personnel's Mantle"
+	item_path = /obj/item/clothing/neck/mantle/hopmantle
+	restricted_roles = list(JOB_HEAD_OF_PERSONNEL)
+	requires_purchase = FALSE
+
+/datum/loadout_item/neck/mantle_cmo
+	name = "Chief Medical Officer's Mantle"
+	item_path = /obj/item/clothing/neck/mantle/cmomantle
+	restricted_roles = list(JOB_CHIEF_MEDICAL_OFFICER)
+	requires_purchase = FALSE
+
+/datum/loadout_item/neck/mantle_rd
+	name = "Research Director's Mantle"
+	item_path = /obj/item/clothing/neck/mantle/rdmantle
+	restricted_roles = list(JOB_RESEARCH_DIRECTOR)
+	requires_purchase = FALSE
+
+/datum/loadout_item/neck/mantle_ce
+	name = "Chief Engineer's Mantle"
+	item_path = /obj/item/clothing/neck/mantle/cemantle
+	restricted_roles = list(JOB_CHIEF_ENGINEER)
+	requires_purchase = FALSE
+
+/datum/loadout_item/neck/mantle_hos
+	name = "Head of Security's Mantle"
+	item_path = /obj/item/clothing/neck/mantle/hosmantle
+	restricted_roles = list(JOB_HEAD_OF_SECURITY)
+	requires_purchase = FALSE
+
+
+/datum/loadout_item/neck/mantle_bs
+	name = "Blueshield's Mantle"
+	item_path = /obj/item/clothing/neck/mantle/bsmantle
+	restricted_roles = list(JOB_BLUESHIELD)
+
+/datum/loadout_item/neck/mantle_cap
+	name = "Captain's Mantle"
+	item_path = /obj/item/clothing/neck/mantle/capmantle
+	restricted_roles = list(JOB_CAPTAIN)
+	requires_purchase = FALSE
+
+/datum/loadout_item/neck/mantle_chap
+	name = "Bishop's Cloak"
+	item_path = /obj/item/clothing/neck/chaplain
+	restricted_roles = list(JOB_CHAPLAIN)
+	requires_purchase = FALSE
+
+/datum/loadout_item/neck/mantle_bchap
+	name = "Bishop's Cloak (Black)"
+	item_path = /obj/item/clothing/neck/chaplain/black
+	restricted_roles = list(JOB_CHAPLAIN)
+	requires_purchase = FALSE
+
+/*
+*	MISC
+*/
+
+/datum/loadout_item/neck/imperial_police_cloak //BUYABLE
+	name = "Imperial Police Cloak"
+	item_path = /obj/item/clothing/neck/cloak/colonial/nri_police

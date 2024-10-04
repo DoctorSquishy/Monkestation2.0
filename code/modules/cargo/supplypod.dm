@@ -76,7 +76,7 @@
 	specialised = TRUE
 	style = STYLE_SYNDICATE
 	bluespace = TRUE
-	explosionSize = list(0,0,1,2)
+	explosionSize = list(0,0,0,0) //monkestation edit: replaced list(0,0,1,2)
 	delays = list(POD_TRANSIT = 25, POD_FALLING = 4, POD_OPENING = 30, POD_LEAVING = 30)
 	reversing = TRUE
 	stay_after_drop = TRUE
@@ -222,6 +222,9 @@
 	stay_after_drop = FALSE
 	holder.pixel_z = initial(holder.pixel_z)
 	holder.alpha = initial(holder.alpha)
+	if (holder != src)
+		contents |= holder.contents
+		qdel(holder)
 	var/shippingLane = GLOB.areas_by_type[/area/centcom/central_command_areas/supplypod/supplypod_temp_holding]
 	forceMove(shippingLane) //Move to the centcom-z-level until the pod_landingzone says we can drop back down again
 	if (!reverse_dropoff_coords) //If we're centcom-launched, the reverse dropoff turf will be a centcom loading bay. If we're an extraction pod, it should be the ninja jail. Thus, this shouldn't ever really happen.
@@ -288,6 +291,8 @@
 	if (style == STYLE_GONDOLA) //Checks if we are supposed to be a gondola pod. If so, create a gondolapod mob, and move this pod to nullspace. I'd like to give a shout out, to my man oranges
 		var/mob/living/simple_animal/pet/gondola/gondolapod/benis = new(turf_underneath, src)
 		benis.contents |= contents //Move the contents of this supplypod into the gondolapod mob.
+		for (var/mob/living/mob_in_pod in benis.contents)
+			mob_in_pod.reset_perspective(null)
 		moveToNullspace()
 		addtimer(CALLBACK(src, PROC_REF(open_pod), benis), delays[POD_OPENING]) //After the opening delay passes, we use the open proc from this supplyprod while referencing the contents of the "holder", in this case the gondolapod mob
 	else if (style == STYLE_SEETHROUGH)
@@ -310,7 +315,7 @@
 		playsound(get_turf(holder), openingSound, soundVolume, FALSE, FALSE) //Special admin sound to play
 	for (var/turf_type in turfs_in_cargo)
 		turf_underneath.PlaceOnTop(turf_type)
-	for (var/cargo in contents)
+	for (var/cargo in holder.contents)
 		var/atom/movable/movable_cargo = cargo
 		movable_cargo.forceMove(turf_underneath)
 	if (!effectQuiet && !openingSound && style != STYLE_SEETHROUGH && !(pod_flags & FIRST_SOUNDS)) //If we aren't being quiet, play the default pod open sound
@@ -389,14 +394,12 @@
 			return FALSE
 		if(istype(obj_to_insert, /obj/effect/supplypod_rubble))
 			return FALSE
-		if((obj_to_insert.comp_lookup && obj_to_insert.comp_lookup[COMSIG_OBJ_HIDE]) && reverse_option_list["Underfloor"])
-			return TRUE
-		else if ((obj_to_insert.comp_lookup && obj_to_insert.comp_lookup[COMSIG_OBJ_HIDE]) && !reverse_option_list["Underfloor"])
-			return FALSE
-		if(isProbablyWallMounted(obj_to_insert) && reverse_option_list["Wallmounted"])
-			return TRUE
-		else if (isProbablyWallMounted(obj_to_insert) && !reverse_option_list["Wallmounted"])
-			return FALSE
+
+		if(HAS_TRAIT(obj_to_insert, TRAIT_UNDERFLOOR))
+			return !!reverse_option_list["Underfloor"]
+		if(isProbablyWallMounted(obj_to_insert))
+			return !!reverse_option_list["Wallmounted"]
+
 		if(!obj_to_insert.anchored && reverse_option_list["Unanchored"])
 			return TRUE
 		if(obj_to_insert.anchored && !ismecha(obj_to_insert) && reverse_option_list["Anchored"]) //Mecha are anchored but there is a separate option for them
@@ -475,13 +478,14 @@
 	vis_contents += glow_effect
 	glow_effect.layer = GASFIRE_LAYER
 	SET_PLANE_EXPLICIT(glow_effect, ABOVE_GAME_PLANE, src)
-	RegisterSignal(glow_effect, COMSIG_PARENT_QDELETING, PROC_REF(remove_glow))
+	RegisterSignal(glow_effect, COMSIG_QDELETING, PROC_REF(remove_glow))
 
 /obj/structure/closet/supplypod/on_changed_z_level(turf/old_turf, turf/new_turf, same_z_layer, notify_contents)
 	. = ..()
 	if(same_z_layer)
 		return
-	SET_PLANE_EXPLICIT(glow_effect, ABOVE_GAME_PLANE, src)
+	if(glow_effect)
+		SET_PLANE_EXPLICIT(glow_effect, ABOVE_GAME_PLANE, src)
 
 /obj/structure/closet/supplypod/proc/endGlow()
 	if(!glow_effect)
@@ -492,7 +496,7 @@
 
 /obj/structure/closet/supplypod/proc/remove_glow()
 	SIGNAL_HANDLER
-	UnregisterSignal(glow_effect, COMSIG_PARENT_QDELETING)
+	UnregisterSignal(glow_effect, COMSIG_QDELETING)
 	vis_contents -= glow_effect
 	glow_effect = null
 
@@ -531,7 +535,7 @@
 /obj/effect/supplypod_smoke/proc/drawSelf(amount)
 	alpha = max(0, 255-(amount*20))
 
-/obj/effect/supplypod_rubble //This is the object that forceMoves the supplypod to it's location
+/obj/effect/supplypod_rubble
 	name = "debris"
 	desc = "A small crater of rubble. Closer inspection reveals the debris to be made primarily of space-grade metal fragments. You're pretty sure that this will disperse before too long."
 	icon = 'icons/obj/supplypods.dmi'

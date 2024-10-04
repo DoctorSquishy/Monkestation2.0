@@ -192,15 +192,6 @@
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
 	liquid_fire_power = 1
 
-	// why, just why
-/datum/reagent/napalm/on_hydroponics_apply(obj/item/seeds/myseed, datum/reagents/chems, obj/machinery/hydroponics/mytray, mob/user)
-	. = ..()
-	if(chems.has_reagent(type, 1))
-		if(!(myseed.resistance_flags & FIRE_PROOF))
-			mytray.adjust_plant_health(-round(chems.get_reagent_amount(type) * 6))
-			mytray.adjust_toxic(round(chems.get_reagent_amount(type) * 7))
-		mytray.adjust_weedlevel(-rand(5,9)) //At least give them a small reward if they bother.
-
 
 /datum/reagent/napalm/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
 	affected_mob.adjust_fire_stacks(1 * REM * seconds_per_tick)
@@ -264,7 +255,7 @@
 	. = ..()
 	if(reac_volume < 5)
 		return
-	for(var/mob/living/simple_animal/slime/exposed_slime in exposed_turf)
+	for(var/mob/living/basic/slime/exposed_slime in exposed_turf)
 		exposed_slime.adjustToxLoss(rand(15,30))
 
 #undef CRYO_SPEED_PREFACTOR

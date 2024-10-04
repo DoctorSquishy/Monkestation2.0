@@ -6,8 +6,6 @@
 	description = "Heavily emps all telecommunication machines, blocking all communication for a while."
 	min_wizard_trigger_potency = 0
 	max_wizard_trigger_potency = 3
-	track = EVENT_TRACK_MODERATE
-	tags = list(TAG_COMMUNAL, TAG_SPOOKY)
 
 /datum/round_event/communications_blackout
 	announce_when = 1
@@ -25,7 +23,7 @@
 		to_chat(A, "<br>[span_warning("<b>[alert]</b>")]<br>")
 
 	if(prob(30) || fake) //most of the time, we don't want an announcement, so as to allow AIs to fake blackouts.
-		priority_announce(alert)
+		priority_announce(alert, "Anomaly Alert")
 
 
 /datum/round_event/communications_blackout/start()

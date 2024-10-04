@@ -8,6 +8,7 @@
 	roundend_category = "vassals"
 	antagpanel_category = "Bloodsucker"
 	job_rank = ROLE_BLOODSUCKER
+	antag_flags = parent_type::antag_flags | FLAG_ANTAG_CAP_IGNORE
 	antag_hud_name = "vassal"
 	show_in_roundend = FALSE
 	hud_icon = 'monkestation/icons/bloodsuckers/bloodsucker_icons.dmi'
@@ -28,6 +29,7 @@
 	. = ..()
 	var/mob/living/current_mob = mob_override || owner.current
 	current_mob.apply_status_effect(/datum/status_effect/agent_pinpointer/vassal_edition)
+	current_mob.clear_mood_event("vampcandle")
 	add_team_hud(current_mob)
 
 /datum/antagonist/vassal/add_team_hud(mob/target)
@@ -73,7 +75,7 @@
 		examine_text += vassal_examine
 
 /datum/antagonist/vassal/on_gain()
-	RegisterSignal(owner.current, COMSIG_PARENT_EXAMINE, PROC_REF(on_examine))
+	RegisterSignal(owner.current, COMSIG_ATOM_EXAMINE, PROC_REF(on_examine))
 	RegisterSignal(SSsunlight, COMSIG_SOL_WARNING_GIVEN, PROC_REF(give_warning))
 	/// Enslave them to their Master
 	if(!master || !istype(master, master))
@@ -97,19 +99,19 @@
 	return ..()
 
 /datum/antagonist/vassal/on_removal()
-	UnregisterSignal(owner.current, COMSIG_PARENT_EXAMINE)
+	UnregisterSignal(owner.current, COMSIG_ATOM_EXAMINE)
 	UnregisterSignal(SSsunlight, COMSIG_SOL_WARNING_GIVEN)
 	//Free them from their Master
-	if(master && master.owner)
+	if(!QDELETED(master?.owner))
 		if(special_type && master.special_vassals[special_type])
 			master.special_vassals[special_type] -= src
 		master.vassals -= src
 		owner.enslaved_to = null
 	//Remove ALL Traits, as long as its from BLOODSUCKER_TRAIT's source.
-	for(var/allstatus_traits in owner.current.status_traits)
+	for(var/allstatus_traits in owner.current._status_traits)
 		REMOVE_TRAIT(owner.current, allstatus_traits, BLOODSUCKER_TRAIT)
 	//Remove Recuperate Power
-	while(powers.len)
+	while(length(powers))
 		var/datum/action/cooldown/bloodsucker/power = pick(powers)
 		powers -= power
 		power.Remove(owner.current)

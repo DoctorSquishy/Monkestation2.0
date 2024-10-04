@@ -39,7 +39,14 @@
 	description = "We need to see how the body functions from the earliest moments. Some cytology experiments will help us gain this understanding."
 	total_requirement = 3
 	max_requirement_per_type = 2
-	possible_types = list(/mob/living/basic/carp, /mob/living/simple_animal/hostile/retaliate/snake, /mob/living/simple_animal/pet/cat, /mob/living/basic/pet/dog/corgi, /mob/living/basic/cow, /mob/living/basic/chicken)
+	possible_types = list(
+		/mob/living/basic/carp,
+		/mob/living/basic/chicken,
+		/mob/living/basic/cow,
+		/mob/living/basic/pet/dog/corgi,
+		/mob/living/basic/snake,
+		/mob/living/simple_animal/pet/cat,
+	)
 
 /datum/experiment/scanning/random/cytology/medium/one
 	name = "Advanced Cytology Scanning Experiment One"
@@ -211,11 +218,9 @@
 	required_atoms = list(
 		/obj/machinery/autolathe = 1,
 		/obj/machinery/rnd/production/circuit_imprinter/department/science = 1,
-		/obj/machinery/monkey_recycler = 1,
-		/obj/machinery/processor/slime = 1,
 		/obj/machinery/processor = 2,
 		/obj/machinery/reagentgrinder = 2,
-		/obj/machinery/hydroponics = 2,
+		/obj/machinery/growing/tray = 2,
 		/obj/machinery/biogenerator = 3,
 		/obj/machinery/gibber = 3,
 		/obj/machinery/chem_master = 3,
@@ -242,7 +247,6 @@
 	required_points = 10
 	required_atoms = list(
 		/obj/machinery/mecha_part_fabricator = 1,
-		/obj/machinery/rnd/experimentor = 1,
 		/obj/machinery/dna_scannernew = 1,
 		/obj/machinery/microwave = 2,
 		/obj/machinery/deepfryer = 2,
@@ -273,7 +277,6 @@
 	required_points = 6
 	required_atoms = list(
 		/obj/machinery/dna_scannernew = 1,
-		/obj/machinery/rnd/experimentor = 1,
 		/obj/machinery/medical_kiosk = 2,
 		/obj/machinery/piratepad/civilian = 2,
 	)
@@ -299,7 +302,6 @@
 	required_atoms = list(
 		/obj/machinery/mecha_part_fabricator = 1,
 		/obj/machinery/microwave = 1,
-		/obj/machinery/rnd/experimentor = 1,
 		/obj/machinery/atmospherics/components/unary/thermomachine/freezer = 2,
 		/obj/machinery/power/emitter = 2,
 		/obj/machinery/chem_heater = 2,
@@ -316,7 +318,7 @@
 	///Damage percent that each mech needs to be at for a scan to work.
 	var/damage_percent
 
-/datum/experiment/scanning/random/mecha_damage_scan/New()
+/datum/experiment/scanning/random/mecha_damage_scan/New(datum/techweb/techweb)
 	. = ..()
 	damage_percent = rand(15, 95)
 	//updating the description with the damage_percent var set

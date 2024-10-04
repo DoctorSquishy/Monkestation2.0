@@ -13,7 +13,7 @@
 	return
 
 /mob/living/carbon/stamina_stun()
-	if(HAS_TRAIT(src, TRAIT_BATON_RESISTANCE))
+	if(HAS_TRAIT(src, TRAIT_CANT_STAMCRIT))
 		return //baton resistance can't stam crit but can still be non sprinted
 	if(HAS_TRAIT_FROM(src, TRAIT_INCAPACITATED, STAMINA)) //Already in stamcrit
 		return
@@ -31,6 +31,7 @@
 	ADD_TRAIT(src, TRAIT_IMMOBILIZED, STAMINA)
 	ADD_TRAIT(src, TRAIT_FLOORED, STAMINA)
 	filters += FILTER_STAMINACRIT
+	SEND_SIGNAL(src, COMSIG_LIVING_STAMINA_STUN)
 
 	addtimer(CALLBACK(src, PROC_REF(exit_stamina_stun)), STAMINA_STUN_TIME)
 	stamina.pause(STAMINA_STUN_TIME + 2 SECONDS)

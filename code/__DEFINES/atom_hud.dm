@@ -46,10 +46,16 @@
 /// Mech camera HUD
 #define DIAG_CAMERA_HUD "22"
 
+//monkestation edit start
 #define NANITE_HUD "23"
 #define DIAG_NANITE_FULL_HUD "24"
 // for gun permit
 #define PERMIT_HUD "25"
+// for implants to let you see sensor field
+#define SENSOR_HUD	"26"
+// for mood change
+#define MOOD_HUD "27"
+//monkestation edit end
 
 //by default everything in the hud_list of an atom is an image
 //a value in hud_list with one of these will change that behavior
@@ -67,11 +73,13 @@
 #define DATA_HUD_SENTIENT_DISEASE 8
 #define DATA_HUD_AI_DETECT 9
 #define DATA_HUD_FAN 10
-#define DATA_HUD_PERMIT 11
+#define DATA_HUD_PERMIT 11 //monkestation edit
+#define DATA_HUD_SENSORS 12 //monkestation edit
+#define DATA_HUD_MOOD 13 //monkestation edit
 
 // Notification action types
 #define NOTIFY_JUMP "jump"
-#define NOTIFY_ATTACK "attack"
+#define NOTIFY_PLAY "play"
 #define NOTIFY_ORBIT "orbit"
 
 /// cooldown for being shown the images for any particular data hud
@@ -84,12 +92,15 @@
 #define SECHUD_UNKNOWN "hudunknown"
 #define SECHUD_CENTCOM "hudcentcom"
 #define SECHUD_SYNDICATE "hudsyndicate"
+#define SECHUD_SYNDICATE_INTERDYNE "hudsyndicateinterdyne"
+#define SECHUD_SYNDICATE_INTERDYNE_HEAD "hudsyndicateinterdynehead"
 
 #define SECHUD_ASSISTANT "hudassistant"
 #define SECHUD_ATMOSPHERIC_TECHNICIAN "hudatmospherictechnician"
 #define SECHUD_BARTENDER "hudbartender"
 #define SECHUD_BITRUNNER "hudbitrunner"
 #define SECHUD_BOTANIST "hudbotanist"
+#define SECHUD_BRIG_PHYSICIAN "hudbrigphysician"
 #define SECHUD_CAPTAIN "hudcaptain"
 #define SECHUD_CARGO_TECHNICIAN "hudcargotechnician"
 #define SECHUD_CHAPLAIN "hudchaplain"

@@ -248,7 +248,7 @@
 
 /datum/chemical_reaction/zombiepowder
 	results = list(/datum/reagent/toxin/zombiepowder = 2)
-	required_reagents = list(/datum/reagent/toxin/carpotoxin = 5, /datum/reagent/medicine/morphine = 5, /datum/reagent/copper = 5)
+	required_reagents = list(/datum/reagent/toxin/carpotoxin = 5, /datum/reagent/medicine/painkiller/morphine = 5, /datum/reagent/copper = 5)
 	mix_message = "The mixture turns into a strange green powder."
 	is_cold_recipe = FALSE
 	required_temp = 100
@@ -307,8 +307,8 @@
 	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_DAMAGING | REACTION_TAG_OTHER
 
 /datum/chemical_reaction/heparin
-	results = list(/datum/reagent/toxin/heparin = 4)
-	required_reagents = list(/datum/reagent/toxin/formaldehyde = 1, /datum/reagent/sodium = 1, /datum/reagent/chlorine = 1, /datum/reagent/lithium = 1)
+	results = list(/datum/reagent/toxin/heparin = 3)
+	required_reagents = list(/datum/reagent/toxin/formaldehyde = 1, /datum/reagent/consumable/salt = 1, /datum/reagent/lithium = 1)
 	mix_message = "<span class='danger'>The mixture thins and loses all color.</span>"
 	is_cold_recipe = FALSE
 	required_temp = 100
@@ -405,3 +405,8 @@
 	purity_min = 0.4
 	reaction_flags = REACTION_PH_VOL_CONSTANT
 	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_DAMAGING | REACTION_TAG_OTHER
+
+/datum/chemical_reaction/radiomagnetic_disruptor // MONKESTATION ADDITION: NANITE REMOVAL CHEM
+	results = list(/datum/reagent/toxin/radiomagnetic_disruptor = 2)
+	required_reagents = list(/datum/reagent/thermite = 1, /datum/reagent/uranium/radium = 1)
+	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_UNIQUE | REACTION_TAG_OTHER

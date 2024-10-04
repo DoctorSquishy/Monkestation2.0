@@ -17,16 +17,9 @@
 	///If not null, overrides the appearance with this sprite accessory datum
 	var/sprite_accessory_override
 
-	/// The savefile_key of the preference this relates to. Used for the preferences UI.
-	var/preference
-	///With what DNA block do we mutate in mutate_feature() ? For genetics
-	var/dna_block
-
 	///Set to EXTERNAL_BEHIND, EXTERNAL_FRONT or EXTERNAL_ADJACENT if you want to draw one of those layers as the object sprite. FALSE to use your own
 	///This will not work if it doesn't have a limb to generate it's icon with
 	var/use_mob_sprite_as_obj_sprite = FALSE
-	///Does this organ have any bodytypes to pass to it's ownerlimb?
-	var/external_bodytypes = NONE
 	///Which flags does a 'modification tool' need to have to restyle us, if it all possible (located in code/_DEFINES/mobs)
 	var/restyle_flags = NONE
 
@@ -99,6 +92,11 @@
 	if(organ_owner)
 		organ_owner.update_body_parts()
 
+
+/obj/item/organ/external/on_remove(mob/living/carbon/organ_owner, special)
+	. = ..()
+	color = bodypart_overlay.draw_color // so a pink felinid doesn't drop a gray tail
+
 ///Transfers the organ to the limb, and to the limb's owner, if it has one.
 /obj/item/organ/external/transfer_to_limb(obj/item/bodypart/bodypart, mob/living/carbon/bodypart_owner)
 	if(owner)
@@ -118,10 +116,11 @@
 	return ..()
 
 /obj/item/organ/external/remove_from_limb()
-	ownerlimb.external_organs -= src
-	ownerlimb.remove_bodypart_overlay(bodypart_overlay)
-	if(ownerlimb.owner && external_bodytypes)
-		ownerlimb.synchronize_bodytypes(ownerlimb.owner)
+	if(!QDELETED(ownerlimb))
+		ownerlimb.external_organs -= src
+		ownerlimb.remove_bodypart_overlay(bodypart_overlay)
+		if(ownerlimb.owner && external_bodytypes)
+			ownerlimb.synchronize_bodytypes(ownerlimb.owner)
 	ownerlimb = null
 	return ..()
 
@@ -221,9 +220,15 @@
 	desc = "Take a closer look at that snout!"
 	icon_state = "snout"
 
+	organ_flags = ORGAN_UNREMOVABLE | ORGAN_EDIBLE
+	visual = TRUE
+	cosmetic_only = TRUE
+
 	zone = BODY_ZONE_HEAD
 	slot = ORGAN_SLOT_EXTERNAL_SNOUT
+	layers = list(BODY_ADJ_LAYER)
 
+	feature_key = "snout"
 	preference = "feature_lizard_snout"
 	external_bodytypes = BODYTYPE_SNOUTED
 

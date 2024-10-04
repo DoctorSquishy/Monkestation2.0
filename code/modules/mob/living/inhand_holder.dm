@@ -67,6 +67,7 @@
 			qdel(src)
 		return FALSE
 	var/mob/living/released_mob = held_mob
+	SEND_SIGNAL(released_mob, COMSIG_MOB_DROPPED, loc, src) // monkestation edit: COMSIG_MOB_DROPPED
 	held_mob = null // stops the held mob from being release()'d twice.
 	if(isliving(loc))
 		var/mob/living/L = loc
@@ -114,11 +115,11 @@
 	desc = "This drone is scared and has curled up into a ball!"
 
 /obj/item/clothing/head/mob_holder/drone/update_visuals(mob/living/L)
-	var/mob/living/simple_animal/drone/D = L
-	if(!D)
+	var/mob/living/basic/drone/drone = L
+	if(!drone)
 		return ..()
 	icon = 'icons/mob/silicon/drone.dmi'
-	icon_state = "[D.visualAppearance]_hat"
+	icon_state = "[drone.visualAppearance]_hat"
 
 /obj/item/clothing/head/mob_holder/destructible
 

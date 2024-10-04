@@ -63,6 +63,8 @@
 		var/list/created_atoms = list()
 		for(var/ritual_item_path in knowledge.required_atoms)
 			var/amount_to_create = knowledge.required_atoms[ritual_item_path]
+			if(islist(ritual_item_path))
+				ritual_item_path = pick(ritual_item_path)
 			for(var/i in 1 to amount_to_create)
 				created_atoms += new ritual_item_path(get_turf(our_heretic))
 
@@ -102,7 +104,7 @@
 		// Finally, we checked all of our resulting atoms and cleaned them up.
 		// The nearby_atoms list should be devoid of any atom/movables now. Let's double-check that.
 		for(var/atom/thing as anything in nearby_atoms)
-			if(!ismovable(thing))
+			if(!ismovable(thing) || istype(thing, /obj/effect/abstract))
 				continue
 
 			// There are atoms around the rune still, and there shouldn't be.

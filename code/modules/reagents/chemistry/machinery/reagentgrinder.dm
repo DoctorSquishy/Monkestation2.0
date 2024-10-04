@@ -1,4 +1,3 @@
-#define MILK_TO_BUTTER_COEFF 15
 
 /obj/machinery/reagentgrinder
 	name = "\improper All-In-One Grinder"
@@ -10,6 +9,7 @@
 	circuit = /obj/item/circuitboard/machine/reagentgrinder
 	pass_flags = PASSTABLE
 	resistance_flags = ACID_PROOF
+	anchored_tabletop_offset = 8
 	var/operating = FALSE
 	var/obj/item/reagent_containers/beaker = null
 	var/limit = 10
@@ -361,5 +361,3 @@
 			var/amount = beaker.reagents.get_reagent_amount(/datum/reagent/consumable/cream)
 			beaker.reagents.remove_reagent(/datum/reagent/consumable/cream, amount)
 			beaker.reagents.add_reagent(/datum/reagent/consumable/whipped_cream, amount)
-
-#undef MILK_TO_BUTTER_COEFF

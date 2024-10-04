@@ -10,7 +10,7 @@
 	righthand_file = 'icons/mob/inhands/equipment/tools_righthand.dmi'
 	w_class = WEIGHT_CLASS_TINY
 	slot_flags = ITEM_SLOT_BELT
-	custom_materials = list(/datum/material/iron = 30, /datum/material/glass = 20)
+	custom_materials = list(/datum/material/iron = SMALL_MATERIAL_AMOUNT*0.3, /datum/material/glass =SMALL_MATERIAL_AMOUNT*0.2)
 
 /obj/item/plant_analyzer/Initialize(mapload)
 	. = ..()
@@ -49,15 +49,20 @@
 	return NONE
 
 /// When we attack something, first - try to scan something we hit with left click. Left-clicking uses scans for stats
-/obj/item/plant_analyzer/pre_attack(atom/target, mob/living/user)
+/obj/item/plant_analyzer/afterattack(atom/target, mob/user, proximity_flag, click_parameters)
 	. = ..()
+	if(!can_see(user, target, 7))
+		return
 	if((user.istate & ISTATE_HARM) || !user.can_read(src))
 		return
 
 	return do_plant_stats_scan(target, user)
 
 /// Same as above, but with right click. Right-clicking scans for chemicals.
-/obj/item/plant_analyzer/pre_attack_secondary(atom/target, mob/living/user)
+/obj/item/plant_analyzer/afterattack_secondary(atom/target, mob/user, proximity_flag, click_parameters)
+	if(!can_see(user, target, 7))
+		return
+
 	if((user.istate & ISTATE_HARM) || !user.can_read(src))
 		return SECONDARY_ATTACK_CONTINUE_CHAIN
 
@@ -73,8 +78,9 @@
  * returns TRUE if we can scan the object, and outputs the message to the USER.
  */
 /obj/item/plant_analyzer/proc/do_plant_stats_scan(atom/scan_target, mob/user)
-	if(istype(scan_target, /obj/machinery/hydroponics))
-		to_chat(user, examine_block(scan_tray_stats(scan_target)))
+	if(scan_target.GetComponent(/datum/component/plant_growing))
+		var/obj/item/seeds/seed = locate(/obj/item/seeds) in scan_target.contents
+		to_chat(user, examine_block(scan_tray_stats(seed, scan_target.GetComponent(/datum/component/plant_growing))))
 		return TRUE
 	if(istype(scan_target, /obj/structure/glowshroom))
 		var/obj/structure/glowshroom/shroom_plant = scan_target
@@ -106,8 +112,9 @@
  * returns TRUE if we can scan the object, and outputs the message to the USER.
  */
 /obj/item/plant_analyzer/proc/do_plant_chem_scan(atom/scan_target, mob/user)
-	if(istype(scan_target, /obj/machinery/hydroponics))
-		to_chat(user, examine_block(scan_tray_chems(scan_target)))
+	if(scan_target.GetComponent(/datum/component/plant_growing))
+		var/obj/item/seeds/seed = locate(/obj/item/seeds) in scan_target.contents
+		to_chat(user, examine_block(scan_tray_chems(scan_target, seed)))
 		return TRUE
 	if(istype(scan_target, /obj/structure/glowshroom))
 		var/obj/structure/glowshroom/shroom_plant = scan_target
@@ -166,24 +173,21 @@
  *
  * Returns the formatted message as text.
  */
-/obj/item/plant_analyzer/proc/scan_tray_stats(obj/machinery/hydroponics/scanned_tray)
+/obj/item/plant_analyzer/proc/scan_tray_stats(obj/item/seeds/seed, datum/component/plant_growing/growing)
 	var/returned_message = ""
-	if(scanned_tray.myseed)
-		returned_message += "[span_bold("[scanned_tray.myseed.plantname]")]"
-		returned_message += "\nPlant Age: [span_notice("[scanned_tray.age]")]"
-		returned_message += "\nPlant Health: [span_notice("[scanned_tray.plant_health]")]"
-		returned_message += scan_plant_stats(scanned_tray.myseed, TRUE)
+	if(seed)
+		var/datum/component/growth_information/info = seed.GetComponent(/datum/component/growth_information)
+		returned_message += "[span_bold("[seed.plantname]")]"
+		returned_message += "\nPlant Age: [span_notice("[info.age]")]"
+		returned_message += "\nPlant Health: [span_notice("[info.health_value]")]"
+		returned_message += scan_plant_stats(seed, TRUE)
 		returned_message += "\n<b>Growth medium</b>"
 	else
 		returned_message += span_bold("No plant found.")
 
-	returned_message += "\nWeed level: [span_notice("[scanned_tray.weedlevel] / [MAX_TRAY_WEEDS]")]"
-	returned_message += "\nPest level: [span_notice("[scanned_tray.pestlevel] / [MAX_TRAY_PESTS]")]"
-	returned_message += "\nToxicity level: [span_notice("[scanned_tray.toxic] / [MAX_TRAY_TOXINS]")]"
-	returned_message += "\nWater level: [span_notice("[scanned_tray.waterlevel] / [scanned_tray.maxwater]")]"
-	returned_message += "\nNutrition level: [span_notice("[round(scanned_tray.reagents.total_volume)] / [scanned_tray.maxnutri]")] Right-click to empty."
-	if(scanned_tray.yieldmod != 1)
-		returned_message += "\nYield modifier on harvest: [span_notice("[scanned_tray.yieldmod]x")]"
+	returned_message += "\nWeed level: [span_notice("[growing.weed_level] / [MAX_TRAY_WEEDS]")]"
+	returned_message += "\nPest level: [span_notice("[growing.pest_level] / [MAX_TRAY_PESTS]")]"
+	returned_message += "\nToxicity level: [span_notice("[growing.toxicity_contents]")]"
 
 	return span_info(returned_message)
 
@@ -195,20 +199,21 @@
  *
  * Returns the formatted message as text.
  */
-/obj/item/plant_analyzer/proc/scan_tray_chems(obj/machinery/hydroponics/scanned_tray)
+/obj/item/plant_analyzer/proc/scan_tray_chems(atom/movable/scanned_tray, obj/item/seeds/seed)
 	var/returned_message = ""
-	if(scanned_tray.myseed)
-		returned_message += "[span_bold("[scanned_tray.myseed.plantname]")]"
-		returned_message += "\nPlant Age: [span_notice("[scanned_tray.age]")]"
-		returned_message += "\nPlant Growth: [round(((scanned_tray.growth * (1.01 ** -scanned_tray.myseed.maturation)) / scanned_tray.myseed.harvest_age) * 100, 0.1)]%"
-		returned_message += scan_plant_chems(scanned_tray.myseed, TRUE)
+	if(seed)
+		var/datum/component/growth_information/info = seed.GetComponent(/datum/component/growth_information)
+		returned_message += "[span_bold("[seed.plantname]")]"
+		returned_message += "\nPlant Age: [span_notice("[info.age]")]"
+		returned_message += "\nPlant Growth: [round(((info.growth_cycle * (1.01 ** -seed.maturation)) / seed.harvest_age) * 100, 0.1)]%"
+		returned_message += scan_plant_chems(seed, TRUE)
 	else
 		returned_message += span_bold("No plant found.")
 
 	returned_message += "\nGrowth medium contains:"
 	if(scanned_tray.reagents.reagent_list.len)
 		for(var/datum/reagent/reagent_id in scanned_tray.reagents.reagent_list)
-			returned_message += "\n[span_notice("&bull; [reagent_id.volume] / [scanned_tray.maxnutri] units of [reagent_id]")]"
+			returned_message += "\n[span_notice("&bull; [reagent_id.volume] units of [reagent_id]")]"
 	else
 		returned_message += "\n[span_notice("No reagents found.")]"
 
@@ -425,7 +430,7 @@
 	force = 5
 	throwforce = 7
 	w_class = WEIGHT_CLASS_SMALL
-	custom_materials = list(/datum/material/iron=50)
+	custom_materials = list(/datum/material/iron = SMALL_MATERIAL_AMOUNT*0.5)
 	attack_verb_continuous = list("slashes", "slices", "cuts", "claws")
 	attack_verb_simple = list("slash", "slice", "cut", "claw")
 	hitsound = 'sound/weapons/bladeslice.ogg'
@@ -441,7 +446,7 @@
 	attack_verb_continuous = list("slashes", "slices", "bashes", "claws")
 	attack_verb_simple = list("slash", "slice", "bash", "claw")
 	hitsound = null
-	custom_materials = list(/datum/material/wood = MINERAL_MATERIAL_AMOUNT * 1.5)
+	custom_materials = list(/datum/material/wood = SHEET_MATERIAL_AMOUNT * 1.5)
 	resistance_flags = FLAMMABLE
 	flags_1 = NONE
 
@@ -479,11 +484,12 @@
 	throw_speed = 4
 	throw_range = 7
 	embedding = list("pain_mult" = 4, "embed_chance" = 35, "fall_chance" = 10)
-	custom_materials = list(/datum/material/iron = 15000)
+	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT*7.5)
 	attack_verb_continuous = list("chops", "tears", "lacerates", "cuts")
 	attack_verb_simple = list("chop", "tear", "lacerate", "cut")
 	hitsound = 'sound/weapons/bladeslice.ogg'
 	sharpness = SHARP_EDGED
+	tool_behaviour = TOOL_SAW
 
 /obj/item/hatchet/Initialize(mapload)
 	. = ..()
@@ -500,7 +506,7 @@
 /obj/item/hatchet/wooden
 	desc = "A crude axe blade upon a short wooden handle."
 	icon_state = "woodhatchet"
-	custom_materials = list(/datum/material/wood = MINERAL_MATERIAL_AMOUNT * 1)
+	custom_materials = list(/datum/material/wood = SHEET_MATERIAL_AMOUNT * 1)
 	resistance_flags = FLAMMABLE
 	flags_1 = NONE
 
@@ -579,7 +585,7 @@
 	throwforce = 6
 	w_class = WEIGHT_CLASS_SMALL
 	slot_flags = ITEM_SLOT_BELT
-	custom_materials = list(/datum/material/iron=4000)
+	custom_materials = list(/datum/material/iron= SHEET_MATERIAL_AMOUNT*2)
 	attack_verb_continuous = list("slashes", "slices", "cuts", "claws")
 	attack_verb_simple = list("slash", "slice", "cut", "claw")
 	hitsound = 'sound/weapons/bladeslice.ogg'
@@ -609,7 +615,7 @@
 	throwforce = 8
 	w_class = WEIGHT_CLASS_SMALL
 	slot_flags = ITEM_SLOT_BELT
-	custom_materials = list(/datum/material/iron=4000, /datum/material/uranium=1500, /datum/material/gold=500)
+	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT*2, /datum/material/uranium=HALF_SHEET_MATERIAL_AMOUNT * 1.5, /datum/material/gold=SMALL_MATERIAL_AMOUNT*5)
 	attack_verb_continuous = list("slashes", "slices", "cuts")
 	attack_verb_simple = list("slash", "slice", "cut")
 	hitsound = 'sound/weapons/bladeslice.ogg'
@@ -638,7 +644,7 @@
 
 /obj/item/reagent_containers/cup/bottle/nutrient/l4z
 	name = "bottle of Left 4 Zed"
-	desc = "Contains a fertilizer that lightly heals the plant but causes significant mutations in plants over generations."
+	desc = "Contains a fertilizer that quickly wilts the plant in exchange for the plant gaining all stats."
 	list_reagents = list(/datum/reagent/plantnutriment/left4zednutriment = 50)
 
 /obj/item/reagent_containers/cup/bottle/nutrient/rh

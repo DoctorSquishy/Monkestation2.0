@@ -16,7 +16,7 @@
 	force = 10
 	flags_1 = CONDUCT_1
 	slot_flags = ITEM_SLOT_BACK
-	mag_type = /obj/item/ammo_box/magazine/internal/shot
+	accepted_magazine_type = /obj/item/ammo_box/magazine/internal/shot
 	semi_auto = FALSE
 	internal_magazine = TRUE
 	casing_ejector = FALSE
@@ -26,6 +26,7 @@
 	weapon_weight = WEAPON_HEAVY
 
 	pb_knockback = 2
+	gun_flags = GUN_SMOKE_PARTICLES
 
 /obj/item/gun/ballistic/shotgun/blow_up(mob/user)
 	. = 0
@@ -34,7 +35,7 @@
 		. = 1
 
 /obj/item/gun/ballistic/shotgun/lethal
-	mag_type = /obj/item/ammo_box/magazine/internal/shot/lethal
+	accepted_magazine_type = /obj/item/ammo_box/magazine/internal/shot/lethal
 
 // RIOT SHOTGUN //
 
@@ -44,7 +45,7 @@
 	icon_state = "riotshotgun"
 	inhand_icon_state = "shotgun"
 	fire_delay = 8
-	mag_type = /obj/item/ammo_box/magazine/internal/shot/riot
+	accepted_magazine_type = /obj/item/ammo_box/magazine/internal/shot/riot
 	sawn_desc = "Come with me if you want to live."
 	can_be_sawn_off = TRUE
 
@@ -60,7 +61,7 @@
 	icon_state = "cshotgun"
 	inhand_icon_state = "shotgun_combat"
 	fire_delay = 5
-	mag_type = /obj/item/ammo_box/magazine/internal/shot/com
+	accepted_magazine_type = /obj/item/ammo_box/magazine/internal/shot/com
 	w_class = WEIGHT_CLASS_HUGE
 
 //Dual Feed Shotgun
@@ -77,9 +78,9 @@
 	worn_icon_state = "cshotgun"
 	w_class = WEIGHT_CLASS_HUGE
 	semi_auto = TRUE
-	mag_type = /obj/item/ammo_box/magazine/internal/shot/tube
+	accepted_magazine_type = /obj/item/ammo_box/magazine/internal/shot/tube
 	/// If defined, the secondary tube is this type, if you want different shell loads
-	var/alt_mag_type
+	var/alt_accepted_magazine_type
 	/// If TRUE, we're drawing from the alternate_magazine
 	var/toggled = FALSE
 	/// The B tube
@@ -88,7 +89,7 @@
 /obj/item/gun/ballistic/shotgun/automatic/dual_tube/bounty
 	name = "bounty cycler shotgun"
 	desc = "An advanced shotgun with two separate magazine tubes. This one shows signs of bounty hunting customization, meaning it likely has a dual rubber shot/fire slug load."
-	alt_mag_type = /obj/item/ammo_box/magazine/internal/shot/tube/fire
+	alt_accepted_magazine_type = /obj/item/ammo_box/magazine/internal/shot/tube/fire
 
 /obj/item/gun/ballistic/shotgun/automatic/dual_tube/examine(mob/user)
 	. = ..()
@@ -96,8 +97,8 @@
 
 /obj/item/gun/ballistic/shotgun/automatic/dual_tube/Initialize(mapload)
 	. = ..()
-	alt_mag_type = alt_mag_type || mag_type
-	alternate_magazine = new alt_mag_type(src)
+	alt_accepted_magazine_type = alt_accepted_magazine_type || accepted_magazine_type
+	alternate_magazine = new alt_accepted_magazine_type(src)
 
 /obj/item/gun/ballistic/shotgun/automatic/dual_tube/Destroy()
 	QDEL_NULL(alternate_magazine)
@@ -138,7 +139,7 @@
 	inhand_x_dimension = 32
 	inhand_y_dimension = 32
 	weapon_weight = WEAPON_MEDIUM
-	mag_type = /obj/item/ammo_box/magazine/m12g
+	accepted_magazine_type = /obj/item/ammo_box/magazine/m12g
 	can_suppress = FALSE
 	burst_size = 1
 	fire_delay = 0
@@ -160,7 +161,7 @@
 
 /obj/item/gun/ballistic/shotgun/bulldog/Initialize(mapload)
 	. = ..()
-	secondary_magazine_type = secondary_magazine_type || mag_type
+	secondary_magazine_type = secondary_magazine_type || accepted_magazine_type
 	secondary_magazine = new secondary_magazine_type(src)
 	update_appearance()
 
@@ -189,7 +190,7 @@
 	else
 		. += "[icon_state]_no_secondary_mag"
 
-/obj/item/gun/ballistic/shotgun/bulldog/handle_chamber()
+/obj/item/gun/ballistic/shotgun/bulldog/handle_chamber(mob/living/user, empty_chamber = TRUE, from_firing = TRUE, chamber_next_round = TRUE)
 	if(!secondary_magazine)
 		return ..()
 	var/secondary_shells_left = LAZYLEN(secondary_magazine.stored_ammo)
@@ -259,7 +260,7 @@
 	force = 10
 	flags_1 = CONDUCT_1
 	slot_flags = ITEM_SLOT_BACK
-	mag_type = /obj/item/ammo_box/magazine/internal/shot/dual
+	accepted_magazine_type = /obj/item/ammo_box/magazine/internal/shot/dual
 	sawn_desc = "Omar's coming!"
 	obj_flags = UNIQUE_RENAME
 	rack_sound_volume = 0
@@ -289,7 +290,13 @@
 	name = "hunting shotgun"
 	desc = "A hunting shotgun used by the wealthy to hunt \"game\"."
 	sawn_desc = "A sawn-off hunting shotgun. In its new state, it's remarkably less effective at hunting... anything."
-	mag_type = /obj/item/ammo_box/magazine/internal/shot/dual/slugs
+	accepted_magazine_type = /obj/item/ammo_box/magazine/internal/shot/dual/slugs
+
+/obj/item/gun/ballistic/shotgun/doublebarrel/breacherslug
+	name = "breaching shotgun"
+	desc = "A normal double-barrel shotgun that has been rechambered to fit breaching shells. Useful in breaching airlocks and windows, not much else."
+	sawn_desc = "A sawn-off breaching shotgun, making for a more compact configuration while still having the same capability as before."
+	accepted_magazine_type = /obj/item/ammo_box/magazine/internal/shot/dual/breacherslug
 
 /obj/item/gun/ballistic/shotgun/hook
 	name = "hook modified sawn-off shotgun"
@@ -300,7 +307,7 @@
 	righthand_file = 'icons/mob/inhands/weapons/guns_righthand.dmi'
 	inhand_x_dimension = 32
 	inhand_y_dimension = 32
-	mag_type = /obj/item/ammo_box/magazine/internal/shot/bounty
+	accepted_magazine_type = /obj/item/ammo_box/magazine/internal/shot/bounty
 	weapon_weight = WEAPON_MEDIUM
 	semi_auto = TRUE
 	flags_1 = CONDUCT_1
@@ -327,3 +334,23 @@
 /obj/item/gun/ballistic/shotgun/hook/afterattack_secondary(atom/target, mob/user, proximity_flag, click_parameters)
 	hook.afterattack(target, user, proximity_flag, click_parameters)
 	return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
+
+// Lever gun
+/obj/item/gun/ballistic/shotgun/leveraction
+	name = "brush gun"
+	desc = "While lever-actions have been horribly out of date for hundreds of years now, \
+	putting a nicely sized hole in a man-sized target with a .45 Long round has stayed relatively timeless."
+	icon_state = "brushgun"
+	bolt_wording = "Lever"
+	cartridge_wording = "bullet"
+	accepted_magazine_type = /obj/item/ammo_box/magazine/internal/shot/levergun
+	projectile_wound_bonus = 10
+	projectile_damage_multiplier = 1.1
+	w_class = WEIGHT_CLASS_BULKY
+	force = 10
+	flags_1 = CONDUCT_1
+	semi_auto = FALSE
+	internal_magazine = TRUE
+	casing_ejector = FALSE
+	weapon_weight = WEAPON_HEAVY
+

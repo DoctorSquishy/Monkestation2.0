@@ -29,6 +29,12 @@
 	/// Percentage chance of receiving a bonus worm
 	var/worm_chance = 30
 
+	/// Set to TRUE to call ex_act parent
+	var/explodable = FALSE
+	var/changes_icon = TRUE
+
+
+
 /turf/open/misc/asteroid/break_tile()
 	icon_state = broken_state
 
@@ -45,7 +51,8 @@
 	new dig_result(src, 5)
 	if (prob(worm_chance))
 		new /obj/item/food/bait/worm(src)
-	icon_state = "[base_icon_state]_dug"
+	if(changes_icon)
+		icon_state = "[base_icon_state]_dug"
 
 /// If the user can dig the turf
 /turf/open/misc/asteroid/proc/can_dig(mob/user)
@@ -63,7 +70,9 @@
 	return
 
 /turf/open/misc/asteroid/ex_act(severity, target)
-	return
+	if(!explodable)
+		return
+	return ..()
 
 /turf/open/misc/asteroid/attackby(obj/item/W, mob/user, params)
 	. = ..()
@@ -87,7 +96,7 @@
 			return TRUE
 	else if(istype(W, /obj/item/storage/bag/ore))
 		for(var/obj/item/stack/ore/O in src)
-			SEND_SIGNAL(W, COMSIG_PARENT_ATTACKBY, O)
+			SEND_SIGNAL(W, COMSIG_ATOM_ATTACKBY, O)
 
 
 /turf/open/floor/plating/lavaland_baseturf
@@ -264,3 +273,19 @@ GLOBAL_LIST_EMPTY(dug_up_basalt)
 /turf/open/misc/asteroid/snow/standard_air
 	initial_gas_mix = OPENTURF_DEFAULT_ATMOS
 	planetary_atmos = FALSE
+
+/turf/open/misc/asteroid/moon
+	name = "lunar surface"
+	baseturfs = /turf/open/misc/asteroid/moon
+	icon = 'icons/turf/floors.dmi'
+	icon_state = "moon"
+	base_icon_state = "moon"
+	floor_variance = 40
+	dig_result = /obj/item/stack/ore/glass/basalt
+	broken_state = "moon_dug"
+
+/turf/open/misc/asteroid/moon/dug //When you want one of these to be already dug.
+	dug = TRUE
+	floor_variance = 0
+	base_icon_state = "moon_dug"
+	icon_state = "moon_dug"

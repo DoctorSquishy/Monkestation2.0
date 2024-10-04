@@ -22,10 +22,17 @@
 	var/decomp_result
 	/// Does our food attract ants?
 	var/produce_ants = FALSE
+	/// Typecache of turfs that support decomposition
+	var/static/list/decomp_turf_typecache // monkestation edit: attempt at micro-optimizing
 
 /datum/component/decomposition/Initialize(mapload, decomp_req_handle, decomp_flags = NONE, decomp_result, ant_attracting = FALSE, custom_time = 0)
 	if(!isobj(parent))
 		return COMPONENT_INCOMPATIBLE
+
+	// monkestation start: attempt at micro-optimizing
+	if(!decomp_turf_typecache)
+		decomp_turf_typecache = typecacheof(/turf/open) - (typecacheof(/turf/open/lava) + typecacheof(/turf/open/misc/asteroid))
+	// monkestation end
 
 	src.decomp_flags = decomp_flags
 	src.decomp_result = decomp_result
@@ -36,13 +43,15 @@
 	RegisterSignal(parent, COMSIG_MOVABLE_MOVED, PROC_REF(handle_movement))
 	RegisterSignals(parent, list(
 		COMSIG_ITEM_PICKUP, //person picks up an item
-		COMSIG_ATOM_ENTERED), //Object enters a storage object (boxes, etc.)
+		COMSIG_ATOM_ENTERED, //Object enters a storage object (boxes, etc.)
+		COMSIG_ITEM_GARY_STASHED), // monkestation edit: gary
 		PROC_REF(picked_up))
 	RegisterSignals(parent, list(
 		COMSIG_ITEM_DROPPED, //Object is dropped anywhere
-		COMSIG_ATOM_EXITED), //Object exits a storage object (boxes, etc)
+		COMSIG_ATOM_EXITED,  //Object exits a storage object (boxes, etc)
+		COMSIG_ITEM_GARY_LOOTED), // monkestation edit: gary
 		PROC_REF(dropped))
-	RegisterSignal(parent, COMSIG_PARENT_EXAMINE, PROC_REF(examine))
+	RegisterSignal(parent, COMSIG_ATOM_EXAMINE, PROC_REF(examine))
 
 	if(custom_time) // We have a custom decomposition time, set it to that
 		original_time = custom_time
@@ -63,7 +72,9 @@
 		COMSIG_MOVABLE_MOVED,
 		COMSIG_ITEM_DROPPED,
 		COMSIG_ATOM_EXITED,
-		COMSIG_PARENT_EXAMINE))
+		COMSIG_ATOM_EXAMINE,
+		COMSIG_ITEM_GARY_LOOTED, // monkestation edit: gary
+	))
 
 /datum/component/decomposition/proc/handle_movement()
 	SIGNAL_HANDLER
@@ -73,14 +84,20 @@
 
 	var/turf/open/open_turf = food.loc
 
-	if(!istype(open_turf) || islava(open_turf) || isasteroidturf(open_turf)) //Are we actually in a valid open turf?
+	// monkestation start: heavily optimize this stupid proc
+	if(!is_type_in_typecache(open_turf, decomp_turf_typecache)) //Are we actually in a valid open turf?
 		remove_timer()
 		return
 
-	for(var/atom/movable/content as anything in open_turf.contents)
+	if(HAS_TRAIT(open_turf, TRAIT_ELEVATED_TURF) || HAS_TRAIT(open_turf, TRAIT_TURF_HAS_ELEVATED_STRUCTURE))
+		remove_timer()
+		return
+	/* for(var/atom/movable/content as anything in open_turf.contents)
 		if(GLOB.typecache_elevated_structures[content.type])
 			remove_timer()
 			return
+		CHECK_TICK */
+	// monkestation end
 
 	// If all other checks fail, then begin decomposition.
 	timerid = addtimer(CALLBACK(src, PROC_REF(decompose)), time_remaining, TIMER_STOPPABLE | TIMER_UNIQUE)
@@ -89,10 +106,18 @@
 	remove_timer()
 	return ..()
 
+/// Returns the time remaining in decomp, either from our potential timer or our own value, whichever is more useful
+/datum/component/decomposition/proc/get_time()
+	if(!timerid)
+		return time_remaining
+	return timeleft(timerid)
+
 /datum/component/decomposition/proc/remove_timer()
-	if(active_timers) // Makes sure there's an active timer to delete.
-		time_remaining = timeleft(timerid)
-		deltimer(timerid)
+	if(!timerid)
+		return
+	time_remaining = timeleft(timerid)
+	deltimer(timerid)
+	timerid = null
 
 /datum/component/decomposition/proc/dropped()
 	SIGNAL_HANDLER
@@ -118,11 +143,7 @@
 
 /datum/component/decomposition/proc/examine(datum/source, mob/user, list/examine_list)
 	SIGNAL_HANDLER
-	var/time_d = 0
-	if(active_timers) // Is the timer currently applied to this?
-		time_d = timeleft(timerid)
-	else
-		time_d = time_remaining
+	var/time_d = get_time()
 	switch(time_d / original_time)
 		if(0.5 to 0.75) // 25% rotten
 			examine_list += span_notice("[parent] looks kinda stale.")

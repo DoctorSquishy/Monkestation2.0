@@ -270,10 +270,10 @@ CREATE TABLE `SS13_library_action` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `book` int(10) unsigned NOT NULL,
   `reason` longtext DEFAULT NULL,
-  `ckey` varchar(11) NOT NULL DEFAULT '',
+  `ckey` varchar(32) NOT NULL DEFAULT '',
   `datetime` datetime NOT NULL DEFAULT current_timestamp(),
   `action` varchar(11) NOT NULL DEFAULT '',
-  `ip_addr` int(11) NOT NULL,
+  `ip_addr` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -492,6 +492,7 @@ CREATE TABLE `SS13_round` (
   `shuttle_name` VARCHAR(64) NULL,
   `map_name` VARCHAR(32) NULL,
   `station_name` VARCHAR(80) NULL,
+  `log_directory` VARCHAR(255) NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

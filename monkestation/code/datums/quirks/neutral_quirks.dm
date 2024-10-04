@@ -9,15 +9,14 @@
 	. = ..()
 	if (ishuman(quirk_holder))
 		var/mob/living/carbon/human/gojira = quirk_holder
-		if(gojira.dna)
-			gojira.dna.add_mutation(/datum/mutation/human/gigantism)
+		gojira.dna?.add_mutation(/datum/mutation/human/gigantism)
 
 /datum/quirk/anime
 	name = "Anime"
 	desc = "You are an anime enjoyer! Show your enthusiasm with some fashionable attire."
 	mob_trait = TRAIT_ANIME
 	value = 0
-	icon = "cat"
+	icon = FA_ICON_PAW
 	quirk_flags = QUIRK_CHANGES_APPEARANCE
 
 	var/list/anime_list = list(
@@ -57,20 +56,20 @@
 	desc = "You never really believed in clowns."
 	mob_trait = TRAIT_HIDDEN_CLOWN
 	value = 0
-	icon = "fa-hippo"
+	icon = FA_ICON_HIPPO
 
 /datum/quirk/clown_disbelief/add(client/client_source)
 	. = ..()
-	if(!quirk_holder)
+	if(QDELETED(quirk_holder))
 		return
 	RegisterSignal(quirk_holder, COMSIG_MOB_LOGIN, PROC_REF(enable))
 	RegisterSignal(quirk_holder, COMSIG_MOB_LOGOUT, PROC_REF(disable))
-	RegisterSignal(quirk_holder, COMSIG_PARENT_EXAMINE_MORE, PROC_REF(examined))
+	RegisterSignal(quirk_holder, COMSIG_ATOM_EXAMINE_MORE, PROC_REF(examined))
 
 /datum/quirk/clown_disbelief/remove()
 	. = ..()
 	disable()
-	UnregisterSignal(quirk_holder, COMSIG_MOB_LOGOUT, COMSIG_MOB_LOGIN, COMSIG_PARENT_EXAMINE_MORE)
+	UnregisterSignal(quirk_holder, COMSIG_MOB_LOGOUT, COMSIG_MOB_LOGIN, COMSIG_ATOM_EXAMINE_MORE)
 
 /datum/quirk/clown_disbelief/proc/examined(datum/source, mob/user, list/examine_list)
 	if(user.mind?.assigned_role.type == /datum/job/clown)
@@ -78,8 +77,29 @@
 
 /datum/quirk/clown_disbelief/proc/enable(datum/source)
 	for(var/image/image as anything in GLOB.hidden_image_holders["clown"])
+		if(QDELETED(quirk_holder?.client))
+			break
 		quirk_holder.client.images += image
 
 /datum/quirk/clown_disbelief/proc/disable(datum/source)
 	for(var/image/image as anything in GLOB.hidden_image_holders["clown"])
+		if(QDELETED(quirk_holder?.client))
+			break
 		quirk_holder.client.images -= image
+
+
+//DRG style callouts
+//Useful mainly for Shaft Miners, but can be taken by anyone.
+/datum/quirk/drg_callout
+	name = "Miner Training"
+	desc = "You arrive with a strange skillchip that teaches you how to reflexively call out mining-related entities you point at."
+	mob_trait = TRAIT_MINING_CALLOUTS
+	value = 0
+	icon = FA_ICON_BULLHORN
+	quirk_flags = QUIRK_HIDE_FROM_SCAN
+
+/datum/quirk/drg_callout/add(client/client_source)
+	var/mob/living/carbon/human/human_holder = quirk_holder
+	var/obj/item/skillchip/drg_callout/skillchip = new
+	human_holder.implant_skillchip(skillchip)
+	skillchip.try_activate_skillchip()

@@ -17,10 +17,11 @@ GLOBAL_VAR_INIT(observer_default_invisibility, INVISIBILITY_OBSERVER)
 	invisibility = INVISIBILITY_OBSERVER
 	hud_type = /datum/hud/ghost
 	movement_type = GROUND | FLYING
-	light_system = MOVABLE_LIGHT
+	light_system = OVERLAY_LIGHT
 	light_outer_range = 1
 	light_power = 2
 	light_on = FALSE
+	rclick_always_context_menu = TRUE
 	var/can_reenter_corpse
 	var/bootime = 0
 	var/started_as_observer //This variable is set to 1 when you enter the game as an observer.
@@ -36,7 +37,7 @@ GLOBAL_VAR_INIT(observer_default_invisibility, INVISIBILITY_OBSERVER)
 	var/health_scan = FALSE //Are health scans currently enabled?
 	var/chem_scan = FALSE //Are chem scans currently enabled?
 	var/gas_scan = FALSE //Are gas scans currently enabled?
-	var/list/datahuds = list(DATA_HUD_SECURITY_ADVANCED, DATA_HUD_MEDICAL_ADVANCED, DATA_HUD_DIAGNOSTIC_ADVANCED) //list of data HUDs shown to ghosts.
+	var/list/datahuds = list(DATA_HUD_SECURITY_ADVANCED, DATA_HUD_MEDICAL_ADVANCED, DATA_HUD_DIAGNOSTIC_ADVANCED, DATA_HUD_MOOD) //list of data HUDs shown to ghosts. monkestation addition here
 	var/ghost_orbit = GHOST_ORBIT_CIRCLE
 
 	//These variables store hair data if the ghost originates from a species with head and/or facial hair.
@@ -106,10 +107,11 @@ GLOBAL_VAR_INIT(observer_default_invisibility, INVISIBILITY_OBSERVER)
 
 		if(ishuman(body))
 			var/mob/living/carbon/human/body_human = body
-			if(HAIR in body_human.dna.species.species_traits)
+			var/datum/species/human_species = body_human.dna.species
+			if(human_species.check_head_flags(HEAD_HAIR))
 				hairstyle = body_human.hairstyle
 				hair_color = brighten_color(body_human.hair_color)
-			if(FACEHAIR in body_human.dna.species.species_traits)
+			if(human_species.check_head_flags(HEAD_FACIAL_HAIR))
 				facial_hairstyle = body_human.facial_hairstyle
 				facial_hair_color = brighten_color(body_human.facial_hair_color)
 
@@ -170,10 +172,10 @@ GLOBAL_VAR_INIT(observer_default_invisibility, INVISIBILITY_OBSERVER)
 		mind.current.med_hud_set_status()
 
 	GLOB.ghost_images_default -= ghostimage_default
-	QDEL_NULL(ghostimage_default)
+	ghostimage_default = null
 
 	GLOB.ghost_images_simple -= ghostimage_simple
-	QDEL_NULL(ghostimage_simple)
+	ghostimage_simple = null
 
 	updateallghostimages()
 
@@ -326,7 +328,7 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 		if(!HAS_TRAIT(src, TRAIT_CORPSELOCKED)) //corpse-locked have to confirm with the alert below
 			ghostize(TRUE)
 			return TRUE
-	var/response = tgui_alert(usr, "Are you sure you want to ghost? You won't be able to re-enter your body!", "Confirm Ghost Observe", list("Ghost", "Stay in Body"))
+	var/response = tgui_alert(usr, "Are you sure you want to ghost? You won't be able to re-enter your body! If you are leaving the round, use cryo instead.", "Confirm Ghost Observe", list("Ghost", "Stay in Body")) // MONKESTATION EDIT: issuing commands to use cryo instead of just ghosting in a locker.
 	if(response != "Ghost")
 		return FALSE//didn't want to ghost after-all
 	ghostize(FALSE) // FALSE parameter is so we can never re-enter our body. U ded.
@@ -337,7 +339,7 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 	set name = "Ghost"
 	set desc = "Relinquish your life and enter the land of the dead."
 
-	var/response = tgui_alert(usr, "Are you sure you want to ghost? If you ghost whilst still alive you cannot re-enter your body!", "Confirm Ghost Observe", list("Ghost", "Stay in Body"))
+	var/response = tgui_alert(usr, "Are you sure you want to ghost? If you ghost whilst still alive you cannot re-enter your body! If you are leaving the round, use cryo instead.", "Confirm Ghost Observe", list("Ghost", "Stay in Body")) // MONKESTATION EDIT: issuing commands to use cryo instead of just ghosting in a locker.
 	if(response != "Ghost")
 		return
 	ghostize(FALSE)
@@ -727,6 +729,7 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 			if(istype(target) && (target != src))
 				ManualFollow(target)
 				return
+
 		if(href_list["x"] && href_list["y"] && href_list["z"])
 			var/tx = text2num(href_list["x"])
 			var/ty = text2num(href_list["y"])
@@ -735,9 +738,22 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 			if(istype(target))
 				abstract_move(target)
 				return
+
 		if(href_list["reenter"])
 			reenter_corpse()
 			return
+
+		if(href_list["jump"])
+			var/atom/movable/target = locate(href_list["jump"])
+			var/turf/target_turf = get_turf(target)
+			if(target_turf && isturf(target_turf))
+				abstract_move(target_turf)
+
+		if(href_list["play"])
+			var/atom/movable/target = locate(href_list["play"])
+			if(istype(target) && (target != src))
+				target.attack_ghost(usr)
+				return
 
 //We don't want to update the current var
 //But we will still carry a mind.
@@ -754,9 +770,10 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 		var/datum/atom_hud/data_hud = GLOB.huds[hudtype]
 		data_hud.hide_from(src)
 
+//MONKESTATION
 /mob/dead/observer/verb/toggle_data_huds()
-	set name = "Toggle Sec/Med/Diag HUD"
-	set desc = "Toggles whether you see medical/security/diagnostic HUDs"
+	set name = "Toggle Sec/Med/Diag/Mood HUD"
+	set desc = "Toggles whether you see medical/security/diagnostic/mood HUDs"
 	set category = "Ghost"
 
 	if(data_huds_on) //remove old huds
@@ -827,11 +844,11 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 	var/species_type = client.prefs.read_preference(/datum/preference/choiced/species)
 	var/datum/species/species = new species_type
 
-	if(HAIR in species.species_traits)
+	if(species.check_head_flags(HEAD_HAIR))
 		hairstyle = client.prefs.read_preference(/datum/preference/choiced/hairstyle)
 		hair_color = brighten_color(client.prefs.read_preference(/datum/preference/color/hair_color))
 
-	if(FACEHAIR in species.species_traits)
+	if(species.check_head_flags(HEAD_FACIAL_HAIR))
 		facial_hairstyle = client.prefs.read_preference(/datum/preference/choiced/facial_hairstyle)
 		facial_hair_color = brighten_color(client.prefs.read_preference(/datum/preference/color/facial_hair_color))
 

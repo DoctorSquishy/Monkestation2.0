@@ -7,24 +7,24 @@
 	///bool on if this component is currently polling for observers to inhabit the item
 	var/attempting_awakening = FALSE
 	///mob contained in the item.
-	var/mob/living/simple_animal/shade/bound_spirit
+	var/mob/living/basic/shade/bound_spirit
 
 /datum/component/spirit_holding/Initialize()
 	if(!ismovable(parent)) //you may apply this to mobs, i take no responsibility for how that works out
 		return COMPONENT_INCOMPATIBLE
 
-/datum/component/spirit_holding/Destroy(force, silent)
+/datum/component/spirit_holding/Destroy(force)
 	. = ..()
 	if(bound_spirit)
 		QDEL_NULL(bound_spirit)
 
 /datum/component/spirit_holding/RegisterWithParent()
-	RegisterSignal(parent, COMSIG_PARENT_EXAMINE, PROC_REF(on_examine))
+	RegisterSignal(parent, COMSIG_ATOM_EXAMINE, PROC_REF(on_examine))
 	RegisterSignal(parent, COMSIG_ITEM_ATTACK_SELF, PROC_REF(on_attack_self))
-	RegisterSignal(parent, COMSIG_PARENT_QDELETING, PROC_REF(on_destroy))
+	RegisterSignal(parent, COMSIG_QDELETING, PROC_REF(on_destroy))
 
 /datum/component/spirit_holding/UnregisterFromParent()
-	UnregisterSignal(parent, list(COMSIG_PARENT_EXAMINE, COMSIG_ITEM_ATTACK_SELF, COMSIG_PARENT_QDELETING))
+	UnregisterSignal(parent, list(COMSIG_ATOM_EXAMINE, COMSIG_ITEM_ATTACK_SELF, COMSIG_QDELETING))
 
 ///signal fired on examining the parent
 /datum/component/spirit_holding/proc/on_examine(datum/source, mob/user, list/examine_list)
@@ -57,7 +57,14 @@
 	attempting_awakening = TRUE
 	to_chat(awakener, span_notice("You attempt to wake the spirit of [parent]..."))
 
-	var/mob/dead/observer/candidates = poll_ghost_candidates("Do you want to play as the spirit of [awakener.real_name]'s blade?", ROLE_PAI, FALSE, 100, POLL_IGNORE_POSSESSED_BLADE)
+	var/list/mob/dead/observer/candidates = SSpolling.poll_ghost_candidates(
+		"Do you want to play as the spirit of [awakener.real_name]'s blade?",
+		check_jobban = ROLE_PAI,
+		poll_time = 10 SECONDS,
+		ignore_category = POLL_IGNORE_POSSESSED_BLADE,
+		alert_pic = parent,
+		role_name_text = "possessed blade",
+	)
 	if(!LAZYLEN(candidates))
 		to_chat(awakener, span_warning("[parent] is dormant. Maybe you can try again later."))
 		attempting_awakening = FALSE

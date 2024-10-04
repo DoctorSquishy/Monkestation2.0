@@ -52,7 +52,7 @@
 			new /obj/item/clothing/under/chameleon(src) // 2 tc since it's not the full set
 			new /obj/item/clothing/mask/chameleon(src) // Goes with above
 			new /obj/item/clothing/shoes/chameleon/noslip(src) // 2 tc
-			new /obj/item/camera_bug(src) // 1 tc
+			new /obj/item/computer_disk/syndicate/camera_app(src) // 1 tc
 			new /obj/item/multitool/ai_detect(src) // 1 tc
 			new /obj/item/encryptionkey/syndicate(src) // 2 tc
 			new /obj/item/reagent_containers/syringe/mulligan(src) // 4 tc
@@ -87,9 +87,10 @@
 			new /obj/item/sbeacondrop/bomb(src) // 11 tc
 			new /obj/item/grenade/syndieminibomb(src) // 6 tc
 			new /obj/item/sbeacondrop/powersink(src) // 11 tc
-			new /obj/item/clothing/suit/space/syndicate/black/red(src) // outfit 1 tc
-			new /obj/item/clothing/head/helmet/space/syndicate/black/red(src)
-			new /obj/item/encryptionkey/syndicate(src) // 2 tc
+			var/obj/item/clothing/suit/space/syndicate/spess_suit = pick(GLOB.syndicate_space_suits_to_helmets)
+			new spess_suit(src) // Above allows me to get the helmet from a variable on the object
+			var/obj/item/clothing/head/helmet/space/syndicate/spess_helmet = GLOB.syndicate_space_suits_to_helmets[spess_suit]
+			new spess_helmet(src) // 4 TC for the space gear
 
 		if(KIT_MURDER)
 			new /obj/item/melee/energy/sword/saber(src) // 8 tc
@@ -114,14 +115,16 @@
 			new /obj/item/ai_module/toy_ai(src) // ~6 tc
 			new /obj/item/multitool/ai_detect(src) // 1 tc
 			new /obj/item/storage/toolbox/syndicate(src) // 1 tc
-			new /obj/item/camera_bug(src) // 1 tc
+			new /obj/item/computer_disk/syndicate/camera_app(src) // 1 tc
 			new /obj/item/clothing/glasses/thermal/syndi(src) // 4 tc
 			new /obj/item/card/id/advanced/chameleon(src) // 2 tc
 
 		if(KIT_LORD_SINGULOTH) //currently disabled, i might return with another anti-engine kit
 			new /obj/item/sbeacondrop(src) // 10 tc
-			new /obj/item/clothing/suit/space/syndicate/black/red(src)
-			new /obj/item/clothing/head/helmet/space/syndicate/black/red(src)
+			var/obj/item/clothing/suit/space/syndicate/spess_suit = pick(GLOB.syndicate_space_suits_to_helmets)
+			new spess_suit(src) // Above allows me to get the helmet from a variable on the object
+			var/obj/item/clothing/head/helmet/space/syndicate/spess_helmet = GLOB.syndicate_space_suits_to_helmets[spess_suit]
+			new spess_helmet(src) // 4 TC for the space gear
 			new /obj/item/card/emag(src) // 4 tc
 			new /obj/item/storage/toolbox/syndicate(src) // 1 tc
 			new /obj/item/card/id/advanced/mining(src)
@@ -133,7 +136,7 @@
 
 		if(KIT_SABOTAGE)
 			new /obj/item/storage/backpack/duffelbag/syndie/sabotage(src) // 5 tc for 3 c4 and 2 x4
-			new /obj/item/camera_bug(src) // 1 tc
+			new /obj/item/computer_disk/syndicate/camera_app(src) // 1 tc
 			new /obj/item/sbeacondrop/powersink(src) // 11 tc
 			new /obj/item/computer_disk/virus/detomatix(src) // 6 tc
 			new /obj/item/storage/toolbox/syndicate(src) // 1 tc
@@ -238,7 +241,6 @@
 			new /obj/item/storage/belt/fannypack/yellow(src) // 0 tc
 			new /obj/item/grenade/spawnergrenade/buzzkill(src) // these are the random super bees this is definitely all of the tc budget for this one
 			new /obj/item/grenade/spawnergrenade/buzzkill(src) // 10 tc per grenade
-			new /obj/item/reagent_containers/cup/bottle/beesease(src) // 10 tc?
 			new /obj/item/melee/beesword(src) //priceless
 
 		if(KIT_MR_FREEZE)
@@ -290,17 +292,13 @@
 /obj/item/paper/contractor_guide/Initialize(mapload)
 	default_raw_text = {"<p>Welcome agent, congratulations on your new position as contractor. On top of your already assigned objectives,
 			this kit will provide you contracts to take on for TC payments.</p>
-
 			<p>Provided within, we give your specialist contractor space suit. It's even more compact, being able to fit into a pocket, and faster than the
 			Syndicate space suit available to you on the uplink. We also provide your chameleon jumpsuit and mask, both of which can be changed
 			to any form you need for the moment. The cigarettes are a special blend - it'll heal your injuries slowly overtime.</p>
-
 			<p>Your standard issue contractor baton hits harder than the ones you might be used to, and likely be your go to weapon for kidnapping your
 			targets. The three additional items have been randomly selected from what we had available. We hope they're useful to you for your mission.</p>
-
 			<p>The contractor hub, available at the top right of the uplink, will provide you unique items and abilities. These are bought using Contractor Rep,
 			with two Rep being provided each time you complete a contract.</p>
-
 			<h3>Using the tablet</h3>
 			<ol>
 				<li>Open the Syndicate Contract Uplink program.</li>
@@ -310,7 +308,6 @@
 				<li>Contracts are completed by bringing the target to designated dropoff, calling for extraction, and putting them
 				inside the pod.</li>
 			</ol>
-
 			<p>Be careful when accepting a contract. While you'll be able to see the location of the dropoff point, cancelling will make it
 			unavailable to take on again.</p>
 			<p>The tablet can also be recharged at any cell charger.</p>
@@ -325,7 +322,6 @@
 			<p>We need your target for our own reasons, but we ransom them back to your mission area once their use is served. They will return back
 			from where you sent them off from in several minutes time. Don't worry, we give you a cut of what we get paid. We pay this into whatever
 			ID card you have equipped, on top of the TC payment we give.</p>
-
 			<p>Good luck agent. You can burn this document with the supplied lighter.</p>"}
 	return ..()
 
@@ -409,13 +405,10 @@
 	atom_storage.set_holdable(list(/obj/item/clothing/suit/space/syndicate, /obj/item/clothing/head/helmet/space/syndicate))
 
 /obj/item/storage/box/syndie_kit/space/PopulateContents()
-	if(prob(50))
-		new /obj/item/clothing/suit/space/syndicate/black/red(src) // Black and red is so in right now
-		new /obj/item/clothing/head/helmet/space/syndicate/black/red(src)
-
-	else
-		new /obj/item/clothing/head/helmet/space/syndicate(src)
-		new /obj/item/clothing/suit/space/syndicate(src)
+	var/obj/item/clothing/suit/space/syndicate/spess_suit = pick(GLOB.syndicate_space_suits_to_helmets)
+	new spess_suit(src) // Above allows me to get the helmet from a variable on the object
+	var/obj/item/clothing/head/helmet/space/syndicate/spess_helmet = GLOB.syndicate_space_suits_to_helmets[spess_suit]
+	new spess_helmet(src) // 4 TC for the space gear
 
 /obj/item/storage/box/syndie_kit/emp
 	name = "EMP kit"
@@ -533,6 +526,22 @@
 		new /obj/item/food/croissant/throwing(src)
 	new /obj/item/book/granter/crafting_recipe/combat_baking(src)
 
+/obj/item/storage/box/syndie_kit/laser_arm/PopulateContents()
+	new /obj/item/autosurgeon/organ/cyberlink_syndicate(src)
+	new /obj/item/autosurgeon/syndicate/laser_arm (src)
+
+/obj/item/storage/box/syndie_kit/nodrop/PopulateContents()
+	new /obj/item/autosurgeon/organ/cyberlink_nt_high(src)
+	new /obj/item/autosurgeon/syndicate/nodrop(src)
+
+/obj/item/storage/box/syndie_kit/anti_stun/PopulateContents()
+	new /obj/item/autosurgeon/organ/cyberlink_nt_high(src)
+	new /obj/item/autosurgeon/syndicate/anti_stun(src)
+
+/obj/item/storage/box/syndie_kit/reviver/PopulateContents()
+	new /obj/item/autosurgeon/organ/cyberlink_nt_high(src)
+	new /obj/item/autosurgeon/syndicate/reviver(src)
+
 /obj/item/storage/box/syndie_kit/centcom_costume/PopulateContents()
 	new /obj/item/clothing/under/rank/centcom/officer(src)
 	new /obj/item/clothing/shoes/sneakers/black(src)
@@ -641,6 +650,114 @@
 	new /obj/item/pinata/syndie(src)
 	new /obj/item/storage/belt/grenade(src)
 	new /obj/item/storage/belt/military/snack(src)
+
+/obj/item/storage/box/syndie_kit/induction_kit
+	name = "syndicate induction kit"
+	desc = "Contains all you need for introducing your newest comrade to the Syndicate and all its worker's benefits."
+
+/obj/item/storage/box/syndie_kit/induction_kit/PopulateContents()
+	// Basic weaponry, so they have something to use.
+	new /obj/item/gun/ballistic/automatic/pistol/clandestine(src) // 6 TC, but free for nukies
+	new /obj/item/ammo_box/magazine/m10mm/hp(src) // 3 TC, a reward for the teamwork involved
+	new /obj/item/ammo_box/magazine/m10mm/ap(src) // 3 TC, a reward for the teamwork involved
+	new /obj/item/pen/edagger(src) // 2 TC
+	// The necessary equipment to help secure that disky.
+	new /obj/item/radio/headset/syndicate/alt(src) // 5 TC / Free for nukies
+	new /obj/item/modular_computer/pda/nukeops(src) // ?? TC / Free for nukies
+	new /obj/item/card/id/advanced/chameleon(src) // 2 TC / Free for nukies
+	var/obj/item/clothing/suit/space/syndicate/spess_suit = pick(GLOB.syndicate_space_suits_to_helmets)
+	new spess_suit(src) // Above allows me to get the helmet from a variable on the object
+	var/obj/item/clothing/head/helmet/space/syndicate/spess_helmet = GLOB.syndicate_space_suits_to_helmets[spess_suit]
+	new spess_helmet(src) // 4 TC for the space gear
+	new /obj/item/tank/jetpack/oxygen/harness(src) // They kinda need this to fly to the cruiser.
+	// Tacticool gear
+	new /obj/item/clothing/shoes/combat(src)
+	new /obj/item/clothing/under/syndicate(src)
+	new /obj/item/clothing/gloves/fingerless(src)
+	new /obj/item/book/manual/nuclear(src) // Very important
+	// The most important part of the kit, the implant that gives them the syndicate faction.
+	new /obj/item/implanter/induction_implant(src)
+	// All in all, 6+3+3+2+5+2+4 = ~25 TC of 'miscellaneous' items.
+	// This is a lot of value for 10 TC, but you have to keep in mind that you NEED someone to get this stuff station-side.
+	// Pretty much all of it is a bad deal for reinforcements or yourself as they already have similar or good-enough alternatives.
+
+/obj/item/implanter/induction_implant
+	name = "implanter (nuclear operative)"
+	desc = "A sterile automatic implant injector. You can see a tiny, somehow legible sticker on the side: 'NOT A BRAINWASH DEVICE'"
+	imp_type = /obj/item/implant/nuclear_operative
+
+/obj/item/implant/nuclear_operative
+	name = "nuclear operative implant"
+	desc = "Registers you as a member of a Syndicate nuclear operative team."
+	implant_color = "r"
+
+/obj/item/implant/nuclear_operative/get_data()
+	var/dat = {"<b>Implant Specifications:</b><BR>
+				<b>Name:</b> Suspicious Implant<BR>
+				<b>Life:</b> UNKNOWN <BR>
+				<b>Implant Details:</b> <BR>
+				<b>Function:</b> Strange implant that seems to resist any attempts at scanning it."}
+	return dat
+
+/obj/item/implant/nuclear_operative/implant(mob/living/target, mob/user, silent = FALSE, force = FALSE)
+	. = ..()
+	if(!. || !ishuman(target) || !(target.mind))
+		return FALSE
+	var/mob/living/carbon/human/human_target = target
+
+	if(IS_NUKE_OP(human_target)) // this wont proc due to ..() but i guess its good as a just-in-case?
+		if(human_target == user)
+			to_chat(user, span_userdanger("You're already a nuclear operative, dumbass! The implant disintegrates within you! You feel sick..."))
+			human_target.Stun(10 SECONDS)
+			human_target.reagents.add_reagent(/datum/reagent/toxin, 10)
+			return FALSE
+		else
+			to_chat(user, span_notice("You finish implanting [human_target], but you don't really notice a difference. Huh."))
+			to_chat(human_target, span_userdanger("Nothing seems to really happen, but you start to feel a little ill.."))
+			human_target.reagents.add_reagent(/datum/reagent/toxin, 2)
+			return FALSE
+
+	/// If all the antag datums are 'fake' or none exist, disallow induction! No self-antagging.
+	var/faker
+	for(var/datum/antagonist/antag_datum as anything in human_target.mind.antag_datums)
+		if((antag_datum.antag_flags & FLAG_FAKE_ANTAG))
+			faker = TRUE
+
+	if(faker || isnull(human_target.mind.antag_datums)) // GTFO. Technically not foolproof but making a heartbreaker or a paradox clone a nuke op sounds hilarious
+		to_chat(human_target, span_notice("Huh? Nothing happened? But you're starting to feel a little ill..."))
+		human_target.reagents.add_reagent(/datum/reagent/toxin, 15)
+		return FALSE
+
+	var/datum/antagonist/nukeop/nuke_datum = new()
+	nuke_datum.send_to_spawnpoint = FALSE
+	nuke_datum.nukeop_outfit = null
+	human_target.mind?.add_antag_datum(nuke_datum)
+	human_target.faction |= ROLE_SYNDICATE
+	to_chat(human_target, span_warning("You are now a nuclear operative. Your main objective, if you were an antagonist and willing, is presumably to assist the nuclear operative team and secure the disk."))
+	to_chat(human_target, span_userdanger("This implant does NOT, in any way, brainwash you. If you were a normal crew member beforehand, forcibly implanted or otherwise, you are still one and cannot assist the nuclear operatives."))
+	return TRUE
+
+/obj/item/implant/nuclear_operative/removed(mob/target, silent = FALSE, special = FALSE)
+	. = ..()
+	if(!. || !isliving(target))
+		return FALSE
+	var/mob/living/living_target = target
+	living_target.mind.remove_antag_datum(/datum/antagonist/nukeop)
+	living_target.faction -= ROLE_SYNDICATE
+	to_chat(target, span_notice("You feel a little less nuclear."))
+	to_chat(target, span_userdanger("You're no longer identified as a nuclear operative! You are free to follow any valid goals you wish, even continuing to secure the disk. Just make sure neither any turrets nor operatives kill you on sight."))
+	return TRUE
+
+/obj/item/storage/box/syndie_kit/poster_box
+	name = "syndicate poster pack"
+	desc = "Contains a variety of demotivational posters to ensure minimum productivity for the crew of any Nanotrasen station."
+
+	/// Number of posters this box contains when spawning.
+	var/poster_count = 3
+
+/obj/item/storage/box/syndie_kit/poster_box/PopulateContents()
+	for(var/i in 1 to poster_count)
+		new /obj/item/poster/traitor(src)
 
 #undef KIT_RECON
 #undef KIT_BLOODY_SPAI

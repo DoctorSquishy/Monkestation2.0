@@ -35,7 +35,7 @@
 		to_chat(user, span_warning("You are not capable of wearing underwear."))
 		return
 
-	var/choice = tgui_input_list(user, "Underwear, Undershirt, or Socks?", "Changing", list("Underwear","Underwear Color","Undershirt","Socks"))
+	var/choice = tgui_input_list(user, "Underwear, Undershirt, or Socks?", "Changing", list("Underwear","Underwear Color","Undershirt","Socks", "Socks Color")) //MONKESTATION EDIT
 	if(isnull(choice))
 		return
 
@@ -47,7 +47,7 @@
 			if(new_undies)
 				dressing_human.underwear = new_undies
 		if("Underwear Color")
-			var/new_underwear_color = input(dressing_human, "Choose your underwear color", "Underwear Color", dressing_human.underwear_color) as color|null
+			var/new_underwear_color = tgui_color_picker(dressing_human, "Choose your underwear color", "Underwear Color", dressing_human.underwear_color)
 			if(new_underwear_color)
 				dressing_human.underwear_color = sanitize_hexcolor(new_underwear_color)
 		if("Undershirt")
@@ -58,6 +58,10 @@
 			var/new_socks = tgui_input_list(user, "Select your socks", "Changing", GLOB.socks_list)
 			if(new_socks)
 				dressing_human.socks= new_socks
+		if("Socks Color")	//MONKESTATION EDIT
+			var/new_socks_color = tgui_color_picker(dressing_human, "Choose your socks color", "Socks Color", dressing_human.socks_color)
+			if(new_socks_color)
+				dressing_human.socks_color = sanitize_hexcolor(new_socks_color)
 
 	add_fingerprint(dressing_human)
 	dressing_human.update_body()

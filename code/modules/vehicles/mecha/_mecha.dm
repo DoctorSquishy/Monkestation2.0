@@ -29,7 +29,7 @@
 	move_force = MOVE_FORCE_VERY_STRONG
 	move_resist = MOVE_FORCE_EXTREMELY_STRONG
 	COOLDOWN_DECLARE(mecha_bump_smash)
-	light_system = MOVABLE_LIGHT_DIRECTIONAL
+	light_system = OVERLAY_LIGHT_DIRECTIONAL
 	light_on = FALSE
 	light_outer_range = 8
 	generic_canpass = FALSE
@@ -66,7 +66,9 @@
 	///Just stop the mech from doing anything
 	var/completely_disabled = FALSE
 	///Whether this mech is allowed to move diagonally
-	var/allow_diagonal_movement = FALSE
+	var/allow_diagonal_movement = TRUE
+	///Whether this mech moves into a direct as soon as it goes to move. Basically, turn and step in the same key press.
+	var/pivot_step = FALSE
 	///Whether or not the mech destroys walls by running into it.
 	var/bumpsmash = FALSE
 

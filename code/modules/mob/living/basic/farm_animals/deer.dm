@@ -21,6 +21,7 @@
 	maxHealth = 75
 	blood_volume = BLOOD_VOLUME_NORMAL
 	ai_controller = /datum/ai_controller/basic_controller/deer
+	habitable_atmos = list("max_co2" = 10) //MONKESTATION ADDITION: deers won't die in colony atmos
 	/// Things that will scare us into being stationary. Vehicles are scary to deers because they might have headlights.
 	var/static/list/stationary_scary_things = list(/obj/vehicle)
 
@@ -34,9 +35,8 @@
 
 /datum/ai_controller/basic_controller/deer
 	blackboard = list(
-		BB_BASIC_MOB_FLEEING = TRUE,
 		BB_STATIONARY_MOVE_TO_TARGET = TRUE,
-		BB_TARGETTING_DATUM = new /datum/targetting_datum/basic/ignore_faction,
+		BB_TARGETING_STRATEGY = /datum/targeting_strategy/basic,
 	)
 	ai_traits = STOP_MOVING_WHEN_PULLED
 	ai_movement = /datum/ai_movement/basic_avoidance

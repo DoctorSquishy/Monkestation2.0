@@ -52,13 +52,13 @@
 
 	if(src.value != value || force)
 		if(isdatum(src.value))
-			UnregisterSignal(src.value, COMSIG_PARENT_QDELETING)
+			UnregisterSignal(src.value, COMSIG_QDELETING)
 		if(datatype_handler.is_extensive)
 			src.value = datatype_handler.convert_value_extensive(src, value, force)
 		else
 			src.value = datatype_handler.convert_value(src, value, force)
 		if(isdatum(value))
-			RegisterSignal(value, COMSIG_PARENT_QDELETING, PROC_REF(null_value))
+			RegisterSignal(value, COMSIG_QDELETING, PROC_REF(null_value))
 	SEND_SIGNAL(src, COMSIG_PORT_SET_VALUE, value)
 
 /**
@@ -123,6 +123,13 @@
  * Sends a signal whenever the output value is changed
  */
 /datum/port/output
+	///how many inputs we are connected to
+	var/connected_inputs = 0
+	///max amount of connected inputs
+	var/max_inputs = 100000
+
+/datum/port/output/singular
+	max_inputs = 1
 
 /**
  * Disconnects a port from all other ports.
@@ -142,6 +149,7 @@
 /datum/port/input/proc/disconnect(datum/port/output/output)
 	SIGNAL_HANDLER
 	connected_ports -= output
+	output.connected_inputs--
 	UnregisterSignal(output, COMSIG_PORT_SET_VALUE)
 	UnregisterSignal(output, COMSIG_PORT_SET_TYPE)
 	UnregisterSignal(output, COMSIG_PORT_DISCONNECT)
@@ -152,7 +160,7 @@
 	if(value == source)
 		value = null
 	else
-		stack_trace("Impossible? [src] should only receive COMSIG_PARENT_QDELETING from an atom currently in the port, not [source].")
+		stack_trace("Impossible? [src] should only receive COMSIG_QDELETING from an atom currently in the port, not [source].")
 
 /**
  * # Input Port
@@ -185,6 +193,10 @@
 /datum/port/input/proc/connect(datum/port/output/output)
 	if(output in connected_ports)
 		return
+	if(output.max_inputs <= output.connected_inputs)
+		return
+
+	output.connected_inputs++
 	connected_ports += output
 	RegisterSignal(output, COMSIG_PORT_SET_VALUE, PROC_REF(receive_value))
 	RegisterSignal(output, COMSIG_PORT_SET_TYPE, PROC_REF(check_type))

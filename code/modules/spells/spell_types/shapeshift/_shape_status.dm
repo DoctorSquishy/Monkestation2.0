@@ -32,13 +32,14 @@
 /datum/status_effect/shapechange_mob/on_apply()
 	caster_mob.mind?.transfer_to(owner)
 	caster_mob.forceMove(owner)
-	caster_mob.notransform = TRUE
+	ADD_TRAIT(caster_mob, TRAIT_NO_TRANSFORM, REF(src))
 	caster_mob.apply_status_effect(/datum/status_effect/grouped/stasis, STASIS_SHAPECHANGE_EFFECT)
 
-	RegisterSignal(owner, COMSIG_LIVING_PRE_WABBAJACKED, PROC_REF(on_wabbajacked))
+	RegisterSignal(owner, COMSIG_LIVING_PRE_WABBAJACKED, PROC_REF(on_pre_wabbajack))
+	RegisterSignal(owner, COMSIG_PRE_MOB_CHANGED_TYPE, PROC_REF(on_pre_type_change))
 	RegisterSignal(owner, COMSIG_LIVING_DEATH, PROC_REF(on_shape_death))
 	RegisterSignal(caster_mob, COMSIG_LIVING_DEATH, PROC_REF(on_caster_death))
-	RegisterSignal(caster_mob, COMSIG_PARENT_QDELETING, PROC_REF(on_caster_deleted))
+	RegisterSignal(caster_mob, COMSIG_QDELETING, PROC_REF(on_caster_deleted))
 
 	SEND_SIGNAL(caster_mob, COMSIG_LIVING_SHAPESHIFTED, owner)
 	return TRUE
@@ -53,15 +54,24 @@
 	// but juuust in case make sure nothing sticks around.
 	caster_mob = null
 
-/// Signal proc for [COMSIG_LIVING_PRE_WABBAJACKED] to prevent us from being Wabbajacked and messed up.
-/datum/status_effect/shapechange_mob/proc/on_wabbajacked(mob/living/source, randomized)
+/// Called when we're shot by the Wabbajack but before we change into a different mob
+/datum/status_effect/shapechange_mob/proc/on_pre_wabbajack(mob/living/source)
 	SIGNAL_HANDLER
+	on_mob_transformed(source)
+	return STOP_WABBAJACK
 
+/// Called when we're turned into a different mob via the change_mob_type proc
+/datum/status_effect/shapechange_mob/proc/on_pre_type_change(mob/living/source)
+	SIGNAL_HANDLER
+	on_mob_transformed(source)
+	return COMPONENT_BLOCK_MOB_CHANGE
+
+/// Called when the transformed mob tries to change into a different kind of mob, we wouldn't handle this well so we'll just turn back
+/datum/status_effect/shapechange_mob/proc/on_mob_transformed(mob/living/source)
 	var/mob/living/revealed_mob = caster_mob
 	source.visible_message(span_warning("[revealed_mob] gets pulled back to their normal form!"))
 	restore_caster()
 	revealed_mob.Paralyze(10 SECONDS, ignore_canstun = TRUE)
-	return STOP_WABBAJACK
 
 /// Restores the caster back to their human form.
 /// if kill_caster_after is TRUE, the caster will have death() called on them after restoring.
@@ -74,10 +84,10 @@
 
 	already_restored = TRUE
 	UnregisterSignal(owner, list(COMSIG_LIVING_PRE_WABBAJACKED, COMSIG_LIVING_DEATH))
-	UnregisterSignal(caster_mob, list(COMSIG_PARENT_QDELETING, COMSIG_LIVING_DEATH))
+	UnregisterSignal(caster_mob, list(COMSIG_QDELETING, COMSIG_LIVING_DEATH))
 
 	caster_mob.forceMove(owner.loc)
-	caster_mob.notransform = FALSE
+	REMOVE_TRAIT(caster_mob, TRAIT_NO_TRANSFORM, REF(src))
 	caster_mob.remove_status_effect(/datum/status_effect/grouped/stasis, STASIS_SHAPECHANGE_EFFECT)
 	owner.mind?.transfer_to(caster_mob)
 
@@ -121,7 +131,7 @@
 	else
 		owner.death()
 
-/// Signal proc for [COMSIG_PARENT_QDELETING] from our caster, delete us / our owner if we get deleted
+/// Signal proc for [COMSIG_QDELETING] from our caster, delete us / our owner if we get deleted
 /datum/status_effect/shapechange_mob/proc/on_caster_deleted(datum/source)
 	SIGNAL_HANDLER
 
@@ -192,7 +202,8 @@
 		var/damage_to_apply = caster_mob.maxHealth * ((owner.maxHealth - owner.health) / owner.maxHealth)
 		caster_mob.apply_damage(damage_to_apply, source_spell.convert_damage_type, forced = TRUE, wound_bonus = CANT_WOUND)
 
-	caster_mob.blood_volume = owner.blood_volume
+	if(iscarbon(owner)) // monkestation edit: iscarbon check (fixes slimes instakilling you when you detransform)
+		caster_mob.blood_volume = owner.blood_volume
 
 /datum/status_effect/shapechange_mob/from_spell/on_shape_death(datum/source, gibbed)
 	var/datum/action/cooldown/spell/shapeshift/source_spell = source_weakref.resolve()

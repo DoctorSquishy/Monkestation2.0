@@ -58,7 +58,7 @@
 			return ..()
 		inserted_tank = tank_item
 		last_recorded_pressure = 0
-		RegisterSignal(inserted_tank, COMSIG_PARENT_QDELETING, PROC_REF(tank_destruction))
+		RegisterSignal(inserted_tank, COMSIG_QDELETING, PROC_REF(tank_destruction))
 		update_appearance()
 		return
 	if(istype(item, /obj/item/computer_disk))
@@ -84,9 +84,6 @@
 	set_init_directions()
 	update_appearance()
 	return TRUE
-
-/obj/machinery/atmospherics/components/binary/circulator/get_node_connects()
-	return list(turn(dir, 180), dir) // airs[2] is input which is facing dir, airs[1] is output which is facing the other side of dir
 
 /obj/machinery/atmospherics/components/binary/tank_compressor/screwdriver_act(mob/living/user, obj/item/tool)
 	if(active || inserted_tank)
@@ -236,7 +233,7 @@
 	if(gone == inserted_disk)
 		inserted_disk = null
 	if(gone == inserted_tank)
-		UnregisterSignal(inserted_tank, COMSIG_PARENT_QDELETING)
+		UnregisterSignal(inserted_tank, COMSIG_QDELETING)
 		inserted_tank = null
 		update_appearance()
 	return ..()

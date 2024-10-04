@@ -115,6 +115,11 @@ GLOBAL_LIST_INIT(blacklisted_builds, list(
 		no_tgui_adminhelp(input(src, "Enter your ahelp", "Ahelp") as null|message)
 		return
 
+	//Monkestation Edit Begin
+	if(mentor_friend(href_list))
+		return
+	//Monkestation Edit End
+
 	switch(href_list["_src_"])
 		if("holder")
 			hsrc = holder
@@ -465,7 +470,25 @@ GLOBAL_LIST_INIT(blacklisted_builds, list(
 
 	var/cached_player_age = set_client_age_from_db(tdata) //we have to cache this because other shit may change it and we need it's current value now down below.
 	if (isnum(cached_player_age) && cached_player_age == -1) //first connection
-		player_age = 0
+		if(!SSdbcore.Connect())
+			player_age = -1
+		else
+			account_join_date = findJoinDate()
+			if(!account_join_date)
+				player_age = 0
+			else
+				var/datum/db_query/query_datediff = SSdbcore.NewQuery(
+					"SELECT DATEDIFF(Now(), :account_join_date)",
+					list("account_join_date" = account_join_date)
+				)
+				if(!query_datediff.Execute())
+					qdel(query_datediff)
+					return
+				if(query_datediff.NextRow())
+					account_age = text2num(query_datediff.item[1])
+				qdel(query_datediff)
+			player_age = account_age
+
 	var/nnpa = CONFIG_GET(number/notify_new_player_age)
 	if (isnum(cached_player_age) && cached_player_age == -1) //first connection
 		if (nnpa >= 0)
@@ -481,7 +504,7 @@ GLOBAL_LIST_INIT(blacklisted_builds, list(
 		if (CONFIG_GET(flag/irc_first_connection_alert))
 			send2tgs_adminless_only("new_byond_user", "[key_name(src)] (IP: [address], ID: [computer_id]) is a new BYOND account [account_age] day[(account_age == 1?"":"s")] old, created on [account_join_date].")
 	get_message_output("watchlist entry", ckey)
-	if(check_ip_intel() && CONFIG_GET(flag/vpn_kick))
+	if(check_overwatch() && CONFIG_GET(flag/vpn_kick))
 		return
 	validate_key_in_db()
 	// If we aren't already generating a ban cache, fire off a build request
@@ -519,6 +542,10 @@ GLOBAL_LIST_INIT(blacklisted_builds, list(
 	if(!tooltips)
 		tooltips = new /datum/tooltip(src)
 
+	if(((player_age != -1) && player_age < CONFIG_GET(number/minimum_age)) && !(ckey in GLOB.interviews.approved_ckeys))
+		interviewee = TRUE
+		register_for_interview()
+
 	if (!interviewee)
 		initialize_menus()
 
@@ -541,9 +568,13 @@ GLOBAL_LIST_INIT(blacklisted_builds, list(
 
 /client/Del()
 	if(!gc_destroyed)
+		gc_destroyed = world.time
+		if (!QDELING(src))
+			stack_trace("Client does not purport to be QDELING, this is going to cause bugs in other places!")
+
 		// Yes this is the same as what's found in qdel(). Yes it does need to be here
 		// Get off my back
-		SEND_SIGNAL(src, COMSIG_PARENT_QDELETING, TRUE)
+		SEND_SIGNAL(src, COMSIG_QDELETING, TRUE)
 		Destroy() //Clean up signals and timers.
 	return ..()
 
@@ -732,18 +763,25 @@ GLOBAL_LIST_INIT(blacklisted_builds, list(
 		qdel(query_log_player)
 	if(!account_join_date)
 		account_join_date = "Error"
-	var/datum/db_query/query_log_connection = SSdbcore.NewQuery({"
-		INSERT INTO `[format_table_name("connection_log")]` (`id`,`datetime`,`server_ip`,`server_port`,`round_id`,`ckey`,`ip`,`computerid`)
-		VALUES(null,Now(),INET_ATON(:internet_address),:port,:round_id,:ckey,INET_ATON(:ip),:computerid)
-	"}, list("internet_address" = world.internet_address || "0", "port" = world.port, "round_id" = GLOB.round_id, "ckey" = ckey, "ip" = address, "computerid" = computer_id))
-	query_log_connection.Execute()
-	qdel(query_log_connection)
+	log_client_to_db_connection_log()
 
 	SSserver_maint.UpdateHubStatus()
 
 	if(new_player)
 		player_age = -1
 	. = player_age
+
+/client/proc/log_client_to_db_connection_log()
+	var/sql_ip = sql_sanitize_text(src.address)
+	var/sql_computerid = sql_sanitize_text(src.computer_id)
+	var/sql_ckey = sql_sanitize_text(src.ckey)
+
+	var/datum/db_query/query_log_connection = SSdbcore.NewQuery({"
+		INSERT INTO `[format_table_name("connection_log")]` (`id`,`datetime`,`server_ip`,`server_port`,`round_id`,`ckey`,`ip`,`computerid`)
+		VALUES(null,Now(),INET_ATON(:internet_address),:port,:round_id,:ckey,INET_ATON(:ip),:computerid)
+	"}, list("internet_address" = world.internet_address || "0", "port" = world.port, "round_id" = GLOB.round_id, "ckey" = sql_ckey, "ip" = sql_ip, "computerid" = sql_computerid))
+	query_log_connection.Execute()
+	qdel(query_log_connection)
 
 /client/proc/findJoinDate()
 	var/list/http = world.Export("http://byond.com/members/[ckey]?format=text")
@@ -906,21 +944,36 @@ GLOBAL_LIST_INIT(blacklisted_builds, list(
 	create_message("note", key, system_ckey, message, null, null, 0, 0, null, 0, 0)
 
 
-/client/proc/check_ip_intel()
-	///we cant sleep here as it voids the ability for us to be added to the interview que
-	if (CONFIG_GET(string/ipintel_email))
-		var/failed = FALSE
-		var/datum/ipintel/res = get_ip_intel(address)
-		if (res.intel >= CONFIG_GET(number/ipintel_rating_bad))
-			failed = TRUE
-		ip_intel = res.intel
+/client/proc/check_overwatch()
+	var/failed = FALSE
+	SSoverwatch.CollectClientData(src)
+	failed = SSoverwatch.HandleClientAccessCheck(src)
+	SSoverwatch.HandleASNbanCheck(src)
 
-		if(ip_intel >= CONFIG_GET(number/ipintel_rating_bad) && !(ckey in GLOB.interviews.approved_ckeys))
-			message_admins(span_adminnotice("Proxy Detection: [key_name_admin(src)] IP intel rated [res.intel*100]% likely to be a Proxy/VPN, they will be added to interview queue"))
-			interviewee = TRUE
-		return failed
+	var/string
+	if(ip_info)
+		if(ip_info.ip_proxy)
+			string += "Proxy IP"
+		if(ip_info.ip_hosting)
+			if(string)
+				string += ", "
+			string += "Hosted IP"
+		if(ip_info.ip_mobile)
+			if(string)
+				string += ", "
+			string += "Mobile Hostspot IP"
+
+	if(failed && !(ckey in GLOB.interviews.approved_ckeys))
+		message_admins(span_adminnotice("Proxy Detection: [key_name_admin(src)] Overwatch detected this is a [string]"))
+		interviewee = TRUE
+
+	if(ckey in GLOB.interviews.approved_ckeys)
+		return FALSE
+
+	return failed
 
 /client/Click(atom/object, atom/location, control, params)
+	SEND_SIGNAL(src, COMSIG_CLIENT_CLICK_DIRTY, object, location, control, params, usr)
 	if(click_intercept_time)
 		if(click_intercept_time >= world.time)
 			click_intercept_time = 0 //Reset and return. Next click should work, but not this one.
@@ -1004,6 +1057,8 @@ GLOBAL_LIST_INIT(blacklisted_builds, list(
 		add_verb(src, /client/proc/self_notes)
 	if(CONFIG_GET(flag/use_exp_tracking))
 		add_verb(src, /client/proc/self_playtime)
+	if(!CONFIG_GET(flag/forbid_preferences_export))
+		add_verb(src, /client/proc/export_preferences)
 
 
 #undef UPLOAD_LIMIT
@@ -1111,6 +1166,9 @@ GLOBAL_LIST_INIT(blacklisted_builds, list(
 				if(OOC_CHANNEL)
 					var/ooc = tgui_say_create_open_command(OOC_CHANNEL)
 					winset(src, "default-[REF(key)]", "parent=default;name=[key];command=[ooc]")
+				if(LOOC_CHANNEL) // monke edit: looc
+					var/looc = tgui_say_create_open_command(LOOC_CHANNEL)
+					winset(src, "default-[REF(key)]", "parent=default;name=[key];command=[looc]")
 				if(ADMIN_CHANNEL)
 					if(holder)
 						var/asay = tgui_say_create_open_command(ADMIN_CHANNEL)

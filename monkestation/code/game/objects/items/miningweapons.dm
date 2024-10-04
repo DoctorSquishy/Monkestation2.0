@@ -1,3 +1,4 @@
+//Proto-Kinetic Crushers
 /obj/item/kinetic_crusher/machete
 	icon = 'monkestation/icons/obj/items_and_weapons.dmi'
 	icon_state = "PKMachete"
@@ -24,7 +25,7 @@
 	sharpness = SHARP_EDGED
 	actions_types = list(/datum/action/item_action/toggle_light)
 	obj_flags = NONE
-	light_system = MOVABLE_LIGHT
+	light_system = OVERLAY_LIGHT
 	light_outer_range = 5
 	light_on = FALSE
 	charged = TRUE
@@ -67,7 +68,7 @@
 	sharpness = SHARP_EDGED
 	actions_types = list(/datum/action/item_action/toggle_light)
 	obj_flags = UNIQUE_RENAME
-	light_system = MOVABLE_LIGHT
+	light_system = OVERLAY_LIGHT
 	light_outer_range = 8
 	light_on = FALSE
 	charged = TRUE
@@ -116,7 +117,7 @@
 	sharpness = NONE
 	actions_types = list(/datum/action/item_action/toggle_light)
 	obj_flags = UNIQUE_RENAME
-	light_system = MOVABLE_LIGHT
+	light_system = OVERLAY_LIGHT
 	light_outer_range = 5
 	light_on = FALSE
 	charged = TRUE
@@ -169,7 +170,7 @@
 	sharpness = SHARP_POINTY
 	actions_types = list(/datum/action/item_action/toggle_light)
 	obj_flags = UNIQUE_RENAME
-	light_system = MOVABLE_LIGHT
+	light_system = OVERLAY_LIGHT
 	light_outer_range = 4
 	light_on = FALSE
 	charged = TRUE
@@ -179,7 +180,6 @@
 	overrides_main = TRUE
 	overrides_twohandrequired = TRUE
 	override_twohandedsprite = TRUE
-
 
 /obj/item/kinetic_crusher/claw/Initialize(mapload)
 	. = ..()

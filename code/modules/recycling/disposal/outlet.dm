@@ -116,12 +116,44 @@
 			eject_speed = EJECT_SPEED_SLOW
 	return TRUE
 
-/obj/structure/disposaloutlet/emag_act(mob/user, obj/item/card/emag/E)
+/obj/structure/disposaloutlet/emag_act(mob/user, obj/item/card/emag/emag_card)
 	. = ..()
 	if(obj_flags & EMAGGED)
 		return
-	to_chat(user, span_notice("You silently disable the sanity checking on \the [src]'s ejection force."))
+	balloon_alert(user, "ejection force maximized")
 	obj_flags |= EMAGGED
+	return TRUE
+
+/obj/structure/disposaloutlet/force_pushed(atom/movable/pusher, force = MOVE_FORCE_DEFAULT, direction)
+	. = ..()
+	if(!isnull(stored))
+		stored.forceMove(loc)
+		transfer_fingerprints_to(stored)
+		stored = null
+		visible_message(span_warning("[src] is ripped free from the floor!"))
+		qdel(src)
+
+/obj/structure/disposaloutlet/move_crushed(atom/movable/pusher, force = MOVE_FORCE_DEFAULT, direction)
+	. = ..()
+	if(!isnull(stored))
+		stored.forceMove(loc)
+		transfer_fingerprints_to(stored)
+		stored = null
+		visible_message(span_warning("[src] is ripped free from the floor!"))
+		qdel(src)
+
+// Monkestation Addition Start
+/obj/structure/disposaloutlet/throw_at(atom/target, range, speed, mob/thrower, spin = TRUE, diagonals_first = FALSE, datum/callback/callback, force = MOVE_FORCE_STRONG, gentle = FALSE, quickstart = TRUE)
+	. = ..()
+	if(target && (target != src.loc))
+		if(isnull(stored))
+			return
+		stored.forceMove(loc)
+		transfer_fingerprints_to(stored)
+		stored = null
+		visible_message(span_warning("[src] is ripped free from the floor!"))
+		qdel(src)
+// Monkestation Addition End
 
 #undef EJECT_SPEED_SLOW
 #undef EJECT_SPEED_MED

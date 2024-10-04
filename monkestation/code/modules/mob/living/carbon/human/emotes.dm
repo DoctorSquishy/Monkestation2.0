@@ -17,7 +17,7 @@
 
 	//BIBLEFART/
 	//This goes above all else because it's an instagib.
-	for(var/obj/item/storage/book/bible/Holy in Location)
+	for(var/obj/item/book/bible/Holy in Location)
 		if(Holy)
 			var/mob/living/carbon/human/Person = user //We know they are human already, it was in the emote check.
 			var/turf/T = get_step(get_step(Person, NORTH), NORTH)
@@ -33,7 +33,7 @@
 				dyn_explosion(Location, 1, 0)
 			return
 
-	playsound(ass_holder, "monkestation/sound/effects/superfart.ogg", 100, FALSE, pressure_affected = FALSE)
+	playsound(ass_holder, "monkestation/sound/effects/superfart.ogg", 100, FALSE, pressure_affected = FALSE, mixer_channel = CHANNEL_PRUDE)
 	spawn(8)
 		Location = get_turf(user)
 		switch(rand(1000))
@@ -80,4 +80,3 @@
 						Struck.apply_damage(20, "brute", BODY_ZONE_HEAD)
 		spawn(20)
 			booty.cooling_down = FALSE
-

@@ -7,8 +7,6 @@
 	category = EVENT_CATEGORY_JANITORIAL
 	description = "The scrubbers release a tide of mostly harmless froth."
 	admin_setup = list(/datum/event_admin_setup/listed_options/scrubber_overflow)
-	track = EVENT_TRACK_MUNDANE
-	tags = list(TAG_COMMUNAL)
 
 /datum/round_event/scrubber_overflow
 	announce_when = 1
@@ -18,7 +16,7 @@
 	/// Amount of reagents ejected from each scrubber
 	var/reagents_amount = 50
 	/// Probability of an individual scrubber overflowing
-	var/overflow_probability = 50
+	var/overflow_probability = 20 //monkestation edit: 20 down from 50
 	/// Specific reagent to force all scrubbers to use, null for random reagent choice
 	var/datum/reagent/forced_reagent_type
 	/// A list of scrubbers that will have reagents ejected from them
@@ -62,14 +60,14 @@
 	)
 	//needs to be chemid unit checked at some point
 
-/datum/round_event/scrubber_overflow/announce_deadchat(random)
+/datum/round_event/scrubber_overflow/announce_deadchat(random, cause)
 	if(!forced_reagent_type)
 		//nothing out of the ordinary, so default announcement
 		return ..()
-	deadchat_broadcast(" has just been[random ? " randomly" : ""] triggered!", "<b>Scrubber Overflow: [initial(forced_reagent_type.name)]</b>", message_type=DEADCHAT_ANNOUNCEMENT)
+	deadchat_broadcast(" has just been[random ? " randomly" : ""] triggered[cause ? " by [cause]" : ""]!", "<b>Scrubber Overflow: [initial(forced_reagent_type.name)]</b>", message_type=DEADCHAT_ANNOUNCEMENT)
 
 /datum/round_event/scrubber_overflow/announce(fake)
-	priority_announce("The scrubbers network is experiencing a backpressure surge. Some ejection of contents may occur.", "Atmospherics alert")
+	priority_announce("The scrubbers network is experiencing a backpressure surge. Some ejection of contents may occur.", "[command_name()] Engineering Division")
 
 /datum/round_event/scrubber_overflow/setup()
 	for(var/obj/machinery/atmospherics/components/unary/vent_scrubber/temp_vent in GLOB.machines)
@@ -86,9 +84,9 @@
 
 	if(!scrubbers.len)
 		return kill()
-	setup = TRUE
+	setup = TRUE //MONKESTATION ADDITION
 
-/datum/round_event_control/scrubber_overflow/can_spawn_event(players_amt, allow_magic = FALSE, fake_check = FALSE)
+/datum/round_event_control/scrubber_overflow/can_spawn_event(players_amt, allow_magic = FALSE, fake_check = FALSE) //MONKESTATION ADDITION: fake_check = FALSE
 	. = ..()
 	if(!.)
 		return
@@ -107,6 +105,7 @@
 /datum/round_event/scrubber_overflow/proc/get_overflowing_reagent(dangerous)
 	return dangerous ? get_random_reagent_id() : pick(safer_chems)
 
+/* monkestation edit: replaced in [monkestation/code/modules/events/scrubber_overflow.dm]
 /datum/round_event/scrubber_overflow/start()
 	for(var/obj/machinery/atmospherics/components/unary/vent_scrubber/vent as anything in scrubbers)
 		if(!vent.loc)
@@ -126,6 +125,7 @@
 		dispensed_reagent.create_foam(/datum/effect_system/fluid_spread/foam/short, reagents_amount)
 
 		CHECK_TICK
+monkestation end */
 
 /datum/round_event_control/scrubber_overflow/threatening
 	name = "Scrubber Overflow: Threatening"

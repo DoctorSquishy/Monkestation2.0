@@ -111,9 +111,10 @@
 	var/client/owner			// Client this is actually running in
 	var/forced=0				// If true, current url overrides area media sources
 	var/playerstyle				// Choice of which player plugin to use
-	var/const/WINDOW_ID = "infowindow.mediapanel"	// Which elem in skin.dmf to use
+	var/const/WINDOW_ID = "outputwindow.mediapanel"	// Which elem in skin.dmf to use
 	var/balance=0				// do you know what insanity is? Value from -100 to 100 where -100 is left and 100 is right
 	var/signal_synced = 0		//used to check if we have our signal created
+	var/lobby_music = FALSE
 
 /datum/media_manager/New(var/client/C)
 	ASSERT(istype(C))
@@ -130,6 +131,9 @@
 /datum/media_manager/proc/send_update()
 	if(!(owner.prefs))
 		return
+	if(!lobby_music)
+		if(owner.prefs.channel_volume["[CHANNEL_JUKEBOX]"])
+			volume = (owner.prefs.channel_volume["[CHANNEL_JUKEBOX]"])
 
 	if(!owner.prefs.read_preference(/datum/preference/toggle/hear_music))
 		owner << output(list2params(list("", (world.time - 0) / 10, volume * 1, 0)), "[WINDOW_ID]:SetMusic")
@@ -178,7 +182,7 @@
 
 		targetURL = M.media_url
 		targetStartTime = M.media_start_time
-		targetVolume = max(0, M.volume - (dist * 0.1))
+		targetVolume = max(0, M.volume * (1 - (dist * 0.1)))
 		targetBalance = x_dist
 
 		//MP_DEBUG("Found audio source: [M.media_url] @ [(world.time - start_time) / 10]s.")
@@ -212,7 +216,7 @@
 		var/dist = get_dist(new_loc, M)
 		var/x_dist = -(new_loc.x - M.x) * 10
 
-		targetVolume = max(0, M.volume - (dist * 0.1))
+		targetVolume = max(0, M.volume * (1 - (dist * 0.1)))
 		targetBalance = x_dist
 	push_volume_recalc(targetVolume, targetBalance)
 

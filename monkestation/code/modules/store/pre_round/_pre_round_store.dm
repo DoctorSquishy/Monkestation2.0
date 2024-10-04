@@ -10,7 +10,7 @@ GLOBAL_LIST_EMPTY(cached_preround_items)
 	. = ..()
 	ui_interact(user)
 
-/datum/pre_round_store/Destroy(force, ...)
+/datum/pre_round_store/Destroy(force)
 	. = ..()
 	bought_item = null
 
@@ -106,5 +106,6 @@ GLOBAL_LIST_EMPTY(cached_preround_items)
 		backpack.atom_storage.attempt_insert(created_item, new_player_mob, force = TRUE)
 
 	owners_prefs.adjust_metacoins(new_player_mob.client.ckey, (-initial(bought_item.item_cost)), donator_multipler = FALSE)
+	logger.Log(LOG_CATEGORY_META, "[new_player_mob.client] bought a [created_item] for [initial(bought_item.item_cost)] (Pre-round Store)", list("currency_left" = new_player_mob.client.prefs.metacoins))
 	ui_close()
 	qdel(new_player_mob.client.readied_store)

@@ -66,7 +66,7 @@
 	inhand_icon_state = "tapehat"
 	dog_fashion = null
 	worn_y_offset = 6
-	body_parts_covered = HEAD|HAIR
+	body_parts_covered = HEAD //this used to also cover HAIR, but that was never valid code as HAIR is not actually a body_part define!
 	flags_inv = HIDEFACE|HIDEHAIR|HIDEFACIALHAIR
 
 /obj/item/clothing/head/wizard/magus
@@ -223,7 +223,7 @@
 	var/mob/living/M = new /mob/living/basic/stickman(get_turf(usr))
 	M.faction += list("[REF(usr)]")
 	robe_charge = FALSE
-	sleep(3 SECONDS)
+	sleep(30 SECONDS)
 	robe_charge = TRUE
 	to_chat(usr, span_notice("The robe hums, its internal magic supply restored."))
 

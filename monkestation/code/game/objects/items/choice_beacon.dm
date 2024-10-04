@@ -10,7 +10,7 @@
 		/datum/pet_command/idle,
 		/datum/pet_command/free,
 		/datum/pet_command/follow,
-		/datum/pet_command/point_targetting/fetch,
+		/datum/pet_command/point_targeting/fetch,
 		/datum/pet_command/play_dead,
 	)
 
@@ -25,7 +25,7 @@
 			/mob/living/basic/axolotl,
 			/mob/living/basic/mouse,
 			/mob/living/basic/mouse/rat,
-			/mob/living/simple_animal/parrot,
+			/mob/living/basic/parrot,
 			/mob/living/basic/butterfly,
 			/mob/living/basic/bee/friendly,
 			/mob/living/basic/crab,
@@ -69,6 +69,7 @@
 	pod.explosionSize = list(0,0,0,0)
 	your_pet.name = name
 	your_pet.real_name = name
+	your_pet.update_name_tag() // monkestation edit: name tags
 
 	if(isbasicmob(your_pet))
 		var/mob/living/basic/pet = your_pet
@@ -92,13 +93,3 @@
 		return
 
 	to_chat(user, span_notice("[uses] use[uses > 1 ? "s" : ""] remain[uses > 1 ? "" : "s"] on [src]."))
-
-/obj/item/choice_beacon/jukebox //this is probably a terrible way to do this, but its the first that worked.
-	name = "jukebox beacon"
-	desc = "Deploys a jukebox! Also comes wrenched down to the floor for you on delivery! How convenient!"
-/obj/item/choice_beacon/jukebox/interact(mob/user)
-	to_chat(user, span_hear("You hear a crackle before a message plays through [src]: \"Thank you for picking Dave's Instant Jukebox Shipping! This beacon will now self destruct.\""))
-	new /obj/machinery/media/jukebox(get_turf(user))
-	playsound(src, 'sound/weapons/emitter2.ogg', 50, extrarange = SILENCED_SOUND_EXTRARANGE)
-	do_sparks(3, source = src)
-	qdel(src)

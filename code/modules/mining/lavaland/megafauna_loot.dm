@@ -398,7 +398,7 @@
 		give_blood(10)
 
 /obj/item/soulscythe/attack_hand(mob/user, list/modifiers)
-	if(soul.ckey && !soul.faction_check_mob(user))
+	if(soul.ckey && !soul.faction_check_atom(user))
 		to_chat(user, span_warning("You can't pick up [src]!"))
 		return
 	return ..()
@@ -422,7 +422,15 @@
 	using = TRUE
 	balloon_alert(user, "you hold the scythe up...")
 	ADD_TRAIT(src, TRAIT_NODROP, type)
-	var/list/mob/dead/observer/candidates = poll_ghost_candidates("Do you want to play as [user.real_name]'s soulscythe?", ROLE_PAI, FALSE, 100, POLL_IGNORE_POSSESSED_BLADE)
+	var/list/mob/dead/observer/candidates = SSpolling.poll_ghost_candidates(
+		"Do you want to play as [user.real_name]'s soulscythe?",
+		role = ROLE_PAI,
+		check_jobban = ROLE_PAI,
+		poll_time = 10 SECONDS,
+		ignore_category = POLL_IGNORE_POSSESSED_BLADE,
+		alert_pic = src,
+		role_name_text = "soul scythe"
+	)
 	if(LAZYLEN(candidates))
 		var/mob/dead/observer/picked_ghost = pick(candidates)
 		soul.ckey = picked_ghost.ckey
@@ -606,7 +614,7 @@
 	light_power = 1
 	light_color = LIGHT_COLOR_BLOOD_MAGIC
 
-/obj/projectile/soulscythe/on_hit(atom/target, blocked = FALSE)
+/obj/projectile/soulscythe/on_hit(atom/target, blocked = 0, pierce_hit)
 	if(ishostile(target))
 		damage *= 2
 	return ..()
@@ -629,6 +637,7 @@
 	force = 1
 	throwforce = 1
 	hitsound = 'sound/effects/ghost2.ogg'
+	block_sound = 'sound/weapons/parry.ogg'
 	attack_verb_continuous = list("attacks", "slashes", "stabs", "slices", "tears", "lacerates", "rips", "dices", "rends")
 	attack_verb_simple = list("attack", "slash", "stab", "slice", "tear", "lacerate", "rip", "dice", "rend")
 	resistance_flags = LAVA_PROOF | FIRE_PROOF | ACID_PROOF
@@ -658,9 +667,13 @@
 		return
 	to_chat(user, span_notice("You call out for aid, attempting to summon spirits to your side."))
 
-	notify_ghosts("[user] is raising [user.p_their()] [name], calling for your help!",
-		enter_link="<a href=?src=[REF(src)];orbit=1>(Click to help)</a>",
-		source = user, ignore_key = POLL_IGNORE_SPECTRAL_BLADE, header = "Spectral blade")
+	notify_ghosts(
+		"[user] is raising [user.p_their()] [name], calling for your help!",
+		action = NOTIFY_ORBIT,
+		source = user,
+		ignore_key = POLL_IGNORE_SPECTRAL_BLADE,
+		header = "Spectral blade",
+	)
 
 	summon_cooldown = world.time + 600
 
@@ -740,7 +753,7 @@
 			consumer.set_species(/datum/species/lizard)
 		if(2)
 			to_chat(user, span_danger("Your flesh begins to melt! Miraculously, you seem fine otherwise."))
-			consumer.set_species(/datum/species/skeleton)
+			consumer.set_species(/datum/species/skeleton/draconic) //monke edit
 		if(3)
 			to_chat(user, span_danger("Power courses through you! You can now shift your form at will."))
 			var/datum/action/cooldown/spell/shapeshift/dragon/dragon_shapeshift = new(user.mind || user)

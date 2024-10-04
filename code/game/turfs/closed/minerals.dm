@@ -137,10 +137,10 @@
 		SEND_SIGNAL(user, COMSIG_MOB_MINED, src, give_exp)
 	if (mineralType && (mineralAmt > 0))
 		new mineralType(src, mineralAmt)
-		SSblackbox.record_feedback("tally", "ore_mined", mineralAmt, mineralType)
+		SSblackbox.record_feedback("tally", "ore_mined", mineralAmt, initial(mineralType.name))
 	if(ishuman(user))
 		var/mob/living/carbon/human/H = user
-		if(HAS_TRAIT(H, FOOD_JOB_MINER))
+		if(HAS_TRAIT(H, TRAIT_FOOD_JOB_MINER))
 			var/obj/item/stack/ore/picked_ore
 			if(prob(20))
 				switch(rand(122))
@@ -158,7 +158,7 @@
 						picked_ore = /obj/item/stack/ore/bluespace_crystal
 			if(picked_ore)
 				new picked_ore(src, 1)
-				SSblackbox.record_feedback("tally", "ore_mined", 1, picked_ore)
+				SSblackbox.record_feedback("tally", "ore_mined", 1, initial(picked_ore.name))
 
 		if(give_exp)
 			if (mineralType && (mineralAmt > 0))
@@ -172,10 +172,12 @@
 	var/old_type = type
 	if(defer_change) // TODO: make the defer change var a var for any changeturf flag
 		flags = CHANGETURF_DEFER_CHANGE
-	var/turf/open/mined = ScrapeAway(null, flags)
-	addtimer(CALLBACK(src, PROC_REF(AfterChange), flags, old_type), 1, TIMER_UNIQUE)
 	playsound(src, 'sound/effects/break_stone.ogg', 50, TRUE) //beautiful destruction
-	mined.update_visuals()
+	var/turf/open/mined = ScrapeAway(null, flags)
+	if(!QDELETED(src))
+		addtimer(CALLBACK(src, PROC_REF(AfterChange), flags, old_type), 1, TIMER_UNIQUE)
+	if(!QDELETED(mined))
+		mined.update_visuals()
 
 /turf/closed/mineral/attack_alien(mob/living/carbon/alien/user, list/modifiers)
 	balloon_alert(user, "digging...")
@@ -215,7 +217,7 @@
 
 /turf/closed/mineral/random
 	var/mineralChance = 13
-	var/turf_transforms
+	var/turf_transforms = TRUE
 
 /// Returns a list of the chances for minerals to spawn.
 /// Will only run once, and will then be cached.
@@ -231,6 +233,7 @@
 		/obj/item/stack/ore/titanium = 11,
 		/obj/item/stack/ore/uranium = 5,
 		/turf/closed/mineral/gibtonite = 4,
+		/turf/closed/mineral/artifact = 1,
 	)
 
 /turf/closed/mineral/random/Initialize(mapload)
@@ -315,6 +318,7 @@
 		/obj/item/stack/ore/titanium = 4,
 		/obj/item/stack/ore/uranium = 2,
 		/turf/closed/mineral/gibtonite = 2,
+		/turf/closed/mineral/artifact = 2,
 	)
 
 //extremely low chance of rare ores, meant mostly for populating stations with large amounts of asteroid
@@ -352,6 +356,7 @@
 		/obj/item/stack/ore/titanium = 11,
 		/obj/item/stack/ore/uranium = 5,
 		/turf/closed/mineral/gibtonite/volcanic = 4,
+		/turf/closed/mineral/artifact/volcanic = 1,
 	)
 
 /// A turf that can't we can't build openspace chasms on or spawn ruins in.
@@ -853,5 +858,48 @@
 
 /turf/closed/mineral/strong/ex_act(severity, target)
 	return FALSE
+
+//Artifact spawning rock
+
+/turf/closed/mineral/artifact
+	mineralAmt = 1
+	//icon_state = "rock_Gibtonite_inactive"
+	scan_state = "rock_Artifact"
+
+/turf/closed/mineral/artifact/gets_drilled(mob/user, give_exp = FALSE, triggered_by_explosion = FALSE)
+	if(istype(user))
+		SEND_SIGNAL(user, COMSIG_MOB_MINED, src, give_exp)
+
+	if(!triggered_by_explosion) //if someone maxcaps lavaland and promptly unearths every single artifact thats gonna fuck up and activate some of them which is not good
+		new /obj/effect/artifact_spawner(src)
+
+	var/flags = NONE
+	if(defer_change)
+		flags = CHANGETURF_DEFER_CHANGE
+	var/turf/open/mined = ScrapeAway(null, flags)
+	mined.update_visuals()
+
+/turf/closed/mineral/artifact/volcanic
+	turf_type = /turf/open/misc/asteroid/basalt/lava_land_surface
+	baseturfs = /turf/open/misc/asteroid/basalt/lava_land_surface
+	initial_gas_mix = LAVALAND_DEFAULT_ATMOS
+	defer_change = TRUE
+
+/turf/closed/mineral/mineral_sample
+	mineralAmt = 1
+	//icon_state = "rock_Gibtonite_inactive"
+	scan_state = "rock_Artifact"
+
+/turf/closed/mineral/mineral_sample/gets_drilled(mob/user, give_exp = FALSE, triggered_by_explosion = FALSE)
+	if(istype(user))
+		SEND_SIGNAL(user, COMSIG_MOB_MINED, src, give_exp)
+
+	new /obj/item/merged_material/mineral_sample(src)
+
+	var/flags = NONE
+	if(defer_change)
+		flags = CHANGETURF_DEFER_CHANGE
+	var/turf/open/mined = ScrapeAway(null, flags)
+	mined.update_visuals()
 
 #undef MINING_MESSAGE_COOLDOWN

@@ -61,6 +61,7 @@
 	if(isliving(parent))
 		RegisterSignal(parent, COMSIG_ATOM_EMP_ACT, PROC_REF(on_emp))
 		RegisterSignal(parent, COMSIG_LIVING_DEATH, PROC_REF(on_death))
+		RegisterSignal(parent, COMSIG_LIVING_REVIVE, PROC_REF(on_revive))
 		RegisterSignal(parent, COMSIG_MOB_TRIED_ACCESS, PROC_REF(check_access))
 		RegisterSignal(parent, COMSIG_LIVING_ELECTROCUTE_ACT, PROC_REF(on_shock))
 		RegisterSignal(parent, COMSIG_LIVING_MINOR_SHOCK, PROC_REF(on_minor_shock))
@@ -110,7 +111,7 @@
 		adjust_nanites(null, amount) //just add to the nanite volume
 
 /datum/component/nanites/process(seconds_per_tick)
-	if(!IS_IN_STASIS(host_mob))
+	if(!HAS_TRAIT(host_mob, TRAIT_STASIS))
 		adjust_nanites(null, (regen_rate + (SSresearch.science_tech.researched_nodes["nanite_harmonic"] ? HARMONIC_REGEN_BOOST : 0)) * seconds_per_tick)
 		add_research()
 		for(var/X in programs)
@@ -302,12 +303,18 @@
 		var/datum/nanite_program/NP = X
 		NP.on_death(gibbed)
 
-/datum/component/nanites/proc/receive_signal(datum/source, code, source = "an unidentified source")
+/datum/component/nanites/proc/on_revive(datum/source, full_heal, admin_revive)
+	SIGNAL_HANDLER
+
+	for(var/datum/nanite_program/program in programs)
+		program.on_revive(full_heal, admin_revive)
+
+/datum/component/nanites/proc/receive_signal(datum/source, code, signal_source = "an unidentified source")
 	SIGNAL_HANDLER
 
 	for(var/X in programs)
 		var/datum/nanite_program/NP = X
-		NP.receive_signal(code, source)
+		NP.receive_signal(code, signal_source)
 
 /datum/component/nanites/proc/receive_comm_signal(datum/source, comm_code, comm_message, comm_source = "an unidentified source")
 	SIGNAL_HANDLER

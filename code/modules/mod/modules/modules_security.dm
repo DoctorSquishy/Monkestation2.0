@@ -18,8 +18,8 @@
 /obj/item/mod/module/magnetic_harness/Initialize(mapload)
 	. = ..()
 	if(!guns_typecache)
-		guns_typecache = typecacheof(list(/obj/item/gun/ballistic, /obj/item/gun/energy, /obj/item/gun/grenadelauncher, /obj/item/gun/chem, /obj/item/gun/syringe))
-
+		guns_typecache = typecacheof(list(/obj/item/gun/ballistic, /obj/item/gun/energy, /obj/item/gun/grenadelauncher, /obj/item/gun/chem, /obj/item/gun/syringe, /obj/item/gun/microfusion))
+//monkestation edit on previous line: adds microfusion guns
 /obj/item/mod/module/magnetic_harness/on_install()
 	already_allowed_guns = guns_typecache & mod.chestplate.allowed
 	mod.chestplate.allowed |= guns_typecache
@@ -364,8 +364,8 @@
 		Its loud ping is much harder to hide in an indoor station than in the outdoor operations it was designed for."
 	icon_state = "active_sonar"
 	module_type = MODULE_USABLE
-	use_power_cost = DEFAULT_CHARGE_DRAIN * 5
-	complexity = 3
+	use_power_cost = DEFAULT_CHARGE_DRAIN * 4
+	complexity = 2
 	incompatible_modules = list(/obj/item/mod/module/active_sonar)
 	cooldown_time = 25 SECONDS
 

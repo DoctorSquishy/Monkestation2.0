@@ -12,10 +12,10 @@
 	throw_speed = 1
 	throw_range = 5
 	w_class = WEIGHT_CLASS_NORMAL
-	custom_materials = list(/datum/material/iron=500)
+	custom_materials = list(/datum/material/iron= HALF_SHEET_MATERIAL_AMOUNT * 0.5)
 	resistance_flags = FIRE_PROOF
 	trigger_guard = TRIGGER_GUARD_NORMAL
-	light_system = MOVABLE_LIGHT
+	light_system = OVERLAY_LIGHT
 	light_on = FALSE
 	var/status = FALSE
 	var/lit = FALSE //on or off
@@ -292,7 +292,7 @@
 	reagent_puff.user = user
 	reagent_puff.sprayer = src
 	reagent_puff.lifetime = puff_reagent_left
-	reagent_puff.RegisterSignal(our_loop, COMSIG_PARENT_QDELETING, TYPE_PROC_REF(/obj/effect/decal/chempuff, loop_ended))
+	reagent_puff.RegisterSignal(our_loop, COMSIG_QDELETING, TYPE_PROC_REF(/obj/effect/decal/chempuff, loop_ended))
 	reagent_puff.RegisterSignal(our_loop, COMSIG_MOVELOOP_POSTPROCESS, TYPE_PROC_REF(/obj/effect/decal/chempuff, check_move))
 
 /obj/item/flamethrower/Initialize(mapload)

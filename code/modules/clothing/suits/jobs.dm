@@ -20,6 +20,7 @@
 		/obj/item/plant_analyzer,
 		/obj/item/reagent_containers/cup/beaker,
 		/obj/item/reagent_containers/cup/bottle,
+		/obj/item/reagent_containers/cup/tube,
 		/obj/item/reagent_containers/spray/pestspray,
 		/obj/item/reagent_containers/spray/plantbgone,
 		/obj/item/secateurs,
@@ -161,6 +162,7 @@
 		/obj/item/tank/internals/plasmaman,
 		/obj/item/t_scanner,
 		/obj/item/gun/ballistic/rifle/boltaction/pipegun/prime,
+		/obj/item/tank/internals/oxygen, //monkestation edit
 	)
 	resistance_flags = NONE
 	species_exception = list(/datum/species/golem)
@@ -267,6 +269,7 @@
 		/obj/item/reagent_containers/dropper,
 		/obj/item/reagent_containers/cup/beaker,
 		/obj/item/reagent_containers/cup/bottle,
+		/obj/item/reagent_containers/cup/tube,
 		/obj/item/reagent_containers/hypospray,
 		/obj/item/reagent_containers/syringe,
 		/obj/item/retractor,

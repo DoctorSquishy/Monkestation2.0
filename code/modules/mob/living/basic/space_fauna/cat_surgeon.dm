@@ -61,11 +61,10 @@
 	)
 	tail.Remove(attacked)
 	tail.forceMove(drop_location())
-	tail.color = attacked.hair_color
 
 /datum/ai_controller/basic_controller/cat_butcherer
 	blackboard = list(
-		BB_TARGETTING_DATUM = new /datum/targetting_datum/basic,
+		BB_TARGETING_STRATEGY = /datum/targeting_strategy/basic,
 	)
 
 	ai_movement = /datum/ai_movement/basic_avoidance

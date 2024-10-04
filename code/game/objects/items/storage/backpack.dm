@@ -255,6 +255,7 @@
 	throwforce = 15
 	attack_verb_continuous = list("MEATS", "MEAT MEATS")
 	attack_verb_simple = list("MEAT", "MEAT MEAT")
+	custom_materials = list(/datum/material/meat = SHEET_MATERIAL_AMOUNT * 25) // MEAT
 	///Sounds used in the squeak component
 	var/list/meat_sounds = list('sound/effects/blobattack.ogg' = 1)
 	///Reagents added to the edible component, ingested when you EAT the MEAT
@@ -271,13 +272,26 @@
 
 /obj/item/storage/backpack/meat/Initialize(mapload)
 	. = ..()
-	AddComponent(/datum/component/edible,\
+	AddComponent(
+		/datum/component/edible,\
 		initial_reagents = meat_reagents,\
 		foodtypes = foodtypes,\
 		tastes = tastes,\
 		eatverbs = eatverbs,\
 	)
 	AddComponent(/datum/component/squeak, meat_sounds)
+	AddComponent(
+		/datum/component/blood_walk,\
+		blood_type = /obj/effect/decal/cleanable/blood,\
+		blood_spawn_chance = 15,\
+		max_blood = 300,\
+	)
+	AddComponent(
+		/datum/component/bloody_spreader,\
+		blood_left = INFINITY,\
+		blood_dna = list("MEAT DNA" = "MT+"),\
+		diseases = null,\
+	)
 
 /*
  * Satchel Types
@@ -411,11 +425,14 @@
 
 	..()
 
+/obj/item/storage/backpack/satchel/flat/listening_post_secret_stash
+	desc = "God, the stench from this thing is potent."
+
 /obj/item/storage/backpack/satchel/flat/listening_post_secret_stash/PopulateContents()
-	new /obj/item/clothing/head/helmet/space/eva(src)
-	new /obj/item/clothing/suit/space/eva(src)
-	new /obj/item/tank/internals/oxygen/empty(src)
-	new /obj/item/tank/internals/oxygen/empty(src)
+	new /obj/item/seeds/cannabis(src)
+	new /obj/item/food/grown/cannabis(src)
+	new /obj/item/storage/box/donkpockets/donkpockethonk(src)
+	new /obj/item/choice_beacon/pet(src)
 
 	..()
 
@@ -494,7 +511,7 @@
 	inhand_icon_state = "duffel-sci"
 
 /obj/item/storage/backpack/duffelbag/virology
-	name = "virologist's duffel bag"
+	name = "pathologist's duffel bag"
 	desc = "A large duffel bag for holding extra viral bottles."
 	icon_state = "duffel-virology"
 	inhand_icon_state = "duffel-virology"
@@ -612,19 +629,20 @@
 	inhand_icon_state = "duffel-syndiemed"
 
 /obj/item/storage/backpack/duffelbag/syndie/surgery/PopulateContents()
-	new /obj/item/scalpel(src)
-	new /obj/item/hemostat(src)
-	new /obj/item/retractor(src)
-	new /obj/item/circular_saw(src)
-	new /obj/item/bonesetter(src)
-	new /obj/item/surgicaldrill(src)
-	new /obj/item/cautery(src)
+	new /obj/item/scalpel/advanced(src)
+	new /obj/item/retractor/advanced(src)
+	new /obj/item/cautery/advanced(src)
 	new /obj/item/surgical_drapes(src)
+	new /obj/item/reagent_containers/medigel/sterilizine(src)
+	new /obj/item/surgicaldrill(src)
+	new /obj/item/bonesetter(src)
+	new /obj/item/blood_filter(src)
+	new /obj/item/stack/medical/bone_gel(src)
+	new /obj/item/stack/sticky_tape/surgical(src)
+	new /obj/item/emergency_bed(src)
 	new /obj/item/clothing/suit/jacket/straight_jacket(src)
 	new /obj/item/clothing/mask/muzzle(src)
 	new /obj/item/mmi/syndie(src)
-	new /obj/item/blood_filter(src)
-	new /obj/item/stack/medical/bone_gel(src)
 
 /obj/item/storage/backpack/duffelbag/syndie/ammo
 	name = "ammunition duffel bag"
@@ -677,6 +695,7 @@
 	desc = "A large duffel bag containing a C-20r, some magazines, and a cheap looking suppressor."
 
 /obj/item/storage/backpack/duffelbag/syndie/c20rbundle/PopulateContents()
+	new /obj/item/ammo_box/magazine/smgm45(src)
 	new /obj/item/ammo_box/magazine/smgm45(src)
 	new /obj/item/ammo_box/magazine/smgm45(src)
 	new /obj/item/gun/ballistic/automatic/c20r(src)

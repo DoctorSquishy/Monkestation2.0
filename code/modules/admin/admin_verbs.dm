@@ -42,9 +42,14 @@ GLOBAL_PROTECT(admin_verbs_admin)
 	/datum/admins/proc/toggleguests, /*toggles whether guests can join the current game*/
 	/datum/admins/proc/toggleooc, /*toggles ooc on/off for everyone*/
 	/datum/admins/proc/toggleoocdead, /*toggles ooc on/off for everyone who is dead*/
+	/datum/admins/proc/togglelooc, /*MONKESTATION EDIT; toggles looc on/off for everyone*/
+	/datum/admins/proc/toggledeadchat, /*MONKESTATION EDIT; toggles deadchat on/off for everyone*/
 	/datum/admins/proc/trophy_manager,
 	/datum/admins/proc/view_all_circuits,
+	/datum/admins/proc/open_artifactpanel,
 	/datum/verbs/menu/Admin/verb/playerpanel, /* It isn't /datum/admin but it fits no less */
+	/datum/admins/proc/kick_player_by_ckey, //MONKESTATION ADDITION - kick a player by their ckey
+	/datum/admins/proc/change_shuttle_events, //allows us to change the shuttle events
 // Client procs
 	/client/proc/admin_call_shuttle, /*allows us to call the emergency shuttle*/
 	/client/proc/admin_cancel_shuttle, /*allows us to cancel the emergency shuttle, sending it back to centcom*/
@@ -52,6 +57,9 @@ GLOBAL_PROTECT(admin_verbs_admin)
 	/client/proc/admin_enable_shuttle,  /*undoes the above*/
 	/client/proc/admin_ghost, /*allows us to ghost/reenter body at will*/
 	/client/proc/admin_hostile_environment, /*Allows admins to prevent the emergency shuttle from leaving, also lets admins clear hostile environments if theres one stuck*/
+	/client/proc/centcom_podlauncher,/*Open a window to launch a Supplypod and configure it or it's contents*/
+	/client/proc/check_ai_laws, /*shows AI and borg laws*/
+	/client/proc/check_antagonists, /*shows all antags*/
 	/client/proc/cmd_admin_check_contents, /*displays the contents of an instance*/
 	/client/proc/cmd_admin_check_player_exp, /* shows players by playtime */
 	/client/proc/cmd_admin_create_centcom_report,
@@ -62,9 +70,7 @@ GLOBAL_PROTECT(admin_verbs_admin)
 	/client/proc/cmd_admin_subtle_message, /*send a message to somebody as a 'voice in their head'*/
 	/client/proc/cmd_admin_world_narrate, /*sends text to all players with no padding*/
 	/client/proc/cmd_change_command_name,
-	/client/proc/centcom_podlauncher,/*Open a window to launch a Supplypod and configure it or it's contents*/
-	/client/proc/check_ai_laws, /*shows AI and borg laws*/
-	/client/proc/check_antagonists, /*shows all antags*/
+	/client/proc/create_mob_worm,
 	/client/proc/fax_panel, /*send a paper to fax*/
 	/client/proc/force_load_lazy_template,
 	/client/proc/game_panel, /*game panel, allows to change game-mode etc*/
@@ -93,8 +99,11 @@ GLOBAL_PROTECT(admin_verbs_admin)
 	/client/proc/cmd_admin_law_panel,
 	/client/proc/spawn_pollution,
 	/client/proc/view_player_camera,
+	/client/proc/log_viewer_new,
+	/client/proc/request_more_opfor,
+	/client/proc/view_opfors,
 	)
-GLOBAL_LIST_INIT(admin_verbs_ban, list(/client/proc/unban_panel, /client/proc/ban_panel, /client/proc/stickybanpanel))
+GLOBAL_LIST_INIT(admin_verbs_ban, list(/client/proc/unban_panel, /client/proc/ban_panel, /client/proc/stickybanpanel, /client/proc/library_control))
 GLOBAL_PROTECT(admin_verbs_ban)
 GLOBAL_LIST_INIT(admin_verbs_sounds, list(/client/proc/play_local_sound, /client/proc/play_direct_mob_sound, /client/proc/play_sound, /client/proc/set_round_end_sound))
 GLOBAL_PROTECT(admin_verbs_sounds)
@@ -104,8 +113,9 @@ GLOBAL_LIST_INIT(admin_verbs_fun, list(
 // Client procs
 	/client/proc/admin_away,
 	/client/proc/add_mob_ability,
-	/client/proc/adjust_players_antag_tokens,
-	/client/proc/adjust_players_metacoins,
+	/client/proc/adjust_players_antag_tokens, //monkestation edit
+	/client/proc/adjust_players_event_tokens, //monkestation edit
+	/client/proc/adjust_players_metacoins, //monkestation edit
 	/client/proc/admin_change_sec_level,
 	/client/proc/change_ocean, //monkestation addition
 	/client/proc/cinematic,
@@ -113,6 +123,8 @@ GLOBAL_LIST_INIT(admin_verbs_fun, list(
 	/client/proc/cmd_admin_gib_self,
 	/client/proc/cmd_select_equipment,
 	/client/proc/command_report_footnote,
+	/client/proc/diseases_panel,
+	/client/proc/disease_view,
 	/client/proc/delay_command_report,
 	/client/proc/drop_bomb,
 	/client/proc/drop_dynex_bomb,
@@ -137,6 +149,7 @@ GLOBAL_LIST_INIT(admin_verbs_fun, list(
 	/client/proc/show_tip,
 	/client/proc/smite,
 	/client/proc/spawn_liquid, //monkestation addition
+	/client/proc/spawn_sunbeam,
 	/client/proc/spawn_pollution, //monkestation addition
 	/client/proc/summon_ert,
 	/client/proc/summon_twitch_event, //monkestation addition
@@ -144,7 +157,7 @@ GLOBAL_LIST_INIT(admin_verbs_fun, list(
 	/client/proc/toggle_random_events,
 	))
 GLOBAL_PROTECT(admin_verbs_fun)
-GLOBAL_LIST_INIT(admin_verbs_spawn, list(/datum/admins/proc/spawn_atom, /datum/admins/proc/podspawn_atom, /datum/admins/proc/spawn_cargo, /datum/admins/proc/spawn_objasmob, /client/proc/respawn_character, /datum/admins/proc/beaker_panel))
+GLOBAL_LIST_INIT(admin_verbs_spawn, list(/datum/admins/proc/spawn_atom, /datum/admins/proc/podspawn_atom, /datum/admins/proc/spawn_cargo, /datum/admins/proc/spawn_objasmob, /client/proc/respawn_character, /datum/admins/proc/beaker_panel, /client/proc/spawn_mixtape)) //Monkestation Addition: mixtape spawner
 GLOBAL_PROTECT(admin_verbs_spawn)
 GLOBAL_LIST_INIT(admin_verbs_server, world.AVerbsServer())
 GLOBAL_PROTECT(admin_verbs_server)
@@ -172,6 +185,8 @@ GLOBAL_PROTECT(admin_verbs_server)
 	/client/proc/toggle_hub,
 	/client/proc/toggle_interviews,
 	/client/proc/toggle_random_events,
+	/client/proc/Overwatch_ASN_panel,
+	/client/proc/Overwatch_WhitelistPanel,
 	)
 GLOBAL_LIST_INIT(admin_verbs_debug, world.AVerbsDebug())
 GLOBAL_PROTECT(admin_verbs_debug)
@@ -216,6 +231,7 @@ GLOBAL_PROTECT(admin_verbs_debug)
 	/client/proc/get_dynex_range, /*debug verbs for dynex explosions.*/
 	/client/proc/jump_to_ruin,
 	/client/proc/load_circuit,
+	/client/proc/map_export,
 	/client/proc/map_template_load,
 	/client/proc/map_template_upload,
 	/client/proc/modify_goals,
@@ -241,6 +257,11 @@ GLOBAL_PROTECT(admin_verbs_debug)
 	/client/proc/validate_cards,
 	/client/proc/validate_puzzgrids,
 	/client/proc/view_runtimes,
+	// monkestation verbs: debugger tools
+	/client/proc/log_viewer_new,
+	/client/proc/getserverlogs_debug,
+	/client/proc/getcurrentlogs_debug,
+	/client/proc/server_memory_stats,
 	)
 GLOBAL_LIST_INIT(admin_verbs_possess, list(/proc/possess, /proc/release))
 GLOBAL_PROTECT(admin_verbs_possess)
@@ -255,6 +276,7 @@ GLOBAL_PROTECT(admin_verbs_poll)
 
 		var/rights = holder.rank_flags()
 		add_verb(src, GLOB.admin_verbs_default)
+		add_verb(src, GLOB.mentor_verbs) // monkestation edit: mentors
 		if(rights & R_BUILD)
 			add_verb(src, /client/proc/togglebuildmodeself)
 		if(rights & R_ADMIN)
@@ -301,7 +323,8 @@ GLOBAL_PROTECT(admin_verbs_poll)
 		/*Debug verbs added by "show debug verbs"*/
 		GLOB.admin_verbs_debug_mapping,
 		/client/proc/disable_mapping_verbs,
-		/client/proc/readmin
+		/client/proc/readmin,
+		GLOB.mentor_verbs //Monkestation Edit
 		))
 
 /client/proc/hide_verbs()
@@ -386,7 +409,7 @@ GLOBAL_PROTECT(admin_verbs_poll)
 
 /client/proc/list_bombers()
 	set name = "List Bombers"
-	set category = "Admin.Game"
+	set category = "Admin.Logging"
 	if(!holder)
 		return
 	holder.list_bombers()
@@ -394,7 +417,7 @@ GLOBAL_PROTECT(admin_verbs_poll)
 
 /client/proc/list_signalers()
 	set name = "List Signalers"
-	set category = "Admin.Game"
+	set category = "Admin.Logging"
 	if(!holder)
 		return
 	holder.list_signalers()
@@ -402,7 +425,7 @@ GLOBAL_PROTECT(admin_verbs_poll)
 
 /client/proc/list_law_changes()
 	set name = "List Law Changes"
-	set category = "Debug"
+	set category = "Admin.Logging"
 	if(!holder)
 		return
 	holder.list_law_changes()
@@ -418,7 +441,7 @@ GLOBAL_PROTECT(admin_verbs_poll)
 
 /client/proc/list_dna()
 	set name = "List DNA"
-	set category = "Debug"
+	set category = "Admin.Logging"
 	if(!holder)
 		return
 	holder.list_dna()
@@ -426,7 +449,7 @@ GLOBAL_PROTECT(admin_verbs_poll)
 
 /client/proc/list_fingerprints()
 	set name = "List Fingerprints"
-	set category = "Debug"
+	set category = "Admin.Logging"
 	if(!holder)
 		return
 	holder.list_fingerprints()
@@ -775,13 +798,9 @@ GLOBAL_PROTECT(admin_verbs_poll)
 	if(!istype(T))
 		to_chat(src, span_notice("You can only give a disease to a mob of type /mob/living."), confidential = TRUE)
 		return
-	var/datum/disease/D = input("Choose the disease to give to that guy", "ACHOO") as null|anything in sort_list(SSdisease.diseases, GLOBAL_PROC_REF(cmp_typepaths_asc))
-	if(!D)
-		return
-	T.ForceContractDisease(new D, FALSE, TRUE)
+	//T.ForceContractDisease(new D, FALSE, TRUE)
+	make_custom_virus(src, T)
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Give Disease") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
-	log_admin("[key_name(usr)] gave [key_name(T)] the disease [D].")
-	message_admins(span_adminnotice("[key_name_admin(usr)] gave [key_name_admin(T)] the disease [D]."))
 
 /client/proc/object_say(obj/O in world)
 	set category = "Admin.Events"
@@ -984,8 +1003,6 @@ GLOBAL_PROTECT(admin_verbs_poll)
 		var/reqs = initial(spell.spell_requirements)
 		if(reqs & SPELL_CASTABLE_AS_BRAIN)
 			real_reqs += "Castable as brain"
-		if(reqs & SPELL_CASTABLE_WHILE_PHASED)
-			real_reqs += "Castable phased"
 		if(reqs & SPELL_REQUIRES_HUMAN)
 			real_reqs += "Must be human"
 		if(reqs & SPELL_REQUIRES_MIME_VOW)
@@ -1039,3 +1056,59 @@ GLOBAL_PROTECT(admin_verbs_poll)
 
 	message_admins("[key_name_admin(usr)] has loaded lazy template '[choice]'")
 	to_chat(usr, span_boldnicegreen("Template loaded, you have been moved to the bottom left of the reservation."))
+
+/client/proc/create_mob_worm()
+	set category = "Admin.Fun"
+	set name = "Create Mob Worm"
+	set desc = "Attached a linked list of mobs to a marked mob"
+	if (!check_rights(R_FUN))
+		return
+	if(isnull(holder))
+		return
+	if(!isliving(holder.marked_datum))
+		to_chat(usr, span_warning("Error: Please mark a mob to attach mobs to."))
+		return
+	var/mob/living/head = holder.marked_datum
+
+	var/attempted_target_path = tgui_input_text(
+		usr,
+		"Enter typepath of a mob you'd like to make your chain from.",
+		"Typepath",
+		"[/mob/living/basic/pet/dog/corgi/ian]",
+	)
+
+	if (isnull(attempted_target_path))
+		return //The user pressed "Cancel"
+
+	var/desired_mob = text2path(attempted_target_path)
+	if(!ispath(desired_mob))
+		var/static/list/mob_paths = make_types_fancy(subtypesof(/mob/living))
+		desired_mob = pick_closest_path(attempted_target_path, mob_paths)
+	if(isnull(desired_mob) || !ispath(desired_mob) || QDELETED(head))
+		return //The user pressed "Cancel"
+
+	var/amount = tgui_input_number(usr, "How long should our tail be?", "Worm Configurator", default = 3, min_value = 1)
+	if (isnull(amount) || amount < 1 || QDELETED(head))
+		return
+	head.AddComponent(/datum/component/mob_chain)
+	var/mob/living/previous = head
+	for (var/i in 1 to amount)
+		var/mob/living/segment = new desired_mob(head.drop_location())
+		if (QDELETED(segment)) // ffs mobs which replace themselves with other mobs
+			i--
+			continue
+		ADD_TRAIT(segment, TRAIT_PERMANENTLY_MORTAL, INNATE_TRAIT)
+		QDEL_NULL(segment.ai_controller)
+		segment.AddComponent(/datum/component/mob_chain, front = previous)
+		previous = segment
+
+/client/proc/library_control()
+	set name = "Library Management"
+	set category = "Admin"
+	if(!check_rights(R_BAN))
+		return
+
+	if(!holder.library_manager)
+		holder.library_manager = new()
+	holder.library_manager.ui_interact(usr)
+	SSblackbox.record_feedback("tally", "admin_verb", 1, "Library Management") // If you are copy-pasting this, ensure the 4th parameter is unique to the new proc!

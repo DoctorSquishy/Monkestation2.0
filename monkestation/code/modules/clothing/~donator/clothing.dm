@@ -44,7 +44,7 @@
 
 /obj/item/canvas/drawingtablet/ui_action_click(mob/user, action)
 	if(istype(action, /datum/action/item_action/dtselectcolor))
-		currentcolor = input(user, "", "Choose Color", currentcolor) as color|null
+		currentcolor = tgui_color_picker(user, "", "Choose Color", currentcolor)
 	else if(istype(action, /datum/action/item_action/dtcolormenu))
 		var/list/selects = colors.Copy()
 		selects["Save"] = "Save"
@@ -269,15 +269,16 @@
 /obj/item/clothing/gloves/ring/hypno/coffeepot
 	name = "hypnodemon's ring"
 	desc = "A pallid, softly desaturated-looking gold ring that doesn't look like it belongs. It's hard to put one's finger on why it feels at odds with the world around it - the shine coming off it looks like it could be a mismatch with the lighting in the room, or it could be that it seems to glint and twinkle occasionally when there's no obvious reason for it to - though only when you're not really looking."
-	spans = list("velvet")
+	spans = list("hypnophrase")
 
 /datum/action/item_action/hypno_whisper
 	name = "Hypnotic Whisper"
 
 /obj/item/clothing/gloves/ring/hypno/ui_action_click(mob/living/user, action)
+	set waitfor = FALSE
 	if(!isliving(user) || !can_use(user))
 		return
-	var/message = input(user, "Speak with a hypnotic whisper", "Whisper")
+	var/message = tgui_input_text(user, "Speak with a hypnotic whisper", "Whisper", encode = FALSE)
 	if(QDELETED(src) || QDELETED(user) || !message || !user.can_speak())
 		return
 	user.whisper(message, spans = spans)
@@ -834,6 +835,16 @@
 	worn_icon = 'monkestation/icons/donator/mob/clothing/suit.dmi'
 	icon_state = "CCvest"
 
+/obj/item/clothing/suit/armor/vest/nanotrasen_consultant/hubert/Initialize(mapload)
+	. = ..()
+	set_armor(/datum/armor/vest_ntc_hubert)
+
+/datum/armor/vest_ntc_hubert
+	melee = 0
+	bullet = 0
+	energy = 0
+	laser = 0
+
 //Donation reward for Hacker T.Dog
 /obj/item/clothing/under/rank/nanotrasen_consultant/hubert
 	name = "CC ensign's uniform"
@@ -1105,14 +1116,15 @@
 	worn_icon_state = "pocketwatch"
 	icon_state = "pocketwatch"
 	inhand_icon_state = "pocketwatch"
-	var/list/spans = list("velvet")
+	var/list/spans = list("hypnophrase")
 	actions_types = list(/datum/action/item_action/hypno_whisper)
 
 //TODO: make a component for all that various hypno stuff instead of adding it to items individually
 /obj/item/clothing/accessory/hypno_watch/ui_action_click(mob/living/user, action)
+	set waitfor = FALSE
 	if(!isliving(user) || !can_use(user))
 		return
-	var/message = input(user, "Speak with a hypnotic whisper", "Whisper")
+	var/message = tgui_input_text(user, "Speak with a hypnotic whisper", "Whisper", encode = FALSE)
 	if(QDELETED(src) || QDELETED(user) || !message || !user.can_speak())
 		return
 	user.whisper(message, spans = spans)

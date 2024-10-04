@@ -83,6 +83,18 @@ GLOBAL_LIST_EMPTY_TYPED(integrated_circuits, /obj/item/integrated_circuit)
 	/// The current linked component printer. Lets you remotely print off circuit components and places them in the integrated circuit.
 	var/datum/weakref/linked_component_printer
 
+	///list of components we cannot put inside this circuit
+	var/list/blacklisted_components = list(
+		/obj/item/circuit_component/chem/filter,
+		/obj/item/circuit_component/chem/mixer,
+		/obj/item/circuit_component/chem/weighted_splitter,
+		/obj/item/circuit_component/chem/synthesizer,
+		/obj/item/circuit_component/chem/output_manufacturer,
+		/obj/item/circuit_component/chem/input,
+		/obj/item/circuit_component/chem/output,
+		/obj/item/circuit_component/chem/splitter,
+	)
+
 /obj/item/integrated_circuit/Initialize(mapload)
 	. = ..()
 
@@ -184,7 +196,7 @@ GLOBAL_LIST_EMPTY_TYPED(integrated_circuits, /obj/item/integrated_circuit)
 	set_on(TRUE)
 	SEND_SIGNAL(src, COMSIG_CIRCUIT_SET_SHELL, new_shell)
 	shell = new_shell
-	RegisterSignal(shell, COMSIG_PARENT_QDELETING, PROC_REF(remove_current_shell))
+	RegisterSignal(shell, COMSIG_QDELETING, PROC_REF(remove_current_shell))
 	for(var/obj/item/circuit_component/attached_component as anything in attached_components)
 		attached_component.register_shell(shell)
 		// Their input ports may be updated with user values, but the outputs haven't updated
@@ -201,7 +213,7 @@ GLOBAL_LIST_EMPTY_TYPED(integrated_circuits, /obj/item/integrated_circuit)
 	shell.name = initial(shell.name)
 	for(var/obj/item/circuit_component/attached_component as anything in attached_components)
 		attached_component.unregister_shell(shell)
-	UnregisterSignal(shell, COMSIG_PARENT_QDELETING)
+	UnregisterSignal(shell, COMSIG_QDELETING)
 	shell = null
 	set_on(FALSE)
 	SEND_SIGNAL(src, COMSIG_CIRCUIT_SHELL_REMOVED)
@@ -245,6 +257,9 @@ GLOBAL_LIST_EMPTY_TYPED(integrated_circuits, /obj/item/integrated_circuit)
  */
 /obj/item/integrated_circuit/proc/add_component(obj/item/circuit_component/to_add, mob/living/user)
 	if(to_add.parent)
+		return FALSE
+
+	if(to_add.type in blacklisted_components)
 		return FALSE
 
 	if(SEND_SIGNAL(src, COMSIG_CIRCUIT_ADD_COMPONENT, to_add, user) & COMPONENT_CANCEL_ADD_COMPONENT)

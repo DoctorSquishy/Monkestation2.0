@@ -6,11 +6,13 @@
 
 	GLOB.carbon_list += src
 	AddComponent(/datum/component/carbon_sprint)
+	immune_system = new(src)
 	var/static/list/loc_connections = list(
 		COMSIG_CARBON_DISARM_PRESHOVE = PROC_REF(disarm_precollide),
 		COMSIG_CARBON_DISARM_COLLIDE = PROC_REF(disarm_collision),
 	)
 	AddElement(/datum/element/connect_loc, loc_connections)
+	ADD_TRAIT(src, TRAIT_CAN_HOLD_ITEMS, INNATE_TRAIT) // Carbons are assumed to be innately capable of having arms, we check their arms count instead
 
 /mob/living/carbon/Destroy()
 	//This must be done first, so the mob ghosts correctly before DNA etc is nulled
@@ -20,6 +22,7 @@
 	QDEL_LIST(organs)
 	QDEL_LIST(bodyparts)
 	QDEL_LIST(implants)
+	QDEL_NULL(immune_system)
 	for(var/wound in all_wounds) // these LAZYREMOVE themselves when deleted so no need to remove the list here
 		qdel(wound)
 	for(var/scar in all_scars)
@@ -28,64 +31,17 @@
 	QDEL_NULL(dna)
 	GLOB.carbon_list -= src
 
-/mob/living/carbon/perform_hand_swap(held_index)
-	. = ..()
-	if(!.)
-		return
-
-	if(!held_index)
-		held_index = (active_hand_index % held_items.len)+1
-
-	if(!isnum(held_index))
-		CRASH("You passed [held_index] into swap_hand instead of a number. WTF man")
-
-	var/oindex = active_hand_index
-	active_hand_index = held_index
-	if(hud_used)
-		var/atom/movable/screen/inventory/hand/H
-		H = hud_used.hand_slots["[oindex]"]
-		if(H)
-			H.update_appearance()
-		H = hud_used.hand_slots["[held_index]"]
-		if(H)
-			H.update_appearance()
-
-
-/mob/living/carbon/activate_hand(selhand) //l/r OR 1-held_items.len
-	if(!selhand)
-		selhand = (active_hand_index % held_items.len)+1
-
-	if(istext(selhand))
-		selhand = lowertext(selhand)
-		if(selhand == "right" || selhand == "r")
-			selhand = 2
-		if(selhand == "left" || selhand == "l")
-			selhand = 1
-
-	if(selhand != active_hand_index)
-		swap_hand(selhand)
-	else
-		mode() // Activate held item
-
-/mob/living/carbon/attackby(obj/item/I, mob/living/user, params)
-	for(var/datum/surgery/operations as anything in surgeries)
-		if((user.istate & ISTATE_HARM))
-			break
-		if(body_position != LYING_DOWN && (operations.surgery_flags & SURGERY_REQUIRE_RESTING))
-			continue
-		if(!(operations.surgery_flags & SURGERY_SELF_OPERABLE) && (user == src))
-			continue
-		var/list/modifiers = params2list(params)
-		if(operations.next_step(user, modifiers))
-			return TRUE
-
+/mob/living/carbon/attackby(obj/item/item, mob/living/user, params)
 	if(!all_wounds || !(!(user.istate & ISTATE_HARM) || user == src))
 		return ..()
 
+	if(can_perform_surgery(user, params))
+		return TRUE
+
 	for(var/i in shuffle(all_wounds))
-		var/datum/wound/W = i
-		if(W.try_treating(I, user))
-			return 1
+		var/datum/wound/wound = i
+		if(wound.try_treating(item, user))
+			return TRUE
 
 	return ..()
 
@@ -164,6 +120,9 @@
 		return FALSE
 	var/atom/movable/thrown_thing
 	var/obj/item/held_item = get_active_held_item()
+	var/verb_text = pick("throw", "toss", "hurl", "chuck", "fling")
+	if(prob(0.5))
+		verb_text = "yeet"
 	var/neckgrab_throw = FALSE // we can't check for if it's a neckgrab throw when totaling up power_throw since we've already stopped pulling them by then, so get it early
 	if(!held_item)
 		if(pulling && isliving(pulling) && grab_state >= GRAB_AGGRESSIVE)
@@ -194,8 +153,12 @@
 		power_throw++
 	if(neckgrab_throw)
 		power_throw++
-	visible_message(span_danger("[src] throws [thrown_thing][power_throw ? " really hard!" : "."]"), \
-					span_danger("You throw [thrown_thing][power_throw ? " really hard!" : "."]"))
+	if(isitem(thrown_thing))
+		var/obj/item/thrown_item = thrown_thing
+		if(thrown_item.throw_verb)
+			verb_text = thrown_item.throw_verb
+	visible_message(span_danger("[src] [verb_text][plural_s(verb_text)] [thrown_thing][power_throw ? " really hard!" : "."]"), \
+					span_danger("You [verb_text] [thrown_thing][power_throw ? " really hard!" : "."]"))
 	log_message("has thrown [thrown_thing] [power_throw > 0 ? "really hard" : ""]", LOG_ATTACK)
 	var/extra_throw_range = HAS_TRAIT(src, TRAIT_THROWINGARM) ? 2 : 0
 	newtonian_move(get_dir(target, src))
@@ -260,16 +223,7 @@
 		buckled.user_unbuckle_mob(src,src)
 
 /mob/living/carbon/resist_fire()
-	adjust_fire_stacks(-5)
-	Paralyze(60, ignore_canstun = TRUE)
-	spin(32,2)
-	visible_message(span_danger("[src] rolls on the floor, trying to put [p_them()]self out!"), \
-		span_notice("You stop, drop, and roll!"))
-	sleep(3 SECONDS)
-	if(fire_stacks <= 0 && !QDELETED(src))
-		visible_message(span_danger("[src] successfully extinguishes [p_them()]self!"), \
-			span_notice("You extinguish yourself."))
-	return
+	return !!apply_status_effect(/datum/status_effect/stop_drop_roll)
 
 /mob/living/carbon/resist_restraints()
 	var/obj/item/I = null
@@ -410,7 +364,45 @@
 		return 0
 	return ..()
 
-/mob/living/carbon/proc/vomit(lost_nutrition = 10, blood = FALSE, stun = TRUE, distance = 1, message = TRUE, vomit_type = VOMIT_TOXIC, harm = TRUE, force = FALSE, purge_ratio = 0.1)
+/mob/living/proc/vomit(lost_nutrition = 10, blood = FALSE, stun = TRUE, distance = 1, message = TRUE, vomit_type = VOMIT_TOXIC, harm = TRUE, force = FALSE, purge_ratio = 0.1)
+	if((HAS_TRAIT(src, TRAIT_NOHUNGER) || HAS_TRAIT(src, TRAIT_TOXINLOVER)) && !force)
+		return TRUE
+	var/starting_dir = dir
+	if(nutrition < 100 && !blood && !force)
+		if(message)
+			visible_message(span_warning("[src] dry heaves!"), \
+							span_userdanger("You try to throw up, but there's nothing in your stomach!"))
+		if(stun)
+			Stun(20 SECONDS)
+		return TRUE
+	if(message)
+		visible_message(span_danger("[src] throws up!"), span_userdanger("You throw up!"))
+		if(!isflyperson(src))
+			add_mood_event("vomit", /datum/mood_event/vomit)
+
+	if(stun)
+		Stun(8 SECONDS)
+
+	playsound(get_turf(src), 'sound/effects/splat.ogg', 50, TRUE)
+	var/turf/T = get_turf(src)
+	if(!blood)
+		adjust_nutrition(-lost_nutrition)
+		adjustToxLoss(-3)
+	for(var/i=0 to distance)
+		if(blood)
+			if(T)
+				add_splatter_floor(T)
+			if(harm)
+				adjustBruteLoss(3)
+		else
+			if(T)
+				T.add_vomit_floor(src, vomit_type, purge_ratio) //toxic barf looks different || call purge when doing detoxicfication to pump more chems out of the stomach.
+		T = get_step(T, starting_dir)
+		if (T?.is_blocked_turf())
+			break
+	return TRUE
+
+/mob/living/carbon/vomit(lost_nutrition = 10, blood = FALSE, stun = TRUE, distance = 1, message = TRUE, vomit_type = VOMIT_TOXIC, harm = TRUE, force = FALSE, purge_ratio = 0.1)
 	if((HAS_TRAIT(src, TRAIT_NOHUNGER) || HAS_TRAIT(src, TRAIT_TOXINLOVER)) && !force)
 		return TRUE
 
@@ -503,12 +495,12 @@
 	if(isnull(.))
 		return
 	if(new_value == LYING_DOWN)
-		if(HAS_TRAIT(src, FOOD_SLIDE))
+		if(HAS_TRAIT(src, TRAIT_FOOD_SLIDE))
 			add_movespeed_modifier(/datum/movespeed_modifier/belly_slide)
 		else
 			add_movespeed_modifier(/datum/movespeed_modifier/carbon_crawling)
 	else
-		if(HAS_TRAIT(src, FOOD_SLIDE))
+		if(HAS_TRAIT(src, TRAIT_FOOD_SLIDE))
 			remove_movespeed_modifier(/datum/movespeed_modifier/belly_slide)
 		else
 			remove_movespeed_modifier(/datum/movespeed_modifier/carbon_crawling)
@@ -546,12 +538,21 @@
 	if((stam < max * STAMINA_EXHAUSTION_THRESHOLD_MODIFIER) && !is_exhausted)
 		ADD_TRAIT(src, TRAIT_EXHAUSTED, STAMINA)
 		ADD_TRAIT(src, TRAIT_NO_SPRINT, STAMINA)
+		add_movespeed_modifier(/datum/movespeed_modifier/exhaustion)
+
 	if((stam < max * STAMINA_STUN_THRESHOLD_MODIFIER) && !is_stam_stunned && stat <= SOFT_CRIT)
 		stamina_stun()
-	if(is_exhausted && (stam > max * STAMINA_EXHAUSTION_THRESHOLD_MODIFIER))
+
+	if(is_exhausted && (stam > max * STAMINA_EXHAUSTION_THRESHOLD_MODIFIER_EXIT))
 		REMOVE_TRAIT(src, TRAIT_EXHAUSTED, STAMINA)
 		REMOVE_TRAIT(src, TRAIT_NO_SPRINT, STAMINA)
+		remove_movespeed_modifier(/datum/movespeed_modifier/exhaustion)
+
 	update_stamina_hud()
+
+/datum/movespeed_modifier/exhaustion
+	id = "exhaustion"
+	multiplicative_slowdown = STAMINA_EXHAUSTION_MOVESPEED_SLOWDOWN
 
 /mob/living/carbon/update_sight()
 	if(!client)
@@ -592,7 +593,7 @@
 			set_invis_see(min(glasses.invis_view, see_invisible))
 		if(!isnull(glasses.lighting_cutoff))
 			lighting_cutoff = max(lighting_cutoff, glasses.lighting_cutoff)
-		if(!isnull(glasses.color_cutoffs))
+		if(length(glasses.color_cutoffs))
 			lighting_color_cutoffs = blend_cutoff_colors(lighting_color_cutoffs, glasses.color_cutoffs)
 
 
@@ -650,7 +651,7 @@
 
 //this handles hud updates
 /mob/living/carbon/update_damage_hud()
-
+	..() // monkestation edit
 	if(!client)
 		return
 
@@ -922,7 +923,7 @@
 		set_handcuffed(null)
 		update_handcuffed()
 
-	stamina.adjust(stamina.maximum)
+	stamina.revitalize(forced = TRUE)
 	return ..()
 
 /mob/living/carbon/can_be_revived()
@@ -1044,6 +1045,9 @@
 
 /proc/cmp_organ_slot_asc(slot_a, slot_b)
 	return GLOB.organ_process_order.Find(slot_a) - GLOB.organ_process_order.Find(slot_b)
+
+/mob/living/carbon/proc/get_footprint_sprite()
+	return FOOTPRINT_SPRITE_PAWS
 
 /mob/living/carbon/vv_get_dropdown()
 	. = ..()
@@ -1253,12 +1257,17 @@
 			else
 				wound_type = forced_type
 		else
-			wound_type = pick(GLOB.global_all_wound_types)
+			for (var/datum/wound/path as anything in shuffle(GLOB.all_wound_pregen_data))
+				var/datum/wound_pregen_data/pregen_data = GLOB.all_wound_pregen_data[path]
+				if (pregen_data.can_be_applied_to(scar_part, random_roll = TRUE))
+					wound_type = path
+					break
 
-		var/datum/wound/phantom_wound = new wound_type
-		scaries.generate(scar_part, phantom_wound)
-		scaries.fake = TRUE
-		QDEL_NULL(phantom_wound)
+		if (wound_type) // can feasibly happen, if its an inorganic limb/cant be wounded/scarred
+			var/datum/wound/phantom_wound = new wound_type
+			scaries.generate(scar_part, phantom_wound)
+			scaries.fake = TRUE
+			QDEL_NULL(phantom_wound)
 
 /mob/living/carbon/is_face_visible()
 	return !(wear_mask?.flags_inv & HIDEFACE) && !(head?.flags_inv & HIDEFACE)
@@ -1367,20 +1376,12 @@
 	log_combat(shover, target, "shoved", addition = "into [name]")
 	return COMSIG_CARBON_SHOVE_HANDLED
 
-/**
- * This proc is a helper for spraying blood for things like slashing/piercing wounds and dismemberment.
- *
- * The strength of the splatter in the second argument determines how much it can dirty and how far it can go
- *
- * Arguments:
- * * splatter_direction: Which direction the blood is flying
- * * splatter_strength: How many tiles it can go, and how many items it can pass over and dirty
- */
-/mob/living/carbon/proc/spray_blood(splatter_direction, splatter_strength = 3)
-	if(!isturf(loc))
+/mob/living/carbon/ominous_nosebleed()
+	var/obj/item/bodypart/head = get_bodypart(BODY_ZONE_HEAD)
+	if(isnull(head))
+		return ..()
+	if(HAS_TRAIT(src, TRAIT_NOBLOOD))
+		to_chat(src, span_notice("You get a headache."))
 		return
-	var/obj/effect/decal/cleanable/blood/hitsplatter/our_splatter = new(loc)
-	our_splatter.add_blood_DNA(GET_ATOM_BLOOD_DNA(src))
-	our_splatter.blood_dna_info = get_blood_dna_list()
-	var/turf/targ = get_ranged_target_turf(src, splatter_direction, splatter_strength)
-	our_splatter.fly_towards(targ, splatter_strength)
+	head.adjustBleedStacks(5)
+	visible_message(span_notice("[src] gets a nosebleed."), span_warning("You get a nosebleed."))

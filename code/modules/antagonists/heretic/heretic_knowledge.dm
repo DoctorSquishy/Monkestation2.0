@@ -25,16 +25,23 @@
 	var/list/banned_knowledge = list()
 	/// Assoc list of [typepaths we need] to [amount needed].
 	/// If set, this knowledge allows the heretic to do a ritual on a transmutation rune with the components set.
+	/// If one of the items in the list is a list, it's treated as 'any of these items will work'
 	var/list/required_atoms
 	/// Paired with above. If set, the resulting spawned atoms upon ritual completion.
 	var/list/result_atoms = list()
-	/// Cost of knowledge in knowlege points
+	/// If set, required_atoms checks for these *exact* types and doesn't allow them to be ingredients.
+	var/list/banned_atom_types = list()
+	/// Cost of knowledge in knowledge points
 	var/cost = 0
+	/// If true, adds side path points according to value. Only main branch powers that split into sidepaths should have this.
+	var/adds_sidepath_points = 0
 	/// The priority of the knowledge. Higher priority knowledge appear higher in the ritual list.
 	/// Number itself is completely arbitrary. Does not need to be set for non-ritual knowledge.
 	var/priority = 0
 	/// What path is this on. If set to "null", assumed to be unreachable (or abstract).
 	var/route
+	///Determines what kind of monster ghosts will ignore from here on out. Defaults to POLL_IGNORE_HERETIC_MONSTER, but we define other types of monsters for more granularity.
+	var/poll_ignore_define = POLL_IGNORE_HERETIC_MONSTER
 
 /datum/heretic_knowledge/New()
 	if(!mutually_exclusive)
@@ -58,6 +65,8 @@
 
 	if(gain_text)
 		to_chat(user, span_warning("[gain_text]"))
+	// Usually zero
+	our_heretic.side_path_points += adds_sidepath_points
 	on_gain(user, our_heretic)
 
 /**
@@ -113,14 +122,26 @@
 	return TRUE
 
 /**
+ * Parses specific items into a more readble form.
+ * Can be overriden by knoweldge subtypes.
+ */
+/datum/heretic_knowledge/proc/parse_required_item(atom/item_path, number_of_things)
+	// If we need a human, there is a high likelihood we actually need a (dead) body
+	if(ispath(item_path, /mob/living/carbon/human))
+		return "bod[number_of_things > 1 ? "ies" : "y"]"
+	if(ispath(item_path, /mob/living))
+		return "carcass[number_of_things > 1 ? "es" : ""] of any kind"
+	return "[initial(item_path.name)]\s"
+
+/**
  * Called whenever the knowledge's associated ritual is completed successfully.
  *
  * Creates atoms from types in result_atoms.
- * Override this is you want something else to happen.
+ * Override this if you want something else to happen.
  * This CAN sleep, such as for summoning rituals which poll for ghosts.
  *
  * Arguments
- * * user - the mob who did the  ritual
+ * * user - the mob who did the ritual
  * * selected_atoms - an list of atoms chosen as a part of this ritual.
  * * loc - the turf the ritual's occuring on
  *
@@ -158,10 +179,14 @@
 			var/obj/item/stack/sac_stack = sacrificed
 			var/how_much_to_use = 0
 			for(var/requirement in required_atoms)
-				if(istype(sacrificed, requirement))
-					how_much_to_use = min(required_atoms[requirement], sac_stack.amount)
-					break
-
+				// If it's not requirement type and type is not a list, skip over this check
+				if(!istype(sacrificed, requirement) && !islist(requirement))
+					continue
+				// If requirement *is* a list and the stack *is* in the list, skip over this check
+				if(islist(requirement) && !is_type_in_list(sacrificed, requirement))
+					continue
+				how_much_to_use = min(required_atoms[requirement], sac_stack.amount)
+				break
 			sac_stack.use(how_much_to_use)
 			continue
 
@@ -192,7 +217,8 @@
 
 /datum/heretic_knowledge/spell/on_lose(mob/user, datum/antagonist/heretic/our_heretic)
 	var/datum/action/cooldown/spell/created_spell = created_spell_ref?.resolve()
-	created_spell?.Remove(user)
+	if(created_spell?.owner == user)
+		created_spell.Remove(user)
 
 /**
  * A knowledge subtype for knowledge that can only
@@ -206,7 +232,7 @@
 	/// A list of weakrefs to all items we've created.
 	var/list/datum/weakref/created_items
 
-/datum/heretic_knowledge/limited_amount/Destroy(force, ...)
+/datum/heretic_knowledge/limited_amount/Destroy(force)
 	LAZYCLEARLIST(created_items)
 	return ..()
 
@@ -264,7 +290,7 @@
 /datum/heretic_knowledge/mark
 	abstract_parent_type = /datum/heretic_knowledge/mark
 	mutually_exclusive = TRUE
-	cost = 2
+	cost = 1
 	/// The status effect typepath we apply on people on mansus grasp.
 	var/datum/status_effect/eldritch/mark_type
 
@@ -505,39 +531,55 @@
 	var/mob/living/mob_to_summon
 
 /datum/heretic_knowledge/summon/on_finished_recipe(mob/living/user, list/selected_atoms, turf/loc)
-	var/mob/living/summoned = new mob_to_summon(loc)
+	summon_ritual_mob(user, loc, mob_to_summon)
+
+/**
+ * Creates the ritual mob and grabs a ghost for it
+ *
+ * * user - the mob doing the summoning
+ * * loc - where the summon is happening
+ * * mob_to_summon - either a mob instance or a mob typepath
+ */
+/datum/heretic_knowledge/proc/summon_ritual_mob(mob/living/user, turf/loc, mob/living/mob_to_summon)
+	var/mob/living/summoned
+	if(isliving(mob_to_summon))
+		summoned = mob_to_summon
+	else
+		summoned = new mob_to_summon(loc)
+	summoned.ai_controller?.set_ai_status(AI_STATUS_OFF)
 	// Fade in the summon while the ghost poll is ongoing.
 	// Also don't let them mess with the summon while waiting
 	summoned.alpha = 0
-	summoned.notransform = TRUE
+	ADD_TRAIT(summoned, TRAIT_NO_TRANSFORM, REF(src))
 	summoned.move_resist = MOVE_FORCE_OVERPOWERING
 	animate(summoned, 10 SECONDS, alpha = 155)
 
 	message_admins("A [summoned.name] is being summoned by [ADMIN_LOOKUPFLW(user)] in [ADMIN_COORDJMP(summoned)].")
-	var/list/mob/dead/observer/candidates = poll_candidates_for_mob("Do you want to play as a [summoned.real_name]?", ROLE_HERETIC, FALSE, 10 SECONDS, summoned)
-	if(!LAZYLEN(candidates))
+	var/mob/chosen_one = SSpolling.poll_ghosts_for_target(check_jobban = ROLE_HERETIC, poll_time = 10 SECONDS, checked_target = summoned, ignore_category = poll_ignore_define, alert_pic = summoned, role_name_text = summoned.name)
+	if(isnull(chosen_one))
 		loc.balloon_alert(user, "ritual failed, no ghosts!")
 		animate(summoned, 0.5 SECONDS, alpha = 0)
 		QDEL_IN(summoned, 0.6 SECONDS)
 		return FALSE
 
-	var/mob/dead/observer/picked_candidate = pick(candidates)
 	// Ok let's make them an interactable mob now, since we got a ghost
 	summoned.alpha = 255
-	summoned.notransform = FALSE
+	REMOVE_TRAIT(summoned, TRAIT_NO_TRANSFORM, REF(src))
 	summoned.move_resist = initial(summoned.move_resist)
 
 	summoned.ghostize(FALSE)
-	summoned.key = picked_candidate.key
+	summoned.key = chosen_one.key
 
-	user.log_message("created a [summoned.name], controlled by [key_name(picked_candidate)].", LOG_GAME)
+	user.log_message("created a [summoned.name], controlled by [key_name(chosen_one)].", LOG_GAME)
 	message_admins("[ADMIN_LOOKUPFLW(user)] created a [summoned.name], [ADMIN_LOOKUPFLW(summoned)].")
 
 	var/datum/antagonist/heretic_monster/heretic_monster = summoned.mind.add_antag_datum(/datum/antagonist/heretic_monster)
 	heretic_monster.set_owner(user.mind)
 
+	/* monkestation removal: heretic refactoring
 	var/datum/objective/heretic_summon/summon_objective = locate() in user.mind.get_all_objectives()
 	summon_objective?.num_summoned++
+	monkestation end */
 
 	return TRUE
 
@@ -634,7 +676,7 @@
 	to_chat(user, span_hypnophrase(span_big("[drain_message]")))
 	desc += " (Completed!)"
 	log_heretic_knowledge("[key_name(user)] completed a [name] at [worldtime2text()].")
-	user.add_mob_memory(/datum/memory/heretic_knowlege_ritual)
+	user.add_mob_memory(/datum/memory/heretic_knowledge_ritual)
 	return TRUE
 
 #undef KNOWLEDGE_RITUAL_POINTS
@@ -703,6 +745,13 @@
 
 	SSblackbox.record_feedback("tally", "heretic_ascended", 1, route)
 	log_heretic_knowledge("[key_name(user)] completed their final ritual at [worldtime2text()].")
+	notify_ghosts(
+		"[user] has completed an ascension ritual!",
+		source = user,
+		action = NOTIFY_ORBIT,
+		header = "A Heretic is Ascending!",
+		notify_flags = NOTIFY_CATEGORY_DEFAULT,
+	)
 	return TRUE
 
 /datum/heretic_knowledge/ultimate/cleanup_atoms(list/selected_atoms)

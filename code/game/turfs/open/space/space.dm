@@ -218,9 +218,9 @@ GLOBAL_VAR_INIT(starlight_color, pick(COLOR_TEAL, COLOR_GREEN, COLOR_CYAN, COLOR
 		if(RCD_CATWALK)
 			var/obj/structure/lattice/lattice = locate(/obj/structure/lattice, src)
 			if(lattice)
-				return list("mode" = RCD_CATWALK, "delay" = 0, "cost" = 1)
-			else
 				return list("mode" = RCD_CATWALK, "delay" = 0, "cost" = 2)
+			else
+				return list("mode" = RCD_CATWALK, "delay" = 0, "cost" = 4)
 	return FALSE
 
 /turf/open/space/rcd_act(mob/user, obj/item/construction/rcd/the_rcd, passed_mode)
@@ -250,6 +250,9 @@ GLOBAL_VAR_INIT(starlight_color, pick(COLOR_TEAL, COLOR_GREEN, COLOR_CYAN, COLOR
 	destination_y = dest_y
 	destination_z = dest_z
 
+/turf/open/space/can_cross_safely(atom/movable/crossing)
+	return HAS_TRAIT(crossing, TRAIT_SPACEWALK)
+
 /turf/open/space/openspace
 	icon = 'icons/turf/floors.dmi'
 	icon_state = MAP_SWITCH("pure_white", "invisible")
@@ -267,13 +270,20 @@ GLOBAL_VAR_INIT(starlight_color, pick(COLOR_TEAL, COLOR_GREEN, COLOR_CYAN, COLOR
 	. = ..()
 	AddElement(/datum/element/turf_z_transparency)
 
+/turf/open/space/openspace/Destroy()
+	// Signals persist through destroy, GO HOME
+	var/turf/below = GET_TURF_BELOW(src)
+	if(below)
+		UnregisterSignal(below, COMSIG_TURF_CHANGE)
+	return ..()
+
 /turf/open/space/openspace/zAirIn()
 	return TRUE
 
 /turf/open/space/openspace/zAirOut()
 	return TRUE
 
-/turf/open/space/openspace/zPassIn(atom/movable/A, direction, turf/source)
+/turf/open/space/openspace/zPassIn(direction)
 	if(direction == DOWN)
 		for(var/obj/contained_object in contents)
 			if(contained_object.obj_flags & BLOCK_Z_IN_DOWN)
@@ -286,9 +296,7 @@ GLOBAL_VAR_INIT(starlight_color, pick(COLOR_TEAL, COLOR_GREEN, COLOR_CYAN, COLOR
 		return TRUE
 	return FALSE
 
-/turf/open/space/openspace/zPassOut(atom/movable/A, direction, turf/destination, allow_anchored_movement)
-	if(A.anchored && !allow_anchored_movement)
-		return FALSE
+/turf/open/space/openspace/zPassOut(direction)
 	if(direction == DOWN)
 		for(var/obj/contained_object in contents)
 			if(contained_object.obj_flags & BLOCK_Z_OUT_DOWN)

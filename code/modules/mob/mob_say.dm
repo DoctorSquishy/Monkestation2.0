@@ -143,6 +143,15 @@
 	if(client?.holder?.fakekey)
 		displayed_key = null
 	deadchat_broadcast(rendered, source, follow_target = src, speaker_key = displayed_key)
+	create_chat_message(src, /datum/language/common, message)
+	for(var/mob/M in GLOB.player_list)
+		if(M == src)
+			continue
+		if(!isdead(M))
+			continue
+		if (M.client?.prefs.read_preference(/datum/preference/toggle/enable_runechat))
+			M.create_chat_message(src, /datum/language/common, message)
+
 
 ///Check if this message is an emote
 /mob/proc/check_emote(message, forced)
@@ -163,7 +172,7 @@
 		return message
 	if (is_banned_from(ckey, "Emote"))
 		return copytext(message, customsaypos + 1)
-	mods[MODE_CUSTOM_SAY_EMOTE] = lowertext(copytext_char(message, 1, customsaypos))
+	mods[MODE_CUSTOM_SAY_EMOTE] = copytext(message, 1, customsaypos)
 	message = copytext(message, customsaypos + 1)
 	if (!message)
 		mods[MODE_CUSTOM_SAY_ERASE_INPUT] = TRUE

@@ -125,7 +125,7 @@
 		return
 
 	mode.log_dynamic_and_announce("Polling [possible_volunteers.len] players to apply for the [name] ruleset.")
-	candidates = poll_ghost_candidates("The mode is looking for volunteers to become [antag_flag] for [name]", antag_flag_override, antag_flag || antag_flag_override, poll_time = 300)
+	candidates = SSpolling.poll_ghost_candidates("Looking for volunteers to become [antag_flag] for [name]", check_jobban = antag_flag_override, role = antag_flag || antag_flag_override, poll_time = 30 SECONDS, alert_pic = /obj/structure/sign/poster/contraband/syndicate_recruitment, role_name_text = antag_flag)
 
 	if(!candidates || candidates.len <= 0)
 		mode.log_dynamic_and_announce("The ruleset [name] received no applications.")
@@ -169,7 +169,12 @@
 		if(makeBody)
 			new_character = generate_ruleset_body(applicant)
 		finish_setup(new_character, i)
-		notify_ghosts("[applicant.name] has been picked for the ruleset [name]!", source = new_character, action = NOTIFY_ORBIT, header="Something Interesting!")
+		notify_ghosts(
+			"[applicant.name] has been picked for the ruleset [name]!",
+			source = new_character,
+			action = NOTIFY_ORBIT,
+			header = "Something Interesting!",
+		)
 
 /datum/dynamic_ruleset/midround/from_ghosts/proc/generate_ruleset_body(mob/applicant)
 	var/mob/living/carbon/human/new_character = make_body(applicant)
@@ -211,7 +216,7 @@
 /datum/dynamic_ruleset/midround/from_living/autotraitor
 	name = "Syndicate Sleeper Agent"
 	midround_ruleset_style = MIDROUND_RULESET_STYLE_LIGHT
-	antag_datum = /datum/antagonist/traitor
+	antag_datum = /datum/antagonist/traitor/infiltrator/sleeper_agent
 	antag_flag = ROLE_SLEEPER_AGENT
 	antag_flag_override = ROLE_TRAITOR
 	protected_roles = list(
@@ -225,6 +230,7 @@
 		JOB_HEAD_OF_SECURITY,
 		JOB_PRISONER,
 		JOB_SECURITY_OFFICER,
+		JOB_SECURITY_ASSISTANT,
 		JOB_WARDEN,
 	)
 	restricted_roles = list(
@@ -257,7 +263,7 @@
 	var/mob/M = pick(candidates)
 	assigned += M
 	candidates -= M
-	var/datum/antagonist/traitor/newTraitor = new
+	var/datum/antagonist/traitor/infiltrator/sleeper_agent/newTraitor = new
 	M.mind.add_antag_datum(newTraitor)
 	message_admins("[ADMIN_LOOKUPFLW(M)] was selected by the [name] ruleset and has been made into a midround traitor.")
 	log_dynamic("[key_name(M)] was selected by the [name] ruleset and has been made into a midround traitor.")
@@ -366,7 +372,7 @@
 	)
 	required_enemies = list(3,3,3,3,3,2,1,1,0,0)
 	required_candidates = 5
-	weight = 5
+	weight = 0
 	cost = 7
 	minimum_round_time = 70 MINUTES
 	requirements = REQUIREMENTS_VERY_HIGH_THREAT_NEEDED
@@ -437,6 +443,7 @@
 		JOB_PRISONER,
 		JOB_SECURITY_OFFICER,
 		JOB_WARDEN,
+		JOB_SECURITY_ASSISTANT,
 	)
 	restricted_roles = list(
 		JOB_AI,
@@ -576,10 +583,8 @@
 	var/datum/mind/player_mind = new /datum/mind(applicant.key)
 	player_mind.active = TRUE
 
-	var/mob/living/simple_animal/hostile/space_dragon/S = new (pick(spawn_locs))
+	var/mob/living/basic/space_dragon/S = new (pick(spawn_locs))
 	player_mind.transfer_to(S)
-	player_mind.set_assigned_role(SSjob.GetJobType(/datum/job/space_dragon))
-	player_mind.special_role = ROLE_SPACE_DRAGON
 	player_mind.add_antag_datum(/datum/antagonist/space_dragon)
 
 	playsound(S, 'sound/magic/ethereal_exit.ogg', 50, TRUE, -1)
@@ -714,7 +719,7 @@
 	. = ..()
 
 /datum/dynamic_ruleset/midround/from_ghosts/revenant/generate_ruleset_body(mob/applicant)
-	var/mob/living/simple_animal/revenant/revenant = new(pick(spawn_locs))
+	var/mob/living/basic/revenant/revenant = new(pick(spawn_locs))
 	revenant.key = applicant.key
 	message_admins("[ADMIN_LOOKUPFLW(revenant)] has been made into a revenant by the midround ruleset.")
 	log_game("[key_name(revenant)] was spawned as a revenant by the midround ruleset.")

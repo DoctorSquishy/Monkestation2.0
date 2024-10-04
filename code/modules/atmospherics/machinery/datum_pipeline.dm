@@ -96,10 +96,10 @@
 				if(item.parent)
 					var/static/pipenetwarnings = 10
 					if(pipenetwarnings > 0)
-						log_mapping("build_pipeline(): [item.type] added to a pipenet while still having one. (pipes leading to the same spot stacking in one turf) around [AREACOORD(item)].")
+						log_mapping("build_pipeline_blocking(): [item.type] added to a pipenet while still having one. (pipes leading to the same spot stacking in one turf) around [AREACOORD(item)].")
 						pipenetwarnings--
 						if(pipenetwarnings == 0)
-							log_mapping("build_pipeline(): further messages about pipenets will be suppressed")
+							log_mapping("build_pipeline_blocking(): further messages about pipenets will be suppressed")
 
 				members += item
 				possible_expansions += item
@@ -177,7 +177,7 @@
 	return
 
 /obj/machinery/atmospherics/pipe/add_member(obj/machinery/atmospherics/considered_device)
-	parent.add_member(considered_device, src)
+	parent?.add_member(considered_device, src)
 
 /obj/machinery/atmospherics/components/add_member(obj/machinery/atmospherics/considered_device)
 	var/datum/pipeline/device_pipeline = return_pipenet(considered_device)
@@ -239,9 +239,8 @@
 
 	var/total_thermal_energy = 0
 	var/total_heat_capacity = 0
-	var/datum/gas_mixture/total_gas_mixture = new(0)
 
-	var/list/total_gases = total_gas_mixture.gases
+	var/list/total_gases = list()
 
 	var/volume_sum = 0
 
@@ -270,11 +269,14 @@
 		total_heat_capacity += heat_capacity
 		total_thermal_energy += gas_mixture.temperature * heat_capacity
 
+	if(volume_sum == 0)
+		return
+
+	var/datum/gas_mixture/total_gas_mixture = new(volume_sum)
 	total_gas_mixture.temperature = total_heat_capacity ? (total_thermal_energy / total_heat_capacity) : 0
-	total_gas_mixture.volume = volume_sum
+	total_gas_mixture.gases = total_gases
 	total_gas_mixture.garbage_collect()
 
-	if(total_gas_mixture.volume > 0)
-		//Update individual gas_mixtures by volume ratio
-		for(var/datum/gas_mixture/gas_mixture as anything in gas_mixture_list)
-			gas_mixture.copy_from_ratio(total_gas_mixture, gas_mixture.volume / volume_sum)
+	//Update individual gas_mixtures by volume ratio
+	for(var/datum/gas_mixture/gas_mixture as anything in gas_mixture_list)
+		gas_mixture.copy_from_ratio(total_gas_mixture, gas_mixture.volume / volume_sum)

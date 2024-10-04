@@ -27,7 +27,7 @@
 		/mob/living/brain,
 		/mob/living/silicon/pai,
 		/mob/living/simple_animal/hostile/megafauna,
-		/mob/living/simple_animal/hostile/guardian,
+		/mob/living/basic/guardian,
 	))
 	//has the spell made a fake wizard yet
 	var/made_false_wizard = FALSE
@@ -59,6 +59,12 @@
 			continue
 
 		if(!nearby_mob.key && target_requires_key)
+			continue
+
+		if(HAS_TRAIT(nearby_mob, TRAIT_MIND_TEMPORARILY_GONE))
+			continue
+
+		if(HAS_TRAIT(nearby_mob, TRAIT_NO_MINDSWAP))
 			continue
 
 		things += nearby_mob

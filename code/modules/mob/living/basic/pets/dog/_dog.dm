@@ -7,10 +7,10 @@
 	speech_commands = list("good dog")
 
 // Set correct attack behaviour
-/datum/pet_command/point_targetting/attack/dog
+/datum/pet_command/point_targeting/attack/dog
 	attack_behaviour = /datum/ai_behavior/basic_melee_attack/dog
 
-/datum/pet_command/point_targetting/attack/dog/set_command_active(mob/living/parent, mob/living/commander)
+/datum/pet_command/point_targeting/attack/dog/set_command_active(mob/living/parent, mob/living/commander)
 	. = ..()
 	parent.ai_controller.set_blackboard_key(BB_DOG_HARASS_HARM, TRUE)
 
@@ -33,14 +33,15 @@
 	attack_verb_simple = "bite"
 	attack_sound = 'sound/weapons/bite.ogg'
 	attack_vis_effect = ATTACK_EFFECT_BITE
+	melee_attack_cooldown = 0.8 SECONDS
 	/// Instructions you can give to dogs
 	var/static/list/pet_commands = list(
 		/datum/pet_command/idle,
 		/datum/pet_command/free,
 		/datum/pet_command/good_boy/dog,
 		/datum/pet_command/follow/dog,
-		/datum/pet_command/point_targetting/attack/dog,
-		/datum/pet_command/point_targetting/fetch,
+		/datum/pet_command/point_targeting/attack/dog,
+		/datum/pet_command/point_targeting/fetch,
 		/datum/pet_command/play_dead,
 	)
 
@@ -73,7 +74,7 @@
 	w_class = WEIGHT_CLASS_SMALL
 	icon = 'icons/obj/food/meat.dmi'
 	icon_state = "skeletonmeat"
-	custom_materials = list(/datum/material/bone = 2000 * 4)
+	custom_materials = list(/datum/material/bone = SHEET_MATERIAL_AMOUNT * 4)
 	force = 3
 	throwforce = 5
 	attack_verb_continuous = list("attacks", "bashes", "batters", "bludgeons", "whacks")

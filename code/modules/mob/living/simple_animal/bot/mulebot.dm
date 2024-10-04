@@ -24,6 +24,7 @@
 	buckle_lying = 0
 	mob_size = MOB_SIZE_LARGE
 	buckle_prevents_pull = TRUE // No pulling loaded shit
+	bot_mode_flags = ~BOT_MODE_ROUNDSTART_POSSESSION
 
 	maints_access_required = list(ACCESS_ROBOTICS, ACCESS_CARGO)
 	radio_key = /obj/item/encryptionkey/headset_cargo
@@ -69,7 +70,7 @@
 	if(prob(0.666) && mapload)
 		new /mob/living/simple_animal/bot/mulebot/paranormal(loc)
 		return INITIALIZE_HINT_QDEL
-	wires = new /datum/wires/mulebot(src)
+	set_wires(new /datum/wires/mulebot(src))
 
 	// Doing this hurts my soul, but simplebot access reworks are for another day.
 	var/datum/id_trim/job/cargo_trim = SSid_access.trim_singletons_by_path[/datum/id_trim/job/cargo_technician]
@@ -156,8 +157,10 @@
 		user.put_in_hands(cell)
 	else
 		cell.forceMove(drop_location())
-	visible_message(span_notice("[user] crowbars [cell] out from [src]."),
-					span_notice("You pry [cell] out of [src]."))
+	user.visible_message(
+		span_notice("[user] crowbars [cell] out from [src]."),
+		span_notice("You pry [cell] out of [src]."),
+	)
 	cell = null
 	diag_hud_set_mulebotcell()
 	return TOOL_ACT_TOOLTYPE_SUCCESS
@@ -171,8 +174,10 @@
 			return TRUE
 		cell = I
 		diag_hud_set_mulebotcell()
-		visible_message(span_notice("[user] inserts \a [cell] into [src]."),
-						span_notice("You insert [cell] into [src]."))
+		user.visible_message(
+			span_notice("[user] inserts \a [cell] into [src]."),
+			span_notice("You insert [cell] into [src]."),
+		)
 		return TRUE
 	else if(is_wire_tool(I) && bot_cover_flags & BOT_COVER_OPEN)
 		return attack_hand(user)
@@ -187,14 +192,15 @@
 	else
 		return ..()
 
-/mob/living/simple_animal/bot/mulebot/emag_act(mob/user)
+/mob/living/simple_animal/bot/mulebot/emag_act(mob/user, obj/item/card/emag/emag_card)
 	if(!(bot_cover_flags & BOT_COVER_EMAGGED))
 		bot_cover_flags |= BOT_COVER_EMAGGED
 	if(!(bot_cover_flags & BOT_COVER_OPEN))
 		bot_cover_flags ^= BOT_COVER_LOCKED
-		to_chat(user, span_notice("You [bot_cover_flags & BOT_COVER_LOCKED ? "lock" : "unlock"] [src]'s controls!"))
+	balloon_alert(user, "controls [bot_cover_flags & BOT_COVER_LOCKED ? "locked" : "unlocked"]")
 	flick("[base_icon]-emagged", src)
 	playsound(src, SFX_SPARKS, 100, FALSE, SHORT_RANGE_SOUND_EXTRARANGE)
+	return TRUE
 
 /mob/living/simple_animal/bot/mulebot/update_icon_state() //if you change the icon_state names, please make sure to update /datum/wires/mulebot/on_pulse() as well. <3
 	. = ..()
@@ -229,7 +235,7 @@
 			unload(0)
 		if(prob(25))
 			visible_message(span_danger("Something shorts out inside [src]!"))
-			wires.cut_random()
+			wires.cut_random(source = Proj.firer)
 
 /mob/living/simple_animal/bot/mulebot/ui_interact(mob/user, datum/tgui/ui)
 	ui = SStgui.try_update_ui(user, src, ui)
@@ -579,7 +585,7 @@
 // calculates a path to the current destination
 // given an optional turf to avoid
 /mob/living/simple_animal/bot/mulebot/calc_path(turf/avoid = null)
-	path = get_path_to(src, target, max_distance=250, id=access_card, exclude=avoid)
+	path = get_path_to(src, target, max_distance=250, access=access_card.GetAccess(), exclude=avoid, diagonal_handling=DIAGONAL_REMOVE_ALL)
 
 // sets the current destination
 // signals all beacons matching the delivery code
@@ -667,6 +673,12 @@
 
 // when mulebot is in the same loc
 /mob/living/simple_animal/bot/mulebot/proc/run_over(mob/living/carbon/human/crushed)
+	if (!(bot_cover_flags & BOT_COVER_EMAGGED) && !wires.is_cut(WIRE_AVOIDANCE))
+		if (!has_status_effect(/datum/status_effect/careful_driving))
+			crushed.visible_message(span_notice("[src] slows down to avoid crushing [crushed]."))
+		apply_status_effect(/datum/status_effect/careful_driving)
+		return // Player mules must be emagged before they can trample
+
 	log_combat(src, crushed, "run over", addition = "(DAMTYPE: [uppertext(BRUTE)])")
 	crushed.visible_message(
 		span_danger("[src] drives over [crushed]!"),

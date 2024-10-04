@@ -8,7 +8,7 @@
 	worn_icon_state = "painter"
 	w_class = WEIGHT_CLASS_SMALL
 
-	custom_materials = list(/datum/material/iron=50, /datum/material/glass=50)
+	custom_materials = list(/datum/material/iron= SMALL_MATERIAL_AMOUNT * 0.5, /datum/material/glass= SMALL_MATERIAL_AMOUNT * 0.5)
 
 	flags_1 = CONDUCT_1
 	item_flags = NOBLUDGEON
@@ -27,7 +27,7 @@
 		"Security" = /obj/machinery/door/airlock/security,
 		"Command" = /obj/machinery/door/airlock/command,
 		"Medical" = /obj/machinery/door/airlock/medical,
-		"Virology" = /obj/machinery/door/airlock/virology,
+		"Pathology" = /obj/machinery/door/airlock/virology,
 		"Research" = /obj/machinery/door/airlock/research,
 		"Hydroponics" = /obj/machinery/door/airlock/hydroponics,
 		"Freezer" = /obj/machinery/door/airlock/freezer,
@@ -157,7 +157,7 @@
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "decal_sprayer"
 	inhand_icon_state = "decal_sprayer"
-	custom_materials = list(/datum/material/iron=50, /datum/material/glass=50)
+	custom_materials = list(/datum/material/iron= SMALL_MATERIAL_AMOUNT * 0.5, /datum/material/glass= SMALL_MATERIAL_AMOUNT * 0.5)
 	initial_ink_type = /obj/item/toner/large
 	/// The current direction of the decal being printed
 	var/stored_dir = 2
@@ -329,7 +329,6 @@
 
 /datum/asset/spritesheet/decals
 	name = "floor_decals"
-	cross_round_cachable = TRUE
 
 	/// The floor icon used for blend_preview_floor()
 	var/preview_floor_icon = 'icons/turf/floors.dmi'

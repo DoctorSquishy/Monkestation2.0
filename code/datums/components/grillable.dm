@@ -13,7 +13,7 @@
 	/// REF() to the mind which placed us on the griddle
 	var/who_placed_us
 
-	/// What type of pollutant we spread around as we are grilleed, can be none  // SKYRAT EDIT ADDITION
+	/// What type of pollutant we spread around as we are grilleed, can be none  // MONKESTATION EDIT ADDITION
 	var/pollutant_type
 
 /datum/component/grillable/Initialize(cook_result, required_cook_time, positive_result, use_large_steam_sprite, pollutant_type)
@@ -30,10 +30,10 @@
 /datum/component/grillable/RegisterWithParent()
 	RegisterSignal(parent, COMSIG_ITEM_GRILL_PLACED_ON, PROC_REF(on_grill_start))
 	RegisterSignal(parent, COMSIG_ITEM_GRILL_PROCESS, PROC_REF(on_grill))
-	RegisterSignal(parent, COMSIG_PARENT_EXAMINE, PROC_REF(on_examine))
+	RegisterSignal(parent, COMSIG_ATOM_EXAMINE, PROC_REF(on_examine))
 
 /datum/component/grillable/UnregisterFromParent()
-	UnregisterSignal(parent, list(COMSIG_ITEM_GRILL_PLACED_ON, COMSIG_ITEM_GRILL_PROCESS, COMSIG_PARENT_EXAMINE))
+	UnregisterSignal(parent, list(COMSIG_ITEM_GRILL_PLACED_ON, COMSIG_ITEM_GRILL_PROCESS, COMSIG_ATOM_EXAMINE))
 
 // Inherit the new values passed to the component
 /datum/component/grillable/InheritComponent(datum/component/grillable/new_comp, original, cook_result, required_cook_time, positive_result, use_large_steam_sprite)
@@ -90,7 +90,7 @@
 			grilled_result.set_custom_materials(original_object.custom_materials)
 
 	if(IS_EDIBLE(grilled_result))
-		BLACKBOX_LOG_FOOD_MADE(grilled_result.type)
+		BLACKBOX_LOG_FOOD_MADE(grilled_result)
 
 	SEND_SIGNAL(parent, COMSIG_ITEM_GRILLED, grilled_result)
 	if(who_placed_us)

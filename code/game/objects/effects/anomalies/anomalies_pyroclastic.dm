@@ -27,20 +27,16 @@
 	if(istype(tile))
 		tile.atmos_spawn_air("o2=500;plasma=500;TEMP=1000") //Make it hot and burny for the new slime
 
-	var/new_colour = pick("red", "orange")
-	var/mob/living/simple_animal/slime/pyro = new(tile, new_colour)
-	pyro.rabid = TRUE
-	pyro.amount_grown = SLIME_EVOLUTION_THRESHOLD
-	pyro.Evolve()
-	var/datum/action/innate/slime/reproduce/repro_action = new
-	repro_action.Grant(pyro)
+	var/new_colour = pick(/datum/slime_color/red, /datum/slime_color/orange)
+	var/mob/living/basic/slime/pyro = new(tile, new_colour)
+	ADD_TRAIT(pyro, TRAIT_SLIME_RABID, "pyro")
+	pyro.maximum_survivable_temperature = INFINITY
+	pyro.apply_temperature_requirements()
 
-	var/list/mob/dead/observer/candidates = poll_candidates_for_mob("Do you want to play as a pyroclastic anomaly slime?", ROLE_SENTIENCE, null, 10 SECONDS, pyro, POLL_IGNORE_PYROSLIME)
-	if(!LAZYLEN(candidates))
+	var/mob/chosen_one = SSpolling.poll_ghosts_for_target(check_jobban = ROLE_SENTIENCE, poll_time = 10 SECONDS, checked_target = pyro, ignore_category = POLL_IGNORE_PYROSLIME, alert_pic = pyro, role_name_text = "pyroclastic anomaly slime")
+	if(isnull(chosen_one))
 		return
-
-	var/mob/dead/observer/chosen = pick(candidates)
-	pyro.key = chosen.key
+	pyro.key = chosen_one.key
 	pyro.mind.special_role = ROLE_PYROCLASTIC_SLIME
 	pyro.mind.add_antag_datum(/datum/antagonist/pyro_slime)
 	pyro.log_message("was made into a slime by pyroclastic anomaly", LOG_GAME)

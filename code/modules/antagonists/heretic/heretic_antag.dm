@@ -23,6 +23,8 @@
 	hijack_speed = 0.5
 	suicide_cry = "THE MANSUS SMILES UPON ME!!"
 	preview_outfit = /datum/outfit/heretic
+	can_assign_self_objectives = TRUE
+	default_custom_objective = "Turn a department into a testament for your dark knowledge."
 	/// Whether we give this antagonist objectives on gain.
 	var/give_objectives = TRUE
 	/// Whether we've ascended! (Completed one of the final rituals)
@@ -31,6 +33,8 @@
 	var/heretic_path = PATH_START
 	/// A sum of how many knowledge points this heretic CURRENTLY has. Used to research.
 	var/knowledge_points = 1
+	/// How many side path points the heretic has. He gains one of these per main path that splits into two sidepaths. These can be used in place of knowledge points for side paths only.
+	var/side_path_points = 0
 	/// The time between gaining influence passively. The heretic gain +1 knowledge points every this duration of time.
 	var/passive_gain_timer = 20 MINUTES
 	/// Assoc list of [typepath] = [knowledge instance]. A list of all knowledge this heretic's reserached.
@@ -41,14 +45,20 @@
 	var/total_sacrifices = 0
 	/// A list of TOTAL how many high value sacrifices completed. (Heads of staff)
 	var/high_value_sacrifices = 0
+	/* monkestation removal: sacrifice refactor (see [monkestation\code\modules\antagonists\heretic])
 	/// Lazy assoc list of [refs to humans] to [image previews of the human]. Humans that we have as sacrifice targets.
 	var/list/mob/living/carbon/human/sac_targets
+	/// List of all sacrifice target's names, used for end of round report
+	var/list/all_sac_targets = list()
+	monkestation end */
 	/// Whether we're drawing a rune or not
 	var/drawing_rune = FALSE
 	/// A static typecache of all tools we can scribe with.
 	var/static/list/scribing_tools = typecacheof(list(/obj/item/pen, /obj/item/toy/crayon))
 	/// A blacklist of turfs we cannot scribe on.
 	var/static/list/blacklisted_rune_turfs = typecacheof(list(/turf/open/space, /turf/open/openspace, /turf/open/lava, /turf/open/chasm))
+	/// Wether we are allowed to ascend
+	var/feast_of_owls = FALSE
 	/// Static list of what each path converts to in the UI (colors are TGUI colors)
 	var/static/list/path_to_ui_color = list(
 		PATH_START = "grey",
@@ -59,6 +69,8 @@
 		PATH_VOID = "blue",
 		PATH_BLADE = "label", // my favorite color is label
 		PATH_COSMIC = "purple",
+		PATH_KNOCK = "yellow",
+		PATH_MOON = "blue",
 	)
 	var/static/list/path_to_rune_color = list(
 		PATH_START = COLOR_LIME,
@@ -68,16 +80,21 @@
 		PATH_VOID = COLOR_CYAN,
 		PATH_BLADE = COLOR_SILVER,
 		PATH_COSMIC = COLOR_PURPLE,
+		PATH_KNOCK = COLOR_YELLOW,
+		PATH_MOON = COLOR_BLUE_LIGHT,
 	)
 
+/* monkestation removal: sacrifice refactor
 /datum/antagonist/heretic/Destroy()
 	LAZYNULL(sac_targets)
 	return ..()
+monkestation end */
 
 /datum/antagonist/heretic/ui_data(mob/user)
 	var/list/data = list()
 
 	data["charges"] = knowledge_points
+	data["side_charges"] = side_path_points
 	data["total_sacrifices"] = total_sacrifices
 	data["ascended"] = ascended
 
@@ -91,7 +108,10 @@
 		knowledge_data["desc"] = initial(knowledge.desc)
 		knowledge_data["gainFlavor"] = initial(knowledge.gain_text)
 		knowledge_data["cost"] = initial(knowledge.cost)
-		knowledge_data["disabled"] = (initial(knowledge.cost) > knowledge_points)
+		if(initial(knowledge.route) == PATH_SIDE)
+			knowledge_data["disabled"] = (initial(knowledge.cost) > knowledge_points + side_path_points)
+		else
+			knowledge_data["disabled"] = (initial(knowledge.cost) > knowledge_points)
 
 		// Final knowledge can't be learned until all objectives are complete.
 		if(ispath(knowledge, /datum/heretic_knowledge/ultimate))
@@ -108,6 +128,7 @@
 	var/list/data = list()
 
 	data["objectives"] = get_objectives()
+	data["can_change_objective"] = can_assign_self_objectives
 
 	for(var/path in researched_knowledge)
 		var/list/knowledge_data = list()
@@ -134,14 +155,36 @@
 			if(!ispath(researched_path))
 				CRASH("Heretic attempted to learn non-heretic_knowledge path! (Got: [researched_path])")
 
-			if(initial(researched_path.cost) > knowledge_points)
-				return TRUE
+			// If side path and has path points, buy!
+			var/coupon = FALSE
+			if((initial(researched_path.route) == PATH_SIDE) && side_path_points)
+				coupon = TRUE
+			// else try normal purchase
+			else if(initial(researched_path.cost) > knowledge_points)
+				return
+
 			if(!gain_knowledge(researched_path))
 				return TRUE
 
-			log_heretic_knowledge("[key_name(owner)] gained knowledge: [initial(researched_path.name)]")
-			knowledge_points -= initial(researched_path.cost)
+			log_heretic_knowledge("[key_name(owner)] gained knowledge: [initial(researched_path.name)][coupon ? "(via free side-path point)" : ""]")
+			if(coupon)
+				side_path_points -= initial(researched_path.cost)
+			else
+				knowledge_points -= initial(researched_path.cost)
 			return TRUE
+
+/datum/antagonist/heretic/submit_player_objective(retain_existing = FALSE, retain_escape = TRUE, force = FALSE)
+	if (isnull(owner) || isnull(owner.current))
+		return
+	var/confirmed = tgui_alert(
+		owner.current,
+		message = "Are you sure? You will no longer be able to Ascend.",
+		title = "Reject the call?",
+		buttons = list("Yes", "No"),
+	) == "Yes"
+	if (!confirmed)
+		return
+	return ..()
 
 /datum/antagonist/heretic/ui_status(mob/user, datum/ui_state/state)
 	if(user.stat == DEAD)
@@ -178,7 +221,7 @@
 	if(give_objectives)
 		forge_primary_objectives()
 
-	owner.current.playsound_local(get_turf(owner.current), 'sound/ambience/antag/ecult_op.ogg', 100, FALSE, pressure_affected = FALSE, use_reverb = FALSE)//subject to change
+	owner.current.playsound_local(get_turf(owner.current), 'sound/ambience/antag/heretic/heretic_gain.ogg', 100, FALSE, pressure_affected = FALSE, use_reverb = FALSE)//subject to change
 
 	for(var/starting_knowledge in GLOB.heretic_start_knowledge)
 		gain_knowledge(starting_knowledge)
@@ -205,7 +248,6 @@
 	RegisterSignal(our_mob, COMSIG_MOB_ITEM_AFTERATTACK, PROC_REF(on_item_afterattack))
 	RegisterSignal(our_mob, COMSIG_MOB_LOGIN, PROC_REF(fix_influence_network))
 	RegisterSignal(our_mob, COMSIG_LIVING_POST_FULLY_HEAL, PROC_REF(after_fully_healed))
-	RegisterSignal(our_mob, COMSIG_LIVING_CULT_SACRIFICED, PROC_REF(on_cult_sacrificed))
 
 /datum/antagonist/heretic/remove_innate_effects(mob/living/mob_override)
 	var/mob/living/our_mob = mob_override || owner.current
@@ -218,11 +260,13 @@
 		COMSIG_MOB_ITEM_AFTERATTACK,
 		COMSIG_MOB_LOGIN,
 		COMSIG_LIVING_POST_FULLY_HEAL,
-		COMSIG_LIVING_CULT_SACRIFICED
 	))
 
 /datum/antagonist/heretic/on_body_transfer(mob/living/old_body, mob/living/new_body)
 	. = ..()
+	if(old_body == new_body) // if they were using a temporary body
+		return
+
 	for(var/knowledge_index in researched_knowledge)
 		var/datum/heretic_knowledge/knowledge = researched_knowledge[knowledge_index]
 		knowledge.on_lose(old_body, src)
@@ -284,14 +328,14 @@
  * * drawing_time - how long the do_after takes to make the rune
  * * additional checks - optional callbacks to be ran while drawing the rune
  */
-/datum/antagonist/heretic/proc/try_draw_rune(mob/living/user, turf/target_turf, drawing_time = 30 SECONDS, additional_checks)
+/datum/antagonist/heretic/proc/try_draw_rune(mob/living/user, turf/target_turf, drawing_time = 20 SECONDS, additional_checks)
 	for(var/turf/nearby_turf as anything in RANGE_TURFS(1, target_turf))
 		if(!isopenturf(nearby_turf) || is_type_in_typecache(nearby_turf, blacklisted_rune_turfs))
 			target_turf.balloon_alert(user, "invalid placement for rune!")
 			return
 
 	if(locate(/obj/effect/heretic_rune) in range(3, target_turf))
-		target_turf.balloon_alert(user, "to close to another rune!")
+		target_turf.balloon_alert(user, "too close to another rune!")
 		return
 
 	if(drawing_rune)
@@ -309,16 +353,16 @@
  * * drawing_time - how long the do_after takes to make the rune
  * * additional checks - optional callbacks to be ran while drawing the rune
  */
-/datum/antagonist/heretic/proc/draw_rune(mob/living/user, turf/target_turf, drawing_time = 30 SECONDS, additional_checks)
+/datum/antagonist/heretic/proc/draw_rune(mob/living/user, turf/target_turf, drawing_time = 20 SECONDS, additional_checks)
 	drawing_rune = TRUE
 
 	var/rune_colour = path_to_rune_color[heretic_path]
 	target_turf.balloon_alert(user, "drawing rune...")
 	var/obj/effect/temp_visual/drawing_heretic_rune/drawing_effect
-	if (drawing_time >= (30 SECONDS))
-		drawing_effect = new(target_turf, rune_colour)
-	else
+	if (drawing_time < (10 SECONDS))
 		drawing_effect = new /obj/effect/temp_visual/drawing_heretic_rune/fast(target_turf, rune_colour)
+	else
+		drawing_effect = new(target_turf, rune_colour)
 
 	if(!do_after(user, drawing_time, target_turf, extra_checks = additional_checks))
 		target_turf.balloon_alert(user, "interrupted!")
@@ -354,25 +398,14 @@
 
 	GLOB.reality_smash_track.rework_network()
 
-/// Signal proc for [COMSIG_LIVING_POST_FULLY_HEAL], when we get fullhealed / ahealed,
-/// all of our organs are "deleted" and regenerated (cause it's a full heal)
-/// which unfortunately means we lose our living heart.
-/// So, we'll give them some lee-way and give them back the living heart afterwards
-/// (Maybe put this behind only admin_revives only? Not sure.)
-/datum/antagonist/heretic/proc/after_fully_healed(mob/living/source, admin_revive)
+/// Signal proc for [COMSIG_LIVING_POST_FULLY_HEAL],
+/// Gives the heretic aliving heart on aheal or organ refresh
+/datum/antagonist/heretic/proc/after_fully_healed(mob/living/source, heal_flags)
 	SIGNAL_HANDLER
 
-	var/datum/heretic_knowledge/living_heart/heart_knowledge = get_knowledge(/datum/heretic_knowledge/living_heart)
-	heart_knowledge.on_research(source)
-
-/// Signal proc for [COMSIG_LIVING_CULT_SACRIFICED] to reward cultists for sacrificing a heretic
-/datum/antagonist/heretic/proc/on_cult_sacrificed(mob/living/source, list/invokers)
-	SIGNAL_HANDLER
-
-	new /obj/item/cult_bastard(source.loc)
-	for(var/mob/living/cultist as anything in invokers)
-		to_chat(cultist, span_cultlarge("\"A follower of the forgotten gods! You must be rewarded for such a valuable sacrifice.\""))
-	return SILENCE_SACRIFICE_MESSAGE
+	if(heal_flags & (HEAL_REFRESH_ORGANS|HEAL_ADMIN))
+		var/datum/heretic_knowledge/living_heart/heart_knowledge = get_knowledge(/datum/heretic_knowledge/living_heart)
+		heart_knowledge.on_research(source, src)
 
 /**
  * Create our objectives for our heretic.
@@ -399,6 +432,7 @@
 		other_sac_objective.owner = owner
 		objectives += other_sac_objective
 
+/* monkestation removal: sacrifice refactor (see [monkestation\code\modules\antagonists\heretic])
 /**
  * Add [target] as a sacrifice target for the heretic.
  * Generates a preview image and associates it with a weakref of the mob.
@@ -409,7 +443,8 @@
 	target_image.overlays = target.overlays
 
 	LAZYSET(sac_targets, target, target_image)
-	RegisterSignal(target, COMSIG_PARENT_QDELETING, PROC_REF(on_target_deleted))
+	RegisterSignal(target, COMSIG_QDELETING, PROC_REF(on_target_deleted))
+	all_sac_targets += target.real_name
 
 /**
  * Removes [target] from the heretic's sacrifice list.
@@ -420,17 +455,18 @@
 		return FALSE
 
 	LAZYREMOVE(sac_targets, target)
-	UnregisterSignal(target, COMSIG_PARENT_QDELETING)
+	UnregisterSignal(target, COMSIG_QDELETING)
 	return TRUE
 
 /**
- * Signal proc for [COMSIG_PARENT_QDELETING] registered on sac targets
+ * Signal proc for [COMSIG_QDELETING] registered on sac targets
  * if sacrifice targets are deleted (gibbed, dusted, whatever), free their slot and reference
  */
 /datum/antagonist/heretic/proc/on_target_deleted(mob/living/carbon/human/source)
 	SIGNAL_HANDLER
 
 	remove_sacrifice_target(source)
+monkestation end */
 
 /**
  * Increments knowledge by one.
@@ -438,7 +474,7 @@
  */
 /datum/antagonist/heretic/proc/passive_influence_gain()
 	knowledge_points++
-	if(owner.current.stat <= SOFT_CRIT)
+	if(owner.current?.stat <= SOFT_CRIT)
 		to_chat(owner.current, "[span_hear("You hear a whisper...")] [span_hypnophrase(pick(strings(HERETIC_INFLUENCE_FILE, "drain_message")))]")
 	addtimer(CALLBACK(src, PROC_REF(passive_influence_gain)), passive_gain_timer)
 
@@ -449,17 +485,16 @@
 
 	parts += printplayer(owner)
 	parts += "<b>Sacrifices Made:</b> [total_sacrifices]"
-
+	parts += "The heretic's sacrifice targets were: [roundend_sac_list()]." // monkestation edit: sacrifice refactor
 	if(length(objectives))
 		var/count = 1
 		for(var/datum/objective/objective as anything in objectives)
-			if(objective.check_completion())
-				parts += "<b>Objective #[count]</b>: [objective.explanation_text] [span_greentext("Success!")]"
-			else
-				parts += "<b>Objective #[count]</b>: [objective.explanation_text] [span_redtext("Fail.")]"
+			if(!objective.check_completion())
 				succeeded = FALSE
+			parts += "<b>Objective #[count]</b>: [objective.explanation_text] [objective.get_roundend_success_suffix()]"
 			count++
-
+	if(feast_of_owls)
+		parts += span_greentext("Ascension Forsaken")
 	if(ascended)
 		parts += span_greentext(span_big("THE HERETIC ASCENDED!"))
 
@@ -492,6 +527,7 @@
 			.["Remove Heart Target"] = CALLBACK(src, PROC_REF(remove_target))
 
 	.["Adjust Knowledge Points"] = CALLBACK(src, PROC_REF(admin_change_points))
+	.["Give Focus"] = CALLBACK(src, PROC_REF(admin_give_focus))
 
 /**
  * Admin proc for giving a heretic a Living Heart easily.
@@ -535,6 +571,7 @@
 		to_chat(admin, span_warning("You shouldn't be using this!"))
 		return
 
+	var/list/sac_targets = get_current_target_bodies() // monkestation edit: heretic refactor
 	var/list/removable = list()
 	for(var/mob/living/carbon/human/old_target as anything in sac_targets)
 		removable[old_target.name] = old_target
@@ -567,6 +604,18 @@
 
 	knowledge_points += change_num
 
+/**
+ * Admin proc for giving a heretic a focus.
+ */
+/datum/antagonist/heretic/proc/admin_give_focus(mob/admin)
+	if(!admin.client?.holder)
+		to_chat(admin, span_warning("You shouldn't be using this!"))
+		return
+
+	var/mob/living/pawn = owner.current
+	pawn.equip_to_slot_if_possible(new /obj/item/clothing/neck/heretic_focus(get_turf(pawn)), ITEM_SLOT_NECK, TRUE, TRUE)
+	to_chat(pawn, span_hypnophrase("The Mansus has manifested you a focus."))
+
 /datum/antagonist/heretic/antag_panel_data()
 	var/list/string_of_knowledge = list()
 
@@ -584,10 +633,10 @@
 
 	. += "<br>"
 	. += "<i><b>Current Targets:</b></i><br>"
+	var/list/sac_targets = get_current_target_bodies() // monkestation edit: heretic refactor
 	if(LAZYLEN(sac_targets))
 		for(var/mob/living/carbon/human/target as anything in sac_targets)
 			. += " - <b>[target.real_name]</b>, the [target.mind?.assigned_role?.title || "human"].<br>"
-
 	else
 		. += "<i>None!</i><br>"
 	. += "<br>"
@@ -653,6 +702,10 @@
  * Returns FALSE if not all of our objectives are complete, or TRUE otherwise.
  */
 /datum/antagonist/heretic/proc/can_ascend()
+	if(!can_assign_self_objectives)
+		return FALSE // We spurned the offer of the Mansus :(
+	if(feast_of_owls)
+		return FALSE // We sold our ambition for immediate power :/
 	for(var/datum/objective/must_be_done as anything in objectives)
 		if(!must_be_done.check_completion())
 			return FALSE
@@ -701,7 +754,7 @@
 /datum/objective/major_sacrifice
 	name = "major sacrifice"
 	target_amount = 1
-	explanation_text = "Sacrifice 1 head of staff."
+	explanation_text = "Sacrifice any head of staff." // monkestation edit: clarify that any head can be sacrificed
 
 /datum/objective/major_sacrifice/check_completion()
 	var/datum/antagonist/heretic/heretic_datum = owner?.has_antag_datum(/datum/antagonist/heretic)
@@ -732,8 +785,8 @@
 	target_amount = main_path_length
 	// Add in the base research we spawn with, otherwise it'd be too easy.
 	target_amount += length(GLOB.heretic_start_knowledge)
-	// And add in some buffer, to require some sidepathing.
-	target_amount += rand(2, 4)
+	// And add in some buffer, to require some sidepathing, especially since heretics get some free side paths.
+	target_amount += rand(5, 7)
 	update_explanation_text()
 
 /datum/objective/heretic_research/update_explanation_text()
@@ -750,28 +803,16 @@
 	name = "summon monsters"
 	target_amount = 2
 	explanation_text = "Summon 2 monsters from the Mansus into this realm."
+/* monkestation removal: refactored in [monkestation\code\modules\antagonists\heretic\heretic_antag.dm]
 	/// The total number of summons the objective owner has done
 	var/num_summoned = 0
 
 /datum/objective/heretic_summon/check_completion()
 	return completed || (num_summoned >= target_amount)
+monkestation end */
 
 /datum/outfit/heretic
 	name = "Heretic (Preview only)"
 
 	suit = /obj/item/clothing/suit/hooded/cultrobes/eldritch
 	r_hand = /obj/item/melee/touch_attack/mansus_fist
-
-/datum/antagonist/heretic/antag_token(datum/mind/hosts_mind, mob/spender)
-	. = ..()
-	var/datum/antagonist/heretic/new_heretic = new()
-	if(isobserver(spender))
-		var/mob/living/carbon/human/newmob = spender.change_mob_type( /mob/living/carbon/human , null, null, TRUE )
-		newmob.equipOutfit(/datum/outfit/job/assistant)
-		newmob.mind.add_antag_datum(new_heretic)
-	else
-		hosts_mind.add_antag_datum(new_heretic)
-
-	if(!new_heretic.has_living_heart())
-		var/datum/heretic_knowledge/living_heart/heart_knowledge = new_heretic.get_knowledge(/datum/heretic_knowledge/living_heart)
-		heart_knowledge.on_research(hosts_mind.current)

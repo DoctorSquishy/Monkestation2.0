@@ -319,14 +319,6 @@
 	greyscale_colors = CIRCUIT_COLOR_GENERIC
 	build_path = /obj/machinery/computer/shuttle/white_ship/bridge
 
-/obj/item/circuitboard/computer/white_ship/pod
-	name = "Salvage Pod"
-	build_path = /obj/machinery/computer/shuttle/white_ship/pod
-
-/obj/item/circuitboard/computer/white_ship/pod/recall
-	name = "Salvage Pod Recall"
-	build_path = /obj/machinery/computer/shuttle/white_ship/pod/recall
-
 /obj/item/circuitboard/computer/bountypad
 	name = "Bounty Pad"
 	build_path = /obj/machinery/computer/piratepad_control/civilian
@@ -408,11 +400,6 @@
 	greyscale_colors = CIRCUIT_COLOR_SCIENCE
 	build_path = /obj/machinery/computer/teleporter
 
-/obj/item/circuitboard/computer/xenobiology
-	name = "Xenobiology Console"
-	greyscale_colors = CIRCUIT_COLOR_SCIENCE
-	build_path = /obj/machinery/computer/camera_advanced/xenobio
-
 /obj/item/circuitboard/computer/scan_consolenew
 	name = "DNA Console"
 	greyscale_colors = CIRCUIT_COLOR_SCIENCE
@@ -487,11 +474,14 @@
 	else
 		to_chat(user, span_alert("The spectrum chip is unresponsive."))
 
-/obj/item/circuitboard/computer/cargo/emag_act(mob/living/user)
-	if(!(obj_flags & EMAGGED))
-		contraband = TRUE
-		obj_flags |= EMAGGED
-		to_chat(user, span_notice("You adjust [src]'s routing and receiver spectrum, unlocking special supplies and contraband."))
+/obj/item/circuitboard/computer/cargo/emag_act(mob/user, obj/item/card/emag/emag_card)
+	if (obj_flags & EMAGGED)
+		return FALSE
+
+	contraband = TRUE
+	obj_flags |= EMAGGED
+	to_chat(user, span_notice("You adjust [src]'s routing and receiver spectrum, unlocking special supplies and contraband."))
+	return TRUE
 
 /obj/item/circuitboard/computer/cargo/configure_machine(obj/machinery/computer/cargo/machine)
 	if(!istype(machine))
@@ -507,20 +497,25 @@
 	name = "Express Supply Console"
 	build_path = /obj/machinery/computer/cargo/express
 
-/obj/item/circuitboard/computer/cargo/express/emag_act(mob/living/user)
-	if(!(obj_flags & EMAGGED))
-		contraband = TRUE
-		obj_flags |= EMAGGED
-		to_chat(user, span_notice("You change the routing protocols, allowing the Drop Pod to land anywhere on the station."))
+/obj/item/circuitboard/computer/cargo/express/emag_act(mob/user, obj/item/card/emag/emag_card)
+	if (obj_flags & EMAGGED)
+		return FALSE
+
+	contraband = TRUE
+	obj_flags |= EMAGGED
+	to_chat(user, span_notice("You change the routing protocols, allowing the Drop Pod to land anywhere on the station."))
+	return TRUE
 
 /obj/item/circuitboard/computer/cargo/express/multitool_act(mob/living/user)
 	if (!(obj_flags & EMAGGED))
 		contraband = !contraband
 		to_chat(user, span_notice("Receiver spectrum set to [contraband ? "Broad" : "Standard"]."))
+		return TRUE
 	else
 		to_chat(user, span_notice("You reset the destination-routing protocols and receiver spectrum to factory defaults."))
 		contraband = FALSE
 		obj_flags &= ~EMAGGED
+		return TRUE
 
 /obj/item/circuitboard/computer/cargo/request
 	name = "Supply Request Console"

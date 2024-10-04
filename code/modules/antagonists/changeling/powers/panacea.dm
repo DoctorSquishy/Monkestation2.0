@@ -13,7 +13,10 @@
 	..()
 	var/list/bad_organs = list(
 		user.get_organ_by_type(/obj/item/organ/internal/body_egg),
-		user.get_organ_by_type(/obj/item/organ/internal/zombie_infection))
+		user.get_organ_by_type(/obj/item/organ/internal/legion_tumour),
+		user.get_organ_by_type(/obj/item/organ/internal/zombie_infection),
+		user.get_organ_by_type(/obj/item/organ/internal/empowered_borer_egg), // MONKESTATION ADDITION -- CORTICAL_BORERS
+	)
 
 	for(var/o in bad_organs)
 		var/obj/item/organ/O = o
@@ -26,20 +29,27 @@
 			C.vomit(0)
 		O.forceMove(get_turf(user))
 
+	// MONKESTATION ADDITION START -- CORTICAL_BORERS
+	var/mob/living/basic/cortical_borer/brain_pest = user.has_borer()
+	if(brain_pest)
+		brain_pest.leave_host()
+	// MONKESTATION ADDITION END
 	user.reagents.add_reagent(/datum/reagent/medicine/mutadone, 10)
 	user.reagents.add_reagent(/datum/reagent/medicine/pen_acid, 20)
 	user.reagents.add_reagent(/datum/reagent/medicine/antihol, 10)
 	user.reagents.add_reagent(/datum/reagent/medicine/mannitol, 25)
+	user.reagents.add_reagent(/datum/reagent/medicine/antipathogenic/changeling, 5) //MONKESTATION ADDITION
 
 	if(iscarbon(user))
 		var/mob/living/carbon/C = user
 		C.cure_all_traumas(TRAUMA_RESILIENCE_LOBOTOMY)
 
-	if(isliving(user))
+	/*if(isliving(user)) //MONKESTATION REMOVAL: Virology rework
 		var/mob/living/L = user
 		for(var/thing in L.diseases)
 			var/datum/disease/D = thing
 			if(D.severity == DISEASE_SEVERITY_POSITIVE)
 				continue
 			D.cure()
+	*/
 	return TRUE

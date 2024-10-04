@@ -23,8 +23,7 @@
 	. = ..()
 	var/turf/our_turf = get_turf(src)
 	if(use_vis_overlay)
-		alpha = 0
-		SSvis_overlays.add_vis_overlay(src, icon, icon_state, ABOVE_MOB_LAYER, MUTATE_PLANE(GAME_PLANE_UPPER, our_turf), dir, add_appearance_flags = RESET_ALPHA) //you see mobs under it, but you hit them like they are above it
+		SSvis_overlays.add_vis_overlay(src, icon, icon_state, ABOVE_MOB_LAYER, MUTATE_PLANE(GAME_PLANE_UPPER, our_turf), dir) //you see mobs under it, but you hit them like they are above it
 	if(source_projector)
 		projector = source_projector
 		LAZYADD(projector.signs, src)
@@ -109,6 +108,20 @@
 	rad_insulation = RAD_LIGHT_INSULATION
 	resistance_flags = FIRE_PROOF | FREEZE_PROOF
 
+/obj/structure/holosign/barrier/atmos/proc/clearview_transparency()
+	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+	alpha = 25
+	SSvis_overlays.remove_vis_overlay(src, managed_vis_overlays)
+	var/turf/our_turf = get_turf(src)
+	SSvis_overlays.add_vis_overlay(src, icon, icon_state, ABOVE_MOB_LAYER, MUTATE_PLANE(GAME_PLANE, our_turf), dir)
+
+/obj/structure/holosign/barrier/atmos/proc/reset_transparency()
+	mouse_opacity = initial(mouse_opacity)
+	alpha = initial(alpha)
+	SSvis_overlays.remove_vis_overlay(src, managed_vis_overlays)
+	var/turf/our_turf = get_turf(src)
+	SSvis_overlays.add_vis_overlay(src, icon, icon_state, ABOVE_MOB_LAYER, MUTATE_PLANE(GAME_PLANE, our_turf), dir, add_appearance_flags = RESET_ALPHA)
+
 /obj/structure/holosign/barrier/atmos/sturdy
 	name = "sturdy holofirelock"
 	max_integrity = 150
@@ -136,14 +149,13 @@
 	density = TRUE
 	max_integrity = 10
 	allow_walk = FALSE
+	armor_type = /datum/armor/structure_holosign/cyborg_barrier // Gets a special armor subtype which is extra good at defense.
 
-/obj/structure/holosign/barrier/cyborg/bullet_act(obj/projectile/P)
-	take_damage((P.damage / 5) , BRUTE, MELEE, 1) //Doesn't really matter what damage flag it is.
-	if(istype(P, /obj/projectile/energy/electrode))
-		take_damage(10, BRUTE, MELEE, 1) //Tasers aren't harmful.
-	if(istype(P, /obj/projectile/beam/disabler))
-		take_damage(5, BRUTE, MELEE, 1) //Disablers aren't harmful.
-	return BULLET_ACT_HIT
+/datum/armor/structure_holosign/cyborg_barrier
+	bullet = 80
+	laser = 80
+	energy = 80
+	melee = 20
 
 /obj/structure/holosign/barrier/medical
 	name = "\improper PENLITE holobarrier"
@@ -151,7 +163,7 @@
 	icon_state = "holo_medical"
 	alpha = 125 //lazy :)
 	var/force_allaccess = FALSE
-	var/buzzcd = 0
+	COOLDOWN_DECLARE(buzzcd)
 
 /obj/structure/holosign/barrier/medical/examine(mob/user)
 	. = ..()
@@ -174,14 +186,16 @@
 	. = ..()
 	icon_state = "holo_medical"
 	if(ishuman(AM) && !CheckHuman(AM))
-		if(buzzcd < world.time)
+		if(COOLDOWN_FINISHED(src, buzzcd))
+			var/obj/item/holosign_creator/medical/medical = projector
+			medical.try_alert(AM, get_area(src))
 			playsound(get_turf(src),'sound/machines/buzz-sigh.ogg',65,TRUE,4)
-			buzzcd = (world.time + 60)
+			COOLDOWN_START(src, buzzcd, 6 SECONDS)
 		icon_state = "holo_medical-deny"
 
 /obj/structure/holosign/barrier/medical/proc/CheckHuman(mob/living/carbon/human/sickboi)
-	var/threat = sickboi.check_virus()
-	if(get_disease_severity_value(threat) > get_disease_severity_value(DISEASE_SEVERITY_MINOR))
+	var/threat = sickboi.check_virus_new()
+	if(threat >= DISEASE_HOLOSIGN_BLOCK)
 		return FALSE
 	return TRUE
 
@@ -196,11 +210,8 @@
 	name = "Charged Energy Field"
 	desc = "A powerful energy field that blocks movement. Energy arcs off it."
 	max_integrity = 20
+	armor_type = /datum/armor/structure_holosign //Yeah no this doesn't get projectile resistance.
 	var/shockcd = 0
-
-/obj/structure/holosign/barrier/cyborg/hacked/bullet_act(obj/projectile/P)
-	take_damage(P.damage, BRUTE, MELEE, 1) //Yeah no this doesn't get projectile resistance.
-	return BULLET_ACT_HIT
 
 /obj/structure/holosign/barrier/cyborg/hacked/proc/cooldown()
 	shockcd = FALSE

@@ -48,6 +48,7 @@
 	var/safe_plasma_min = 0
 	///How much breath partial pressure is a safe amount of plasma. 0 means that we are immune to plasma.
 	var/safe_plasma_max = 0.05
+	var/n2o_detect_min = 0.08 //Minimum n2o for effects
 	var/n2o_para_min = 1 //Sleeping agent
 	var/n2o_sleep_min = 5 //Sleeping agent
 	var/BZ_trip_balls_min = 1 //BZ gas
@@ -265,7 +266,7 @@
 		return
 
 	var/ratio = (breath.gases[/datum/gas/oxygen][MOLES] / safe_oxygen_max) * 10
-	breather.apply_damage_type(clamp(ratio, oxy_breath_dam_min, oxy_breath_dam_max), oxy_damage_type)
+	breather.apply_damage(clamp(ratio, oxy_breath_dam_min, oxy_breath_dam_max), oxy_damage_type, spread_damage = TRUE)
 	breather.throw_alert(ALERT_TOO_MUCH_OXYGEN, /atom/movable/screen/alert/too_much_oxy)
 
 /// Handles NOT having too much o2. only relevant if safe_oxygen_max has a value
@@ -321,10 +322,10 @@
 		breather.throw_alert(ALERT_TOO_MUCH_CO2, /atom/movable/screen/alert/too_much_co2)
 		breather.Unconscious(6 SECONDS)
 		// Lets hurt em a little, let them know we mean business.
-		breather.apply_damage_type(3, co2_damage_type)
+		breather.apply_damage(3, co2_damage_type, spread_damage = TRUE)
 		// They've been in here 30s now, start to kill them for their own good!
 		if((world.time - breather.co2overloadtime) > 30 SECONDS)
-			breather.apply_damage_type(8, co2_damage_type)
+			breather.apply_damage(8, co2_damage_type, spread_damage = TRUE)
 
 /// Handles NOT having too much co2. only relevant if safe_co2_max has a value
 /obj/item/organ/internal/lungs/proc/safe_co2(mob/living/carbon/breather, datum/gas_mixture/breath, old_co2_pp)
@@ -365,7 +366,7 @@
 		breather.throw_alert(ALERT_TOO_MUCH_PLASMA, /atom/movable/screen/alert/too_much_plas)
 
 	var/ratio = (breath.gases[/datum/gas/plasma][MOLES] / safe_plasma_max) * 10
-	breather.apply_damage_type(clamp(ratio, plas_breath_dam_min, plas_breath_dam_max), plas_damage_type)
+	breather.apply_damage(clamp(ratio, plas_breath_dam_min, plas_breath_dam_max), plas_damage_type, spread_damage = TRUE)
 
 /// Resets plasma side effects
 /obj/item/organ/internal/lungs/proc/safe_plasma(mob/living/carbon/breather, datum/gas_mixture/breath, old_plasma_pp)
@@ -417,9 +418,8 @@
 	else
 		healium_euphoria = EUPHORIA_INACTIVE
 	// Stun/Sleep side-effects.
-	if(healium_pp > healium_para_min)
-		// Random chance to stun mob. Timing not in seconds to have a much higher variation
-		breather.Unconscious(rand(3 SECONDS, 5 SECONDS))
+	if(healium_pp > healium_para_min && !breather.IsSleeping() && prob(30))
+		breather.Sleeping(rand(3 SECONDS, 5 SECONDS))
 	// Metabolize to reagent when concentration is high enough.
 	if(healium_pp > healium_sleep_min)
 		breather.reagents.add_reagent(/datum/reagent/healium, max(0, 1 - breather.reagents.get_reagent_amount(/datum/reagent/healium)))
@@ -433,14 +433,17 @@
 	breathe_gas_volume(breath, /datum/gas/helium)
 	if(helium_pp > helium_speech_min)
 		if(old_helium_pp <= helium_speech_min)
+			ADD_TRAIT(breather, TRAIT_HELIUM, ORGAN_TRAIT) // monke edit: funny helium voice
 			RegisterSignal(breather, COMSIG_MOB_SAY, PROC_REF(handle_helium_speech))
 	else
 		if(old_helium_pp > helium_speech_min)
 			UnregisterSignal(breather, COMSIG_MOB_SAY)
+			REMOVE_TRAIT(breather, TRAIT_HELIUM, ORGAN_TRAIT) // monke edit: funny helium voice
 
 /// Lose helium high pitched voice
 /obj/item/organ/internal/lungs/proc/lose_helium(mob/living/carbon/breather, datum/gas_mixture/breath, old_helium_pp)
 	UnregisterSignal(breather, COMSIG_MOB_SAY)
+	REMOVE_TRAIT(breather, TRAIT_HELIUM, ORGAN_TRAIT) // monke edit: funny helium voice
 
 /// React to speach while hopped up on the high pitched voice juice
 /obj/item/organ/internal/lungs/proc/handle_helium_speech(mob/living/carbon/breather, list/speech_args)
@@ -504,12 +507,12 @@
 /obj/item/organ/internal/lungs/proc/too_much_n2o(mob/living/carbon/breather, datum/gas_mixture/breath, n2o_pp, old_n2o_pp)
 	if(n2o_pp < n2o_para_min)
 		// Small amount of N2O, small side-effects.
-		if(n2o_pp <= 0.01)
-			if(old_n2o_pp > 0.01)
+		if(n2o_pp <= n2o_detect_min)
+			if(old_n2o_pp > n2o_detect_min)
 				return BREATH_LOST
 			return
 		// No alert for small amounts, but the mob randomly feels euphoric.
-		if(old_n2o_pp >= n2o_para_min || old_n2o_pp <= 0.01)
+		if(old_n2o_pp >= n2o_para_min || old_n2o_pp <= n2o_detect_min)
 			breather.clear_alert(ALERT_TOO_MUCH_N2O)
 
 		if(prob(20))
@@ -753,30 +756,84 @@
 
 	if(!HAS_TRAIT(breather, TRAIT_RESISTCOLD)) // COLD DAMAGE
 		var/cold_modifier = breather.dna.species.coldmod
+		var/breath_effect_prob = 0
 		if(breath_temperature < cold_level_3_threshold)
-			breather.apply_damage_type(cold_level_3_damage*cold_modifier, cold_damage_type)
+			breather.apply_damage(cold_level_3_damage * cold_modifier, cold_damage_type, spread_damage = TRUE)
+			breath_effect_prob = 100
 		if(breath_temperature > cold_level_3_threshold && breath_temperature < cold_level_2_threshold)
-			breather.apply_damage_type(cold_level_2_damage*cold_modifier, cold_damage_type)
+			breather.apply_damage(cold_level_2_damage * cold_modifier, cold_damage_type, spread_damage = TRUE)
+			breath_effect_prob = 50
 		if(breath_temperature > cold_level_2_threshold && breath_temperature < cold_level_1_threshold)
-			breather.apply_damage_type(cold_level_1_damage*cold_modifier, cold_damage_type)
+			breather.apply_damage(cold_level_1_damage * cold_modifier, cold_damage_type, spread_damage = TRUE)
+			breath_effect_prob = 25
 		if(breath_temperature < cold_level_1_threshold)
-			if(prob(20))
+			if(prob(sqrt(breath_effect_prob) * 4))
 				to_chat(breather, span_warning("You feel [cold_message] in your [name]!"))
+				if(prob(50))
+					breather.emote("shiver")
+			if(prob(breath_effect_prob))
+				// Breathing into your mask, no particle. We can add fogged up glasses later
+				if(breather.is_mouth_covered())
+					return
+				// Even though breathing via internals TECHNICALLY exhales into the environment, we'll still block it
+				if(breather.internal || breather.external)
+					return
+				emit_breath_particle(breather, /particles/fog/breath)
 
 	if(!HAS_TRAIT(breather, TRAIT_RESISTHEAT)) // HEAT DAMAGE
 		var/heat_modifier = breather.dna.species.heatmod
+		var/heat_message_prob = 0
 		if(breath_temperature > heat_level_1_threshold && breath_temperature < heat_level_2_threshold)
-			breather.apply_damage_type(heat_level_1_damage*heat_modifier, heat_damage_type)
+			breather.apply_damage(heat_level_1_damage * heat_modifier, heat_damage_type, spread_damage = TRUE)
+			heat_message_prob = 100
 		if(breath_temperature > heat_level_2_threshold && breath_temperature < heat_level_3_threshold)
-			breather.apply_damage_type(heat_level_2_damage*heat_modifier, heat_damage_type)
+			breather.apply_damage(heat_level_2_damage * heat_modifier, heat_damage_type, spread_damage = TRUE)
+			heat_message_prob = 50
 		if(breath_temperature > heat_level_3_threshold)
-			breather.apply_damage_type(heat_level_3_damage*heat_modifier, heat_damage_type)
+			breather.apply_damage(heat_level_3_damage * heat_modifier, heat_damage_type, spread_damage = TRUE)
+			heat_message_prob = 25
 		if(breath_temperature > heat_level_1_threshold)
-			if(prob(20))
+			if(prob(sqrt(heat_message_prob) * 4))
 				to_chat(breather, span_warning("You feel [hot_message] in your [name]!"))
 
 	// The air you breathe out should match your body temperature
 	breath.temperature = breather.bodytemperature
+
+/// Creates a particle effect off the mouth of the passed mob.
+/obj/item/organ/internal/lungs/proc/emit_breath_particle(mob/living/carbon/human/breather, particle_type)
+	ASSERT(ispath(particle_type, /particles))
+
+	var/obj/effect/abstract/particle_holder/holder = new(breather, particle_type)
+	var/particles/breath_particle = holder.particles
+	var/breath_dir = breather.dir
+
+	var/list/particle_grav = list(0, 0.1, 0)
+	var/list/particle_pos = list(0, breather.get_mob_height() + 2, 0)
+	if(breath_dir & NORTH)
+		particle_grav[2] = 0.2
+		breath_particle.rotation = pick(-45, 45)
+		// Layer it behind the mob since we're facing away from the camera
+		holder.pixel_w -= 4
+		holder.pixel_y += 4
+	if(breath_dir & WEST)
+		particle_grav[1] = -0.2
+		particle_pos[1] = -5
+		breath_particle.rotation = -45
+	if(breath_dir & EAST)
+		particle_grav[1] = 0.2
+		particle_pos[1] = 5
+		breath_particle.rotation = 45
+	if(breath_dir & SOUTH)
+		particle_grav[2] = 0.2
+		breath_particle.rotation = pick(-45, 45)
+		// Shouldn't be necessary but just for parity
+		holder.pixel_w += 4
+		holder.pixel_y -= 4
+
+	breath_particle.gravity = particle_grav
+	breath_particle.position = particle_pos
+
+	QDEL_IN(holder, breath_particle.lifespan)
 
 /obj/item/organ/internal/lungs/on_life(seconds_per_tick, times_fired)
 	. = ..()
@@ -787,7 +844,7 @@
 		var/do_i_cough = SPT_PROB((damage < high_threshold) ? 2.5 : 5, seconds_per_tick) // between : past high
 		if(do_i_cough)
 			owner.emote("cough")
-	if(organ_flags & ORGAN_FAILING && owner.stat == CONSCIOUS)
+	if((organ_flags & ORGAN_FAILING) && owner.stat == CONSCIOUS && SPT_PROB(1, seconds_per_tick)) // monkestation edit: antispam
 		owner.visible_message(span_danger("[owner] grabs [owner.p_their()] throat, struggling for breath!"), span_userdanger("You suddenly feel like you can't breathe!"))
 		failed = TRUE
 
@@ -819,6 +876,7 @@
 /obj/item/organ/internal/lungs/cybernetic
 	name = "basic cybernetic lungs"
 	desc = "A basic cybernetic version of the lungs found in traditional humanoid entities."
+	failing_desc = "seems to be broken."
 	icon_state = "lungs-c"
 	organ_flags = ORGAN_SYNTHETIC
 	maxHealth = STANDARD_ORGAN_THRESHOLD * 0.5
@@ -937,12 +995,6 @@
 	breath_out.assert_gases(/datum/gas/oxygen, /datum/gas/hydrogen)
 	breath_out.gases[/datum/gas/oxygen][MOLES] += gas_breathed
 	breath_out.gases[/datum/gas/hydrogen][MOLES] += gas_breathed * 2
-
-/obj/item/organ/internal/lungs/oozeling
-	name = "oozeling vacuole"
-	desc = "A large organelle designed to store oxygen and filter toxins."
-
-	safe_oxygen_min = 4 //We don't need much oxygen to subsist.
 
 #undef BREATH_RELATIONSHIP_INITIAL_GAS
 #undef BREATH_RELATIONSHIP_CONVERT

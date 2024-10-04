@@ -4,14 +4,20 @@ GLOBAL_LIST_INIT(high_priority_sentience, typecacheof(list(
 	/mob/living/basic/lizard,
 	/mob/living/basic/carp/pet/cayenne,
 	/mob/living/basic/cow,
-	/mob/living/basic/spider/giant/sgt_araneus,
+	/mob/living/basic/goat,
 	/mob/living/basic/lizard,
 	/mob/living/basic/mouse/brown/tom,
+	/mob/living/basic/parrot,
 	/mob/living/basic/pet,
 	/mob/living/basic/pig,
 	/mob/living/basic/rabbit,
 	/mob/living/basic/sheep,
+	/mob/living/basic/sloth,
+	/mob/living/basic/snake,
+	/mob/living/basic/spider/giant/sgt_araneus,
 	/mob/living/simple_animal/bot/secbot/beepsky,
+	/mob/living/simple_animal/hostile/retaliate/goose/vomit,
+	/mob/living/simple_animal/pet,
 )))
 
 /datum/round_event_control/sentience
@@ -22,8 +28,6 @@ GLOBAL_LIST_INIT(high_priority_sentience, typecacheof(list(
 	description = "An animal or robot becomes sentient!"
 	min_wizard_trigger_potency = 0
 	max_wizard_trigger_potency = 7
-	track = EVENT_TRACK_MODERATE
-	tags = list(TAG_COMMUNAL, TAG_SPOOKY)
 
 
 /datum/round_event/ghost_role/sentience
@@ -46,7 +50,12 @@ GLOBAL_LIST_INIT(high_priority_sentience, typecacheof(list(
 
 /datum/round_event/ghost_role/sentience/spawn_role()
 	var/list/mob/dead/observer/candidates
-	candidates = get_candidates(ROLE_SENTIENCE, ROLE_SENTIENCE)
+	candidates = SSpolling.poll_ghost_candidates(
+		"Would you like to be a random animal?",
+		role = ROLE_SENTIENCE,
+		alert_pic = /obj/item/slimepotion/slime/sentience,
+		role_name_text = role_name
+	)
 
 	// find our chosen mob to breathe life into
 	// Mobs have to be simple animals, mindless, on station, and NOT holograms.
@@ -70,11 +79,11 @@ GLOBAL_LIST_INIT(high_priority_sentience, typecacheof(list(
 
 	if(!potential.len)
 		return WAITING_FOR_SOMETHING
-	if(!candidates.len)
+	if(!length(candidates))
 		return NOT_ENOUGH_PLAYERS
 
 	var/spawned_animals = 0
-	while(spawned_animals < animals && candidates.len && potential.len)
+	while(spawned_animals < animals && length(candidates) && potential.len)
 		var/mob/living/selected = popleft(potential)
 		var/mob/dead/observer/picked_candidate = pick_n_take(candidates)
 

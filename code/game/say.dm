@@ -38,7 +38,7 @@ GLOBAL_LIST_INIT(freqtospan, list(
 	SEND_SIGNAL(src, COMSIG_MOVABLE_HEAR, args)
 
 //MONKESTATION EDIT
-/mob/Hear(message, atom/movable/speaker, message_language, raw_message, radio_freq, list/spans, list/message_mods = list())
+/mob/Hear(message, atom/movable/speaker, message_language, raw_message, radio_freq, list/spans, list/message_mods = list(), message_range)
 	. = ..()
 	if(client && radio_freq)
 		var/atom/movable/virtualspeaker/V = speaker
@@ -164,13 +164,14 @@ GLOBAL_LIST_INIT(freqtospan, list(
 /// Transforms the speech emphasis mods from [/atom/movable/proc/say_emphasis] into the appropriate HTML tags. Includes escaping.
 #define ENCODE_HTML_EMPHASIS(input, char, html, varname) \
 	var/static/regex/##varname = regex("(?<!\\\\)[char](.+?)(?<!\\\\)[char]", "g");\
-	input = varname.Replace_char(input, "<[html]>$1</[html]>")
+	input = varname.Replace_char(input, "<[html]>$1</[html]>&#8203;") //zero-width space to force maptext to respect closing tags.
 
 /// Scans the input sentence for speech emphasis modifiers, notably |italics|, +bold+, and _underline_ -mothblocks
 /atom/movable/proc/say_emphasis(input)
 	ENCODE_HTML_EMPHASIS(input, "\\|", "i", italics)
 	ENCODE_HTML_EMPHASIS(input, "\\+", "b", bold)
 	ENCODE_HTML_EMPHASIS(input, "_", "u", underline)
+	ENCODE_HTML_EMPHASIS(input, "\\`", "font color= 'red'", redtext) //MONKESTATION ADDITION: makes your text red
 	var/static/regex/remove_escape_backlashes = regex("\\\\(_|\\+|\\|)", "g") // Removes backslashes used to escape text modification.
 	input = remove_escape_backlashes.Replace_char(input, "$1")
 	return input
@@ -218,7 +219,7 @@ GLOBAL_LIST_INIT(freqtospan, list(
 		return "2"
 	return "0"
 
-/atom/movable/proc/GetVoice()
+/atom/proc/GetVoice()
 	return "[src]" //Returns the atom's name, prepended with 'The' if it's not a proper noun
 
 /atom/movable/proc/get_alt_name()

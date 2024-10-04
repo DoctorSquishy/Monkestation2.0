@@ -14,12 +14,21 @@
 	if(!prev_lying)
 		gib_animation()
 
+	ghostize()
 	spill_organs(no_brain, no_organs, no_bodyparts)
 
 	if(!no_bodyparts)
-		spread_bodyparts(no_brain, no_organs)
+		spread_bodyparts(no_brain, no_organs, TRUE)
 
 	spawn_gibs(no_bodyparts)
+	///lol I want it to be bloody as fuck
+	blood_particles(5, min_deviation = 70, max_deviation = 120, min_pixel_z = 4, max_pixel_z = 11)
+	blood_particles(6, min_deviation = -70, max_deviation = -30, min_pixel_z = 5, max_pixel_z = 7)
+	blood_particles(4, min_deviation = -190, max_deviation = -80, min_pixel_z = 0, max_pixel_z = 9)
+	blood_particles(7, min_deviation = 130, max_deviation = 160, min_pixel_z = 12, max_pixel_z = 16)
+	blood_particles(4, min_deviation = -200, max_deviation = -220, min_pixel_z = 4, max_pixel_z = 6)
+	blood_particles(2, min_deviation = 161, max_deviation = 200, min_pixel_z = 2, max_pixel_z = 12)
+	///lol
 	SEND_SIGNAL(src, COMSIG_LIVING_GIBBED, no_brain, no_organs, no_bodyparts)
 	qdel(src)
 
@@ -32,7 +41,7 @@
 /mob/living/proc/spill_organs()
 	return
 
-/mob/living/proc/spread_bodyparts()
+/mob/living/proc/spread_bodyparts(skip_head, skip_organs, violent)
 	return
 
 /**
@@ -55,6 +64,7 @@
 
 	dust_animation()
 	spawn_dust(just_ash)
+	ghostize()
 	QDEL_IN(src,5) // since this is sometimes called in the middle of movement, allow half a second for movement to finish, ghosting to happen and animation to play. Looks much nicer and doesn't cause multiple runtimes.
 
 /mob/living/proc/dust_animation()
@@ -72,6 +82,9 @@
 /mob/living/proc/death(gibbed)
 	if(stat == DEAD)
 		return FALSE
+
+	if(!gibbed && (death_sound || death_message))
+		INVOKE_ASYNC(src, TYPE_PROC_REF(/mob, emote), "deathgasp")
 
 	set_stat(DEAD)
 	unset_machine()
@@ -99,13 +112,12 @@
 	med_hud_set_status()
 	stop_pulling()
 
+	set_ssd_indicator(FALSE)
+
 	SEND_SIGNAL(src, COMSIG_LIVING_DEATH, gibbed)
 	SEND_GLOBAL_SIGNAL(COMSIG_GLOB_MOB_DEATH, src, gibbed)
 
 	if (client)
 		client.move_delay = initial(client.move_delay)
-
-	if(!gibbed && (death_sound || death_message))
-		INVOKE_ASYNC(src, TYPE_PROC_REF(/mob, emote), "deathgasp")
 
 	return TRUE

@@ -1,4 +1,5 @@
 #define ROUND_START_MUSIC_LIST "strings/round_start_sounds.txt"
+#define SS_TICKER_TRAIT "SS_Ticker"
 
 SUBSYSTEM_DEF(ticker)
 	name = "Ticker"
@@ -10,8 +11,10 @@ SUBSYSTEM_DEF(ticker)
 
 	/// state of current round (used by process()) Use the defines GAME_STATE_* !
 	var/current_state = GAME_STATE_STARTUP
-	/// Boolean to track if round was ended by admin intervention or a "round-ending" event, like summoning Nar'Sie, a blob victory, the nuke going off, etc.
-	var/force_ending = FALSE
+	/// Boolean to track if round should be forcibly ended next ticker tick.
+	/// Set by admin intervention ([ADMIN_FORCE_END_ROUND])
+	/// or a "round-ending" event, like summoning Nar'Sie, a blob victory, the nuke going off, etc. ([FORCE_END_ROUND])
+	var/force_ending = END_ROUND_AS_NORMAL
 	/// If TRUE, there is no lobby phase, the game starts immediately.
 	var/start_immediately = FALSE
 	/// Boolean to track and check if our subsystem setup is done.
@@ -19,7 +22,7 @@ SUBSYSTEM_DEF(ticker)
 
 	var/datum/game_mode/mode = null
 
-	var/login_music //music played in pregame lobby
+	var/login_music_done = FALSE // monkestation edit: : fix-lobby-music
 	var/round_end_sound //music/jingle played when the world reboots
 	var/round_end_sound_sent = TRUE //If all clients have loaded it
 
@@ -36,7 +39,7 @@ SUBSYSTEM_DEF(ticker)
 	var/start_at
 
 	var/gametime_offset = 432000 //Deciseconds to add to world.time for station time.
-	var/station_time_rate_multiplier = 12 //factor of station time progressal vs real time.
+	var/station_time_rate_multiplier = 128 //factor of station time progressal vs real time.
 
 	/// Num of players, used for pregame stats on statpanel
 	var/totalPlayers = 0
@@ -72,6 +75,25 @@ SUBSYSTEM_DEF(ticker)
 	var/list/jobs_to_reward = list(JOB_JANITOR,)
 
 /datum/controller/subsystem/ticker/Initialize()
+	// monkestation start: fix-lobby-music
+	var/old_login_music = trim(file2text("data/last_round_lobby_music.txt"))
+
+	var/base_provisional_music_path = "[global.config.directory]/title_music/sounds/"
+	var/list/provisional_title_music = flist(base_provisional_music_path)
+	for(var/S in provisional_title_music)
+		var/fullpath = base_provisional_music_path + S
+		if (fexists(fullpath))
+			try
+				var/list/json = json_decode(file2text(fullpath))
+				if (json["url"] != old_login_music)
+					GLOB.jukebox_track_files += fullpath
+			catch
+				if (S == "exclude") continue
+				log_runtime("Failed to parse [fullpath], likely an invalid file.")
+	login_music_done = TRUE
+	// monkestation end
+
+	/* //monkestation removal start: fix-lobby-music
 	var/list/byond_sound_formats = list(
 		"mid" = TRUE,
 		"midi" = TRUE,
@@ -126,6 +148,7 @@ SUBSYSTEM_DEF(ticker)
 		login_music = pick(music)
 	else
 		login_music = "[global.config.directory]/title_music/sounds/[pick(music)]"
+	*/ // monkestation removal end
 
 
 	if(!GLOB.syndicate_code_phrase)
@@ -211,7 +234,7 @@ SUBSYSTEM_DEF(ticker)
 			mode.process(wait * 0.1)
 			check_queue()
 
-			if(!roundend_check_paused && mode.check_finished(force_ending) || force_ending)
+			if(!roundend_check_paused && (mode.check_finished() || force_ending))
 				current_state = GAME_STATE_FINISHED
 				toggle_ooc(TRUE) // Turn it on
 				toggle_dooc(TRUE)
@@ -282,7 +305,12 @@ SUBSYSTEM_DEF(ticker)
 	INVOKE_ASYNC(SSdbcore, TYPE_PROC_REF(/datum/controller/subsystem/dbcore,SetRoundStart))
 
 	to_chat(world, span_notice("<B>Welcome to [station_name()], enjoy your stay!</B>"))
-	SEND_SOUND(world, sound(SSstation.announcer.get_rand_welcome_sound()))
+
+	for(var/mob/M as anything in GLOB.player_list)
+		if(!M.client)
+			SEND_SOUND(M, sound(SSstation.announcer.get_rand_welcome_sound(), volume = 100))
+		else if("[CHANNEL_VOX]" in M.client.prefs.channel_volume)
+			SEND_SOUND(M, sound(SSstation.announcer.get_rand_welcome_sound(), volume = M.client.prefs.channel_volume["[CHANNEL_VOX]"] * (M.client.prefs.channel_volume["[CHANNEL_MASTER_VOLUME]"] * 0.01)))
 
 	current_state = GAME_STATE_PLAYING
 	Master.SetRunLevel(RUNLEVEL_GAME)
@@ -291,7 +319,7 @@ SUBSYSTEM_DEF(ticker)
 		to_chat(world, span_notice("and..."))
 		for(var/holidayname in GLOB.holidays)
 			var/datum/holiday/holiday = GLOB.holidays[holidayname]
-			to_chat(world, "<h4>[holiday.greet()]</h4>")
+			to_chat(world, span_info(holiday.greet()))
 
 	PostSetup()
 
@@ -325,6 +353,7 @@ SUBSYSTEM_DEF(ticker)
 
 		iter_human.increment_scar_slot()
 		iter_human.load_persistent_scars()
+		SSpersistence.load_modular_persistence(iter_human.get_organ_slot(ORGAN_SLOT_BRAIN))
 
 		if(!iter_human.hardcore_survival_score)
 			continue
@@ -356,7 +385,8 @@ SUBSYSTEM_DEF(ticker)
 		var/mob/dead/new_player/player = i
 		if(player.ready == PLAYER_READY_TO_PLAY && player.mind)
 			GLOB.joined_player_list += player.ckey
-			var/atom/destination = player.mind.assigned_role.get_roundstart_spawn_point()
+			var/chosen_title = player.client?.prefs.alt_job_titles[player.mind.assigned_role.title] || player.mind.assigned_role.title
+			var/atom/destination = player.mind.assigned_role.get_roundstart_spawn_point(chosen_title)
 			if(!destination) // Failed to fetch a proper roundstart location, won't be going anywhere.
 				continue
 			player.create_character(destination)
@@ -477,12 +507,11 @@ SUBSYSTEM_DEF(ticker)
 
 /datum/controller/subsystem/ticker/proc/transfer_characters()
 	var/list/livings = list()
-	for(var/i in GLOB.new_player_list)
-		var/mob/dead/new_player/player = i
+	for(var/mob/dead/new_player/player as anything in GLOB.new_player_list)
 		var/mob/living = player.transfer_character()
 		if(living)
 			qdel(player)
-			living.notransform = TRUE
+			ADD_TRAIT(living, TRAIT_NO_TRANSFORM, SS_TICKER_TRAIT)
 			if(living.client)
 				var/atom/movable/screen/splash/S = new(null, living.client, TRUE)
 				S.Fade(TRUE)
@@ -497,12 +526,11 @@ SUBSYSTEM_DEF(ticker)
 				if(living.job == processing_reward_jobs)
 					living.client.reward_this_person += 150
 	if(livings.len)
-		addtimer(CALLBACK(src, PROC_REF(release_characters), livings), 30, TIMER_CLIENT_TIME)
+		addtimer(CALLBACK(src, PROC_REF(release_characters), livings), 3 SECONDS, TIMER_CLIENT_TIME)
 
 /datum/controller/subsystem/ticker/proc/release_characters(list/livings)
-	for(var/I in livings)
-		var/mob/living/L = I
-		L.notransform = FALSE
+	for(var/mob/living/living_mob as anything in livings)
+		REMOVE_TRAIT(living_mob, TRAIT_NO_TRANSFORM, SS_TICKER_TRAIT)
 
 /datum/controller/subsystem/ticker/proc/check_queue()
 	if(!queued_players.len)
@@ -555,7 +583,9 @@ SUBSYSTEM_DEF(ticker)
 	force_ending = SSticker.force_ending
 	mode = SSticker.mode
 
-	login_music = SSticker.login_music
+	//monkestation removal start: fix-lobby-music
+	// login_music = SSticker.login_music
+	//monkestation removal end
 	round_end_sound = SSticker.round_end_sound
 
 	minds = SSticker.minds
@@ -754,8 +784,9 @@ SUBSYSTEM_DEF(ticker)
 		if(M.client.prefs.read_preference(/datum/preference/toggle/sound_endofround))
 			SEND_SOUND(M.client, end_of_round_sound_ref)
 
-	text2file(login_music, "data/last_round_lobby_music.txt")
-
+	// monkestation removal start: fix-lobby-music
+	// text2file(login_music, "data/last_round_lobby_music.txt")
+	// monkestation removal end
 /datum/controller/subsystem/ticker/proc/choose_round_end_song()
 	var/list/reboot_sounds = flist("[global.config.directory]/reboot_themes/")
 	var/list/possible_themes = list()
@@ -766,3 +797,4 @@ SUBSYSTEM_DEF(ticker)
 		return "[global.config.directory]/reboot_themes/[pick(possible_themes)]"
 
 #undef ROUND_START_MUSIC_LIST
+#undef SS_TICKER_TRAIT

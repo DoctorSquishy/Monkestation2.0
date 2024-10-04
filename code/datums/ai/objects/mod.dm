@@ -4,6 +4,7 @@
 		BB_MOD_TARGET,
 		BB_MOD_IMPLANT,
 	)
+	can_idle = FALSE
 	max_target_distance = MOD_AI_RANGE //a little spicy but its one specific item that summons it, and it doesn't run otherwise
 	ai_movement = /datum/ai_movement/jps
 	///ID card generated from the suit's required access. Used for pathing.
@@ -28,7 +29,7 @@
 		queue_behavior(/datum/ai_behavior/mod_attach)
 
 /datum/ai_controller/mod/get_access()
-	return id_card
+	return id_card.GetAccess()
 
 /datum/ai_behavior/mod_attach
 	behavior_flags = AI_BEHAVIOR_REQUIRE_MOVEMENT|AI_BEHAVIOR_MOVE_AND_PERFORM

@@ -9,7 +9,7 @@
 	max_integrity = 200
 	resistance_flags = FIRE_PROOF
 	interaction_flags_machine = INTERACT_MACHINE_OPEN | INTERACT_MACHINE_WIRES_IF_OPEN | INTERACT_MACHINE_ALLOW_SILICON | INTERACT_MACHINE_OPEN_SILICON
-	obj_flags = CAN_BE_HIT | USES_TGUI
+	obj_flags = CAN_BE_HIT
 
 	/// The internal air reservoir of the disposal
 	var/datum/gas_mixture/air_contents
@@ -119,7 +119,7 @@
 				return
 
 			to_chat(user, span_notice("You start slicing the floorweld off \the [src]..."))
-			if(I.use_tool(src, user, 20, volume=100) && panel_open)
+			if(I.use_tool(src, user, 20, volume=SMALL_MATERIAL_AMOUNT) && panel_open)
 				to_chat(user, span_notice("You slice the floorweld off \the [src]."))
 				deconstruct()
 			return
@@ -304,6 +304,25 @@
 			continue
 		to_dump.pixel_x = to_dump.base_pixel_x + rand(-5, 5)
 		to_dump.pixel_y = to_dump.base_pixel_y + rand(-5, 5)
+
+
+/obj/machinery/disposal/force_pushed(atom/movable/pusher, force = MOVE_FORCE_DEFAULT, direction)
+	. = ..()
+	visible_message(span_warning("[src] is ripped free from the floor!"))
+	deconstruct()
+
+/obj/machinery/disposal/move_crushed(atom/movable/pusher, force = MOVE_FORCE_DEFAULT, direction)
+	. = ..()
+	visible_message(span_warning("[src] is ripped free from the floor!"))
+	deconstruct()
+
+// Monkestation Addition Start
+/obj/machinery/disposal/throw_at(atom/target, range, speed, mob/thrower, spin = TRUE, diagonals_first = FALSE, datum/callback/callback, force = MOVE_FORCE_STRONG, gentle = FALSE, quickstart = TRUE)
+	. = ..()
+	if(target && (target != src.loc))
+		visible_message(span_warning("[src] is ripped free from the floor!"))
+		deconstruct()
+// Monkestation Addition End
 
 // Disposal bin
 // Holds items for disposal into pipe system

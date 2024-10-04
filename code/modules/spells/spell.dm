@@ -48,7 +48,7 @@
 	button_icon_state = "spell_default"
 	overlay_icon_state = "bg_spell_border"
 	active_overlay_icon_state = "bg_spell_border_active_red"
-	check_flags = AB_CHECK_CONSCIOUS
+	check_flags = AB_CHECK_CONSCIOUS|AB_CHECK_PHASED
 	panel = "Spells"
 	melee_cooldown_time = 0 SECONDS
 
@@ -141,7 +141,9 @@
 /datum/action/cooldown/spell/PreActivate(atom/target)
 	if(SEND_SIGNAL(owner, COMSIG_MOB_ABILITY_STARTED, src) & COMPONENT_BLOCK_ABILITY_START)
 		return FALSE
-	if(!is_valid_target(target))
+	if(target == owner)
+		target = get_caster_from_target(target)
+	if(isnull(target) || !is_valid_target(target))
 		return FALSE
 
 	return Activate(target)
@@ -177,12 +179,7 @@
 			to_chat(owner, span_warning("Some form of antimagic is preventing you from casting [src]!"))
 		return FALSE
 
-	if(!(spell_requirements & SPELL_CASTABLE_WHILE_PHASED) && HAS_TRAIT(owner, TRAIT_MAGICALLY_PHASED))
-		if(feedback)
-			to_chat(owner, span_warning("[src] cannot be cast unless you are completely manifested in the material plane!"))
-		return FALSE
-
-	if(!try_invoke(feedback = feedback))
+	if(!try_invoke(owner, feedback = feedback))
 		return FALSE
 
 	if(ishuman(owner))
@@ -218,10 +215,6 @@
 				to_chat(owner, span_warning("[src] can't be cast in this state!"))
 			return FALSE
 
-		// Being put into a card form breaks a lot of spells, so we'll just forbid them in these states
-		if(ispAI(owner) || (isAI(owner) && istype(owner.loc, /obj/item/aicard)))
-			return FALSE
-
 	return TRUE
 
 /**
@@ -233,6 +226,28 @@
  */
 /datum/action/cooldown/spell/proc/is_valid_target(atom/cast_on)
 	return TRUE
+
+/**
+ * Used to get the cast_on atom if a self cast spell is being cast.
+ *
+ * Allows for some atoms to be used as casting sources if a spell caster is located within.
+ */
+/datum/action/cooldown/spell/proc/get_caster_from_target(atom/target)
+	var/atom/cast_loc = target.loc
+	if(isnull(cast_loc))
+		return null // No magic in nullspace
+
+	if(isturf(cast_loc))
+		return target // They're just standing around, proceed as normal
+
+	if(HAS_TRAIT(cast_loc, TRAIT_CASTABLE_LOC))
+		/*if(HAS_TRAIT(cast_loc, TRAIT_SPELLS_TRANSFER_TO_LOC) && ismob(cast_loc.loc))
+			return cast_loc.loc
+		else*/ //monkestation temp removal
+		return cast_loc
+	// They're in an atom which allows casting, so redirect the caster to loc
+
+	return null
 
 // The actual cast chain occurs here, in Activate().
 // You should generally not be overriding or extending Activate() for spells.
@@ -383,6 +398,8 @@
 		return FALSE
 
 	if((invocation_type == INVOCATION_WHISPER || invocation_type == INVOCATION_SHOUT) && !living_owner.can_speak())
+		if(HAS_TRAIT(living_owner, TRAIT_SIGN_LANG) && !HAS_MIND_TRAIT(living_owner, TRAIT_CANT_SIGN_SPELLS)) // monkestation edit: allow sign language users to cast spells
+			return TRUE
 		if(feedback)
 			to_chat(owner, span_warning("You can't get the words out to invoke [src]!"))
 		return FALSE
@@ -411,6 +428,7 @@
 
 	spell_level++
 	cooldown_time = max(cooldown_time - cooldown_reduction_per_rank, 0.25 SECONDS) // 0 second CD starts to break things.
+	name = "[get_spell_title()][initial(name)]"
 	build_all_button_icons(UPDATE_BUTTON_NAME)
 	return TRUE
 
@@ -431,12 +449,9 @@
 	else
 		cooldown_time = max(cooldown_time + cooldown_reduction_per_rank, initial(cooldown_time))
 
+	name = "[get_spell_title()][initial(name)]"
 	build_all_button_icons(UPDATE_BUTTON_NAME)
 	return TRUE
-
-/datum/action/cooldown/spell/update_button_name(atom/movable/screen/movable/action_button/button, force)
-	name = "[get_spell_title()][initial(name)]"
-	return ..()
 
 /// Gets the title of the spell based on its level.
 /datum/action/cooldown/spell/proc/get_spell_title()

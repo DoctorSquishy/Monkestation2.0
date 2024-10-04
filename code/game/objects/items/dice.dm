@@ -381,9 +381,26 @@
 			explosion(get_turf(user), devastation_range = -1, light_impact_range = 2, flame_range = 2, explosion_cause = src)
 		if(9)
 			//Cold
-			var/datum/disease/cold = new /datum/disease/cold()
 			selected_turf.visible_message(span_userdanger("[user] looks a little under the weather!"))
-			user.ForceContractDisease(cold, FALSE, TRUE)
+			var/virus_choice = pick(subtypesof(/datum/disease/advanced)- typesof(/datum/disease/advanced/premade))
+			var/list/anti = list(
+				ANTIGEN_BLOOD	= 1,
+				ANTIGEN_COMMON	= 1,
+				ANTIGEN_RARE	= 2,
+				ANTIGEN_ALIEN	= 0,
+				)
+			var/list/bad = list(
+				EFFECT_DANGER_HELPFUL	= 0,
+				EFFECT_DANGER_FLAVOR	= 1,
+				EFFECT_DANGER_ANNOYING	= 2,
+				EFFECT_DANGER_HINDRANCE	= 3,
+				EFFECT_DANGER_HARMFUL	= 1,
+				EFFECT_DANGER_DEADLY	= 0,
+				)
+			var/datum/disease/advanced/new_disease = new virus_choice
+			new_disease.makerandom(list(50,90),list(50,100),anti,bad,src)
+			user.infect_disease(new_disease, TRUE, "(Die of Fate 7)")
+
 		if(10)
 			//Nothing
 			selected_turf.visible_message(span_userdanger("Nothing seems to happen."))
@@ -425,11 +442,10 @@
 			var/mob/living/carbon/human/human_servant = new(drop_location())
 			do_smoke(0, holder = src, location = drop_location())
 
-			var/list/mob/dead/observer/candidates = poll_candidates_for_mob("Do you want to play as [user.real_name]'s Servant?", ROLE_WIZARD, ROLE_WIZARD, 5 SECONDS, human_servant)
-			if(LAZYLEN(candidates))
-				var/mob/dead/observer/candidate = pick(candidates)
-				message_admins("[ADMIN_LOOKUPFLW(candidate)] was spawned as Dice Servant")
-				human_servant.key = candidate.key
+			var/mob/chosen_one = SSpolling.poll_ghosts_for_target("Do you want to play as [span_danger("[user.real_name]'s")] [span_notice("Servant")]?", check_jobban = ROLE_WIZARD, role = ROLE_WIZARD, poll_time = 5 SECONDS, checked_target = human_servant, alert_pic = user, role_name_text = "dice servant")
+			if(chosen_one)
+				message_admins("[ADMIN_LOOKUPFLW(chosen_one)] was spawned as Dice Servant")
+				human_servant.key = chosen_one.key
 
 			human_servant.equipOutfit(/datum/outfit/butler)
 			var/datum/mind/servant_mind = new /datum/mind()

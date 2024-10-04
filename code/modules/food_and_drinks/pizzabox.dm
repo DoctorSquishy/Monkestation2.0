@@ -15,7 +15,7 @@
 	inhand_icon_state = "pizzabox"
 	lefthand_file = 'icons/mob/inhands/items/food_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/items/food_righthand.dmi'
-	custom_materials = list(/datum/material/cardboard = 2000)
+	custom_materials = list(/datum/material/cardboard =SHEET_MATERIAL_AMOUNT)
 
 	var/open = FALSE
 	var/can_open_on_fall = TRUE //if FALSE, this pizza box will never open if it falls from a stack
@@ -208,7 +208,7 @@
 		if(open && !bomb)
 			if(!user.transferItemToLoc(I, src))
 				return
-			wires = new /datum/wires/explosive/pizza(src)
+			set_wires(new /datum/wires/explosive/pizza(src))
 			bomb = I
 			balloon_alert(user, "bomb placed")
 			update_appearance()
@@ -287,7 +287,7 @@
 /obj/item/pizzabox/proc/unprocess()
 	STOP_PROCESSING(SSobj, src)
 	qdel(wires)
-	wires = null
+	set_wires(null)
 	update_appearance()
 
 /obj/item/pizzabox/bomb/Initialize(mapload)
@@ -296,7 +296,7 @@
 		var/randompizza = pick(subtypesof(/obj/item/food/pizza))
 		pizza = new randompizza(src)
 	bomb = new(src)
-	wires = new /datum/wires/explosive/pizza(src)
+	set_wires(new /datum/wires/explosive/pizza(src))
 
 /obj/item/pizzabox/bomb/armed
 	bomb_timer = 5

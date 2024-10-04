@@ -9,7 +9,7 @@
 	max_wizard_trigger_potency = 7
 
 ///behold... the only reason sticky is a subtype...
-/datum/round_event_control/wizard/embedpocalypse/can_spawn_event(players_amt, allow_magic = FALSE, fake_check = FALSE)
+/datum/round_event_control/wizard/embedpocalypse/can_spawn_event(players_amt, allow_magic = FALSE, fake_check = FALSE) //MONKESTATION ADDITION: fake_check = FALSE
 	. = ..()
 	if(!.)
 		return .
@@ -75,7 +75,7 @@ GLOBAL_DATUM(global_funny_embedding, /datum/global_funny_embedding)
 /datum/global_funny_embedding/proc/handle_current_items()
 	for(var/obj/item/embed_item in world)
 		CHECK_TICK
-		if(!(embed_item.flags_1 & INITIALIZED_1))
+		if(QDELETED(embed_item) || !(embed_item.flags_1 & INITIALIZED_1))
 			continue
 		if(!embed_item.embedding)
 			embed_item.embedding = embed_type

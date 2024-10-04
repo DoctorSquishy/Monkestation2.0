@@ -50,11 +50,12 @@
 
 /obj/machinery/firealarm/Initialize(mapload, dir, building)
 	. = ..()
+	id_tag = assign_random_name()
 	if(building)
 		buildstage = ALARM_NO_CIRCUIT
 		set_panel_open(TRUE)
 	if(name == initial(name))
-		name = "[get_area_name(src)] [initial(name)]"
+		update_name()
 	my_area = get_area(src)
 	LAZYADD(my_area.firealarms, src)
 
@@ -114,7 +115,7 @@
 
 /obj/machinery/firealarm/update_name(updates)
 	. = ..()
-	name = "[get_area_name(my_area)] [initial(name)]"
+	name = "[get_area_name(my_area)] [initial(name)] [id_tag]"
 
 /obj/machinery/firealarm/on_exit_area(datum/source, area/area_to_unregister)
 	//we cannot unregister from an area we never registered to in the first place
@@ -214,17 +215,18 @@
 	if(prob(50 / severity))
 		alarm()
 
-/obj/machinery/firealarm/emag_act(mob/user)
+/obj/machinery/firealarm/emag_act(mob/user, obj/item/card/emag/emag_card)
 	if(obj_flags & EMAGGED)
-		return
+		return FALSE
 	obj_flags |= EMAGGED
 	update_appearance()
+	visible_message(span_warning("Sparks fly out of [src]!"))
 	if(user)
-		user.visible_message(span_warning("Sparks fly out of [src]!"))
-		user.balloon_alert(user, "speaker disabled!")
+		balloon_alert(user, "speaker disabled")
 		user.log_message("emagged [src].", LOG_ATTACK)
 	playsound(src, SFX_SPARKS, 50, TRUE, SHORT_RANGE_SOUND_EXTRARANGE)
 	set_status()
+	return TRUE
 
 /**
  * Signal handler for checking if we should update fire alarm appearance accordingly to a newly set security level
@@ -258,6 +260,8 @@
 	if(user)
 		balloon_alert(user, "triggered alarm!")
 		user.log_message("triggered a fire alarm.", LOG_GAME)
+	my_area.fault_status = AREA_FAULT_MANUAL
+	my_area.fault_location = name
 	soundloop.start() //Manually pulled fire alarms will make the sound, rather than the doors.
 	SEND_SIGNAL(src, COMSIG_FIREALARM_ON_TRIGGER)
 	update_use_power(ACTIVE_POWER_USE)
@@ -430,7 +434,7 @@
 
 /obj/machinery/firealarm/rcd_vals(mob/user, obj/item/construction/rcd/the_rcd)
 	if((buildstage == ALARM_NO_CIRCUIT) && (the_rcd.upgrade & RCD_UPGRADE_SIMPLE_CIRCUITS))
-		return list("mode" = RCD_WALLFRAME, "delay" = 20, "cost" = 1)
+		return list("mode" = RCD_WALLFRAME, "delay" = 2 SECONDS, "cost" = 1)
 	return FALSE
 
 /obj/machinery/firealarm/rcd_act(mob/user, obj/item/construction/rcd/the_rcd, passed_mode)
@@ -475,6 +479,7 @@
 	. = ..()
 	if((my_area?.fire || LAZYLEN(my_area?.active_firelocks)))
 		. += "The local area hazard light is flashing."
+		. += "The fault location display is [my_area.fault_location] ([my_area.fault_status == AREA_FAULT_AUTOMATIC ? "Automatic Detection" : "Manual Trigger"])."
 		if(is_station_level(z))
 			. += "The station security alert level is [SSsecurity_level.get_current_level_as_text()]."
 		. += "<b>Left-Click</b> to activate all firelocks in this area."

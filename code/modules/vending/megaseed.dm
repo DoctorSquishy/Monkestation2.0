@@ -20,6 +20,7 @@
 				/obj/item/seeds/cocoapod = 3,
 				/obj/item/seeds/eggplant = 3,
 				/obj/item/seeds/grape = 3,
+				/obj/item/seeds/lanternfruit = 3,
 				/obj/item/seeds/lemon = 3,
 				/obj/item/seeds/lime = 3,
 				/obj/item/seeds/olive = 3,
@@ -78,7 +79,7 @@
 				/obj/item/seeds/wheat/rice = 3,
 				/obj/item/seeds/tea = 3,
 				/obj/item/seeds/tobacco = 3,
-				/obj/item/seeds/tower = 3,
+				/obj/item/seeds/tree = 3,
 				/obj/item/seeds/wheat = 3,
 			),
 		),
@@ -94,6 +95,7 @@
 		/obj/item/seeds/cannabis = 3,
 		/obj/item/seeds/starthistle = 2,
 		/obj/item/seeds/cocaleaf = 2, // MONKESTATION ADDITION
+		/obj/item/seeds/coconut = 3, // MONKESTATION ADDITION
 		/obj/item/seeds/random = 2,
 	)
 

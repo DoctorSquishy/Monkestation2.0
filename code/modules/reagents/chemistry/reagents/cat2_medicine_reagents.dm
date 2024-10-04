@@ -44,13 +44,19 @@
 	affected_mob.adjustBruteLoss(-thou_shall_heal * REM * seconds_per_tick, FALSE, required_bodytype = affected_bodytype)
 
 	if(good_kind_of_healing && !reaping && SPT_PROB(0.00005, seconds_per_tick)) //janken with the grim reaper!
+		notify_ghosts(
+			"[affected_mob] has entered a game of rock-paper-scissors with death!",
+			source = affected_mob,
+			action = NOTIFY_ORBIT,
+			header = "Who Will Win?",
+			notify_flags = NOTIFY_CATEGORY_DEFAULT,
+		)
 		reaping = TRUE
-		var/list/RockPaperScissors = list("rock" = "paper", "paper" = "scissors", "scissors" = "rock") //choice = loses to
 		if(affected_mob.apply_status_effect(/datum/status_effect/necropolis_curse, CURSE_BLINDING))
 			helbent = TRUE
 		to_chat(affected_mob, span_hierophant("Malevolent spirits appear before you, bartering your life in a 'friendly' game of rock, paper, scissors. Which do you choose?"))
 		var/timeisticking = world.time
-		var/RPSchoice = tgui_alert(affected_mob, "Janken Time! You have 60 Seconds to Choose!", "Rock Paper Scissors", RockPaperScissors, 60)
+		var/RPSchoice = tgui_alert(affected_mob, "Janken Time! You have 60 Seconds to Choose!", "Rock Paper Scissors", list("rock" , "paper" , "scissors"), 60)
 		if(QDELETED(affected_mob) || (timeisticking+(1.1 MINUTES) < world.time))
 			reaping = FALSE
 			return //good job, you ruined it
@@ -58,21 +64,21 @@
 			to_chat(affected_mob, span_hierophant("You decide to not press your luck, but the spirits remain... hopefully they'll go away soon."))
 			reaping = FALSE
 			return
-		var/grim = pick(RockPaperScissors)
-		if(grim == RPSchoice) //You Tied!
-			to_chat(affected_mob, span_hierophant("You tie, and the malevolent spirits disappear... for now."))
-			reaping = FALSE
-		else if(RockPaperScissors[RPSchoice] == grim) //You lost!
-			to_chat(affected_mob, span_hierophant("You lose, and the malevolent spirits smirk eerily as they surround your body."))
-			affected_mob.investigate_log("has lost rock paper scissors with the grim reaper and been dusted.", INVESTIGATE_DEATHS)
-			affected_mob.dust()
-			return
-		else //VICTORY ROYALE
-			to_chat(affected_mob, span_hierophant("You win, and the malevolent spirits fade away as well as your wounds."))
-			affected_mob.client.give_award(/datum/award/achievement/misc/helbitaljanken, affected_mob)
-			affected_mob.revive(HEAL_ALL)
-			holder.del_reagent(type)
-			return
+		switch(rand(1,3))
+			if(1) //You Tied!
+				to_chat(affected_mob, span_hierophant("You tie, and the malevolent spirits disappear... for now."))
+				reaping = FALSE
+			if(2) //You lost!
+				to_chat(affected_mob, span_hierophant("You lose, and the malevolent spirits smirk eerily as they surround your body."))
+				affected_mob.investigate_log("has lost rock paper scissors with the grim reaper and been dusted.", INVESTIGATE_DEATHS)
+				affected_mob.dust()
+				return
+			if(3) //VICTORY ROYALE
+				to_chat(affected_mob, span_hierophant("You win, and the malevolent spirits fade away as well as your wounds."))
+				affected_mob.client.give_award(/datum/award/achievement/jobs/helbitaljanken, affected_mob)
+				affected_mob.revive(HEAL_ALL)
+				holder.del_reagent(type)
+				return
 
 	..()
 	return
@@ -130,12 +136,14 @@
 	. = TRUE
 
 /datum/reagent/medicine/c2/probital/overdose_process(mob/living/affected_mob, seconds_per_tick, times_fired)
-	affected_mob.stamina.adjust(-3 * REM * seconds_per_tick, FALSE)
+	affected_mob.stamina.adjust(-3 * REM * seconds_per_tick, TRUE)
 	if(affected_mob.stamina.loss >= 80)
 		affected_mob.adjust_drowsiness(2 SECONDS * REM * seconds_per_tick)
 	if(affected_mob.stamina.loss >= 100)
 		to_chat(affected_mob,span_warning("You feel more tired than you usually do, perhaps if you rest your eyes for a bit..."))
 		affected_mob.stamina.adjust(100, TRUE)
+		if(HAS_TRAIT(affected_mob, TRAIT_INCAPACITATED))
+			affected_mob.exit_stamina_stun()
 		affected_mob.Sleeping(10 SECONDS)
 	..()
 	. = TRUE
@@ -361,12 +369,6 @@
 		affected_mob.reagents.remove_reagent(the_reagent2.type, amount2purge * REM * seconds_per_tick)
 	..()
 	return TRUE
-
-// Antitoxin binds plants pretty well. So the tox goes significantly down
-/datum/reagent/medicine/c2/multiver/on_hydroponics_apply(obj/item/seeds/myseed, datum/reagents/chems, obj/machinery/hydroponics/mytray, mob/user)
-	. = ..()
-	if(chems.has_reagent(src.type, 1))
-		mytray.adjust_toxic(-round(chems.get_reagent_amount(src.type) * 2))
 
 #define issyrinormusc(A) (istype(A,/datum/reagent/medicine/c2/syriniver) || istype(A,/datum/reagent/medicine/c2/musiver)) //musc is metab of syrin so let's make sure we're not purging either
 

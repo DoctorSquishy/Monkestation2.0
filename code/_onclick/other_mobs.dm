@@ -9,14 +9,18 @@
 	else if (secondary_result != SECONDARY_ATTACK_CALL_NORMAL)
 		CRASH("resolve_right_click_attack (probably attack_hand_secondary) did not return a SECONDARY_ATTACK_* define.")
 
+//Checks if mob doesnt have hands blocked, for future TG PR port (see https://github.com/tgstation/tgstation/pull/78991)
+/mob/living/proc/can_unarmed_attack()
+	return !HAS_TRAIT(src, TRAIT_HANDS_BLOCKED)
+
 /*
 	Humans:
 	Adds an exception for gloves, to allow special glove types like the ninja ones.
 
 	Otherwise pretty standard.
 */
-/mob/living/carbon/human/UnarmedAttack(atom/A, proximity_flag)
-	if(HAS_TRAIT(src, TRAIT_HANDS_BLOCKED))
+/mob/living/carbon/human/UnarmedAttack(atom/A, proximity_flag, list/params)
+	if(HAS_TRAIT(src, TRAIT_HANDS_BLOCKED) && stat < SOFT_CRIT)
 		if(src == A)
 			check_self_for_injuries()
 		return
@@ -36,7 +40,7 @@
 
 	if(!right_click_attack_chain(A) && !dna?.species?.spec_unarmedattack(src, A)) //Because species like monkeys dont use attack hand
 		//monkestation edit
-		. = A.attack_hand(src)
+		. = A.attack_hand(src, params)
 		if(.)
 			animate_interact(A, INTERACT_GENERIC)
 		//monkestation edit end
@@ -45,7 +49,7 @@
 	return target.attack_hand_secondary(src, modifiers)
 
 /// Return TRUE to cancel other attack hand effects that respect it. Modifiers is the assoc list for click info such as if it was a right click.
-/atom/proc/attack_hand(mob/user)
+/atom/proc/attack_hand(mob/user, list/params)
 	. = FALSE
 	if(!(interaction_flags_atom & INTERACT_ATOM_NO_FINGERPRINT_ATTACK_HAND))
 		add_fingerprint(user)
@@ -86,7 +90,7 @@
 			return FALSE
 	return TRUE
 
-/atom/ui_status(mob/user)
+/atom/ui_status(mob/user, datum/ui_state/state)
 	. = ..()
 	//Check if both user and atom are at the same location
 	if(!can_interact(user))
@@ -127,13 +131,27 @@
 #define LIVING_UNARMED_ATTACK_BLOCKED(target_atom) (HAS_TRAIT(src, TRAIT_HANDS_BLOCKED) \
 	|| SEND_SIGNAL(src, COMSIG_LIVING_UNARMED_ATTACK, target_atom, proximity_flag) & COMPONENT_CANCEL_ATTACK_CHAIN)
 
-/mob/living/UnarmedAttack(atom/attack_target, proximity_flag)
-	if(LIVING_UNARMED_ATTACK_BLOCKED(attack_target))
+//Partial port of https://github.com/tgstation/tgstation/pull/78991 to fix some immenent bugs with cleanbots
+//This will eventually be entirely ported
+/mob/living/UnarmedAttack(atom/attack_target, proximity_flag, list/modifiers)
+	var/sigreturn = SEND_SIGNAL(src, COMSIG_LIVING_EARLY_UNARMED_ATTACK, attack_target, proximity_flag, modifiers)
+	if(sigreturn & COMPONENT_CANCEL_ATTACK_CHAIN)
+		return TRUE
+	if(sigreturn & COMPONENT_SKIP_ATTACK)
 		return FALSE
-	if(!right_click_attack_chain(attack_target))
-		resolve_unarmed_attack(attack_target)
-	return TRUE
 
+	if(!can_unarmed_attack())
+		return FALSE
+
+	sigreturn = SEND_SIGNAL(src, COMSIG_LIVING_UNARMED_ATTACK, attack_target, proximity_flag, modifiers)
+	if(sigreturn & COMPONENT_CANCEL_ATTACK_CHAIN)
+		return TRUE
+	if(sigreturn & COMPONENT_SKIP_ATTACK)
+		return FALSE
+
+	if(!right_click_attack_chain(attack_target, modifiers))
+		resolve_unarmed_attack(attack_target, modifiers)
+	return TRUE
 /**
  * Called when the unarmed attack hasn't been stopped by the LIVING_UNARMED_ATTACK_BLOCKED macro or the right_click_attack_chain proc.
  * This will call an attack proc that can vary from mob type to mob type on the target.
@@ -176,7 +194,8 @@
 /atom/proc/attack_paw(mob/user, list/modifiers)
 	if(SEND_SIGNAL(src, COMSIG_ATOM_ATTACK_PAW, user, modifiers) & COMPONENT_CANCEL_ATTACK_CHAIN)
 		return TRUE
-	return FALSE
+	if(interaction_flags_atom & INTERACT_ATOM_ATTACK_PAW)
+		. = _try_interact(user)
 
 
 /*
@@ -218,41 +237,17 @@
 
 
 /*
-	Slimes
-	Nothing happening here
-*/
-/mob/living/simple_animal/slime/resolve_unarmed_attack(atom/attack_target, proximity_flag, list/modifiers)
-	if(isturf(attack_target))
-		return ..()
-	attack_target.attack_slime(src, modifiers)
-
-/mob/living/simple_animal/slime/resolve_right_click_attack(atom/target, list/modifiers)
-	if(isturf(target))
-		return ..()
-	return target.attack_slime_secondary(src, modifiers)
-
-/atom/proc/attack_slime(mob/user, list/modifiers)
-	return
-
-/**
- * Called when a slime mob right clicks an atom (that is not a turf).
- * Returns a SECONDARY_ATTACK_* value.
- */
-/atom/proc/attack_slime_secondary(mob/user, list/modifiers)
-	return SECONDARY_ATTACK_CALL_NORMAL
-
-/*
 	Drones
 */
 
-/mob/living/simple_animal/drone/resolve_unarmed_attack(atom/attack_target, proximity_flag, list/modifiers)
+/mob/living/basic/drone/resolve_unarmed_attack(atom/attack_target, proximity_flag, list/modifiers)
 	attack_target.attack_drone(src, modifiers)
 
-/mob/living/simple_animal/drone/resolve_right_click_attack(atom/target, list/modifiers)
+/mob/living/basic/drone/resolve_right_click_attack(atom/target, list/modifiers)
 	return target.attack_drone_secondary(src, modifiers)
 
 /// Defaults to attack_hand. Override it when you don't want drones to do same stuff as humans.
-/atom/proc/attack_drone(mob/living/simple_animal/drone/user, list/modifiers)
+/atom/proc/attack_drone(mob/living/basic/drone/user, list/modifiers)
 	attack_hand(user, modifiers)
 
 /**
@@ -260,7 +255,7 @@
  * Defaults to attack_hand_secondary.
  * When overriding it, remember that it ought to return a SECONDARY_ATTACK_* value.
  */
-/atom/proc/attack_drone_secondary(mob/living/simple_animal/drone/user, list/modifiers)
+/atom/proc/attack_drone_secondary(mob/living/basic/drone/user, list/modifiers)
 	return attack_hand_secondary(user, modifiers)
 
 /*
@@ -296,14 +291,14 @@
 */
 
 /mob/living/simple_animal/resolve_unarmed_attack(atom/attack_target, list/modifiers)
-	if(dextrous && (isitem(attack_target) || !(istate & ISTATE_HARM)))
+	if((isitem(attack_target) || !(istate & ISTATE_HARM)))
 		attack_target.attack_hand(src, modifiers)
 		update_held_items()
 	else
 		return ..()
 
 /mob/living/simple_animal/resolve_right_click_attack(atom/target, list/modifiers)
-	if(dextrous && (isitem(target) || !(istate & ISTATE_HARM)))
+	if((isitem(target) || !(istate & ISTATE_HARM)))
 		. = target.attack_hand_secondary(src, modifiers)
 		update_held_items()
 	else
@@ -315,10 +310,7 @@
 
 /mob/living/simple_animal/hostile/resolve_unarmed_attack(atom/attack_target, list/modifiers)
 	GiveTarget(attack_target)
-	if(dextrous && (isitem(attack_target) || !(istate & ISTATE_HARM)))
-		return ..()
-	else
-		AttackingTarget(attack_target)
+	INVOKE_ASYNC(src, PROC_REF(AttackingTarget), attack_target)
 
 #undef LIVING_UNARMED_ATTACK_BLOCKED
 

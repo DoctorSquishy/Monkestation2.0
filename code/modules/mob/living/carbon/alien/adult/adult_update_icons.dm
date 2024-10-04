@@ -52,7 +52,7 @@
 	// update_icons() //Handled in update_transform(), leaving this here as a reminder
 		update_transform()
 
-/mob/living/carbon/alien/adult/perform_update_transform() //The old method of updating lying/standing was update_icons(). Aliens still expect that.
+/mob/living/carbon/alien/adult/update_transform() //The old method of updating lying/standing was update_icons(). Aliens still expect that.
 	. = ..()
 	update_icons()
 
@@ -76,7 +76,7 @@
 
 //Royals have bigger sprites, so inhand things must be handled differently.
 /mob/living/carbon/alien/adult/royal/update_held_items()
-	..()
+	. = ..()
 	remove_overlay(HANDS_LAYER)
 	var/list/hands = list()
 

@@ -4,7 +4,7 @@
 	name = "NULL ENTRY Board"
 	desc = "I promise this doesn't give you syndicate goodies!"
 	build_type = IMPRINTER | AWAY_IMPRINTER
-	materials = list(/datum/material/glass = 1000)
+	materials = list(/datum/material/glass =HALF_SHEET_MATERIAL_AMOUNT)
 
 /datum/design/board/arcade_battle
 	name = "Battle Arcade Machine Board"
@@ -46,21 +46,11 @@
 	)
 	departmental_flags = DEPARTMENT_BITFLAG_SCIENCE
 
-/datum/design/board/xenobiocamera
-	name = "Xenobiology Console Board"
-	desc = "Allows for the construction of circuit boards used to build xenobiology camera computers."
-	id = "xenobioconsole"
-	build_path = /obj/item/circuitboard/computer/xenobiology
-	category = list(
-		RND_CATEGORY_COMPUTER + RND_SUBCATEGORY_COMPUTER_RESEARCH
-	)
-	departmental_flags = DEPARTMENT_BITFLAG_SCIENCE
-
 /datum/design/board/aiupload
 	name = "AI Upload Board"
 	desc = "Allows for the construction of circuit boards used to build an AI Upload Console."
 	id = "aiupload"
-	materials = list(/datum/material/glass = 1000, /datum/material/gold = 2000, /datum/material/diamond = 2000, /datum/material/bluespace = 2000)
+	materials = list(/datum/material/glass =HALF_SHEET_MATERIAL_AMOUNT, /datum/material/gold =SHEET_MATERIAL_AMOUNT, /datum/material/diamond =SHEET_MATERIAL_AMOUNT, /datum/material/bluespace =SHEET_MATERIAL_AMOUNT)
 	build_path = /obj/item/circuitboard/computer/aiupload
 	category = list(
 		RND_CATEGORY_COMPUTER + RND_SUBCATEGORY_COMPUTER_ROBOTICS
@@ -71,7 +61,7 @@
 	name = "Cyborg Upload Board"
 	desc = "Allows for the construction of circuit boards used to build a Cyborg Upload Console."
 	id = "borgupload"
-	materials = list(/datum/material/glass = 1000, /datum/material/gold = 2000, /datum/material/diamond = 2000, /datum/material/bluespace = 2000)
+	materials = list(/datum/material/glass =HALF_SHEET_MATERIAL_AMOUNT, /datum/material/gold =SHEET_MATERIAL_AMOUNT, /datum/material/diamond =SHEET_MATERIAL_AMOUNT, /datum/material/bluespace =SHEET_MATERIAL_AMOUNT)
 	build_path = /obj/item/circuitboard/computer/borgupload
 	category = list(
 		RND_CATEGORY_COMPUTER + RND_SUBCATEGORY_COMPUTER_ROBOTICS
@@ -163,7 +153,7 @@
 	name = "Robotics Control Console Board"
 	desc = "Allows for the construction of circuit boards used to build a Robotics Control console."
 	id = "robocontrol"
-	materials = list(/datum/material/glass = 1000, /datum/material/gold = 1000, /datum/material/silver = 1000, /datum/material/bluespace = 2000)
+	materials = list(/datum/material/glass =HALF_SHEET_MATERIAL_AMOUNT, /datum/material/gold =HALF_SHEET_MATERIAL_AMOUNT, /datum/material/silver =HALF_SHEET_MATERIAL_AMOUNT, /datum/material/bluespace =SHEET_MATERIAL_AMOUNT)
 	build_path = /obj/item/circuitboard/computer/robotics
 	category = list(
 		RND_CATEGORY_COMPUTER + RND_SUBCATEGORY_COMPUTER_ROBOTICS

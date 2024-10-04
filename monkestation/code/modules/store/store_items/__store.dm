@@ -28,7 +28,7 @@ GLOBAL_LIST_EMPTY(all_store_datums)
 	/// Our preview sprite.
 	var/icon/dummysprite
 
-/datum/store_manager/Destroy(force, ...)
+/datum/store_manager/Destroy(force)
 	owner = null
 	QDEL_NULL(menu)
 	QDEL_NULL(custom_loadout)
@@ -122,7 +122,7 @@ GLOBAL_LIST_EMPTY(all_store_datums)
 	var/list/all_selected_paths = list()
 	for(var/path in owner?.prefs?.loadout_list)
 		all_selected_paths += path
-	data["user_is_donator"] = !!(owner.patreon?.is_donator() || is_admin(owner))
+	data["user_is_donator"] = !!(owner.patreon?.is_donator() || owner.twitch?.is_donator() || is_admin(owner))
 	data["owned_items"] = user.client.prefs.inventory
 
 	data["total_coins"] = user.client.prefs.metacoins
@@ -154,8 +154,8 @@ GLOBAL_LIST_EMPTY(all_store_datums)
 	loadout_tabs += list(list("name" = "Misc. Under", "title" = "Uniform Slot Items (cont)", "contents" = list_to_data(GLOB.store_miscunders)))
 	loadout_tabs += list(list("name" = "Accessory", "title" = "Uniform Accessory Slot Items", "contents" = list_to_data(GLOB.store_accessory)))
 	loadout_tabs += list(list("name" = "Inhand", "title" = "In-hand Items", "contents" = list_to_data(GLOB.store_inhand_items)))
-	loadout_tabs += list(list("name" = "Toys", "title" = "Toys!)", "contents" = list_to_data(GLOB.store_toys)))
-	loadout_tabs += list(list("name" = "Other", "title" = "Backpack Items)", "contents" = list_to_data(GLOB.store_pockets)))
+	loadout_tabs += list(list("name" = "Toys", "title" = "Toys!", "contents" = list_to_data(GLOB.store_toys)))
+	loadout_tabs += list(list("name" = "Other", "title" = "Backpack Items", "contents" = list_to_data(GLOB.store_pockets)))
 
 	data["loadout_tabs"] = loadout_tabs
 

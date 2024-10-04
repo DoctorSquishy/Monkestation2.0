@@ -36,8 +36,8 @@
 	var/contributes_to_ratcap = TRUE
 	/// Probability that, if we successfully bite a shocked cable, that we will die to it.
 	var/cable_zap_prob = 85
-	/// responsible for disease stuff
-	var/list/ratdisease = list()
+
+	var/chooses_bodycolor = TRUE
 
 /mob/living/basic/mouse/Initialize(mapload, tame = FALSE, new_body_color)
 	. = ..()
@@ -46,20 +46,20 @@
 	ADD_TRAIT(src, TRAIT_VENTCRAWLER_ALWAYS, INNATE_TRAIT)
 
 	src.tame = tame
-	body_color = new_body_color
-	if(isnull(body_color))
-		body_color = pick("brown", "gray", "white")
-	held_state = "mouse_[body_color]" // not handled by variety element
-	AddElement(/datum/element/animal_variety, "mouse", body_color, FALSE)
+	if(chooses_bodycolor)
+		body_color = new_body_color
+		if(isnull(body_color))
+			body_color = pick("brown", "gray", "white")
+		held_state = "mouse_[body_color]" // not handled by variety element
+		AddElement(/datum/element/animal_variety, "mouse", body_color, FALSE)
 	AddElement(/datum/element/swabable, CELL_LINE_TABLE_MOUSE, CELL_VIRUS_TABLE_GENERIC_MOB, 1, 10)
 	AddComponent(/datum/component/squeak, list('sound/effects/mousesqueek.ogg' = 1), 100, extrarange = SHORT_RANGE_SOUND_EXTRARANGE) //as quiet as a mouse or whatever
 	var/static/list/loc_connections = list(
 		COMSIG_ATOM_ENTERED = PROC_REF(on_entered),
 	)
-	var/datum/disease/advance/R = new /datum/disease/advance/random(rand(1, 6), 9, 1)
-	ratdisease += R
 	AddElement(/datum/element/connect_loc, loc_connections)
 	make_tameable()
+	AddComponent(/datum/component/swarming, 16, 16) //max_x, max_y
 
 /mob/living/basic/mouse/proc/make_tameable()
 	if (tame)
@@ -74,7 +74,7 @@
 /mob/living/basic/mouse/examine(mob/user)
 	. = ..()
 
-	var/sameside = user.faction_check_mob(src, exact_match = TRUE)
+	var/sameside = user.faction_check_atom(src, exact_match = TRUE)
 	if(isregalrat(user))
 		if(sameside)
 			. += span_notice("This rat serves under you.")
@@ -110,7 +110,6 @@
 
 // On death, remove the mouse from the ratcap, and turn it into an item if applicable
 /mob/living/basic/mouse/death(gibbed)
-	var/list/data = list("viruses" = ratdisease)
 	SSmobs.cheeserats -= src
 	// Rats with a mind will not turn into a lizard snack on death
 	if(mind)
@@ -123,8 +122,15 @@
 		var/obj/item/food/deadmouse/mouse = new(loc)
 		mouse.name = name
 		mouse.icon_state = icon_dead
+		//MONKESTATION EDIT START
+		var/list/data = list("viruses"=list(),"blood_DNA"=null,"blood_type"=null,"resistances"=null,"trace_chem"=null,"immunity"=list())
+		for(var/datum/disease/D as anything in diseases)
+			var/datum/disease/DA = D.Copy()
+			DA.spread_flags = DISEASE_SPREAD_BLOOD //please stop killing the station with the black death from eating rats
+			data["viruses"] += DA
+		data["immunity"] = immune_system.GetImmunity()
+		//MONKESTATION EDIT END
 		mouse.reagents.add_reagent(/datum/reagent/blood, 2, data)
-		mouse.ratdisease = src.ratdisease
 		if(HAS_TRAIT(src, TRAIT_BEING_SHOCKED))
 			mouse.desc = "They're toast."
 			mouse.add_atom_colour("#3A3A3A", FIXED_COLOUR_PRIORITY)
@@ -305,8 +311,6 @@
 	decomp_req_handle = TRUE
 	ant_attracting = FALSE
 	decomp_type = /obj/item/food/deadmouse/moldy
-	///responsible for holding diseases for dead rat
-	var/list/ratdisease = list()
 	var/body_color = "gray"
 	var/critter_type = /mob/living/basic/mouse
 
@@ -381,11 +385,11 @@
 
 /// The mouse AI controller
 /datum/ai_controller/basic_controller/mouse
-	blackboard = list(
-		BB_BASIC_MOB_FLEEING = TRUE, // Always cowardly
+	blackboard = list( // Always cowardly
 		BB_CURRENT_HUNTING_TARGET = null, // cheese
 		BB_LOW_PRIORITY_HUNTING_TARGET = null, // cable
-		BB_TARGETTING_DATUM = new /datum/targetting_datum/basic(), // Use this to find people to run away from
+		BB_TARGETING_STRATEGY = /datum/targeting_strategy/basic, // Use this to find people to run away from
+		BB_BASIC_MOB_FLEE_DISTANCE = 3,
 	)
 
 	ai_traits = STOP_MOVING_WHEN_PULLED
@@ -406,9 +410,6 @@
 
 /// Don't look for anything to run away from if you are distracted by being adjacent to cheese
 /datum/ai_planning_subtree/flee_target/mouse
-	flee_behaviour = /datum/ai_behavior/run_away_from_target/mouse
-
-/datum/ai_planning_subtree/flee_target/mouse
 
 /datum/ai_planning_subtree/flee_target/mouse/SelectBehaviors(datum/ai_controller/controller, seconds_per_tick)
 	var/atom/hunted_cheese = controller.blackboard[BB_CURRENT_HUNTING_TARGET]
@@ -416,16 +417,11 @@
 		return // We see some cheese, which is more important than our life
 	return ..()
 
-/datum/ai_planning_subtree/flee_target/mouse/select
-
-/datum/ai_behavior/run_away_from_target/mouse
-	run_distance = 3 // Mostly exists in small tunnels, don't get ahead of yourself
-
 /// AI controller for rats, slightly more complex than mice becuase they attack people
 /datum/ai_controller/basic_controller/mouse/rat
 	blackboard = list(
-		BB_TARGETTING_DATUM = new /datum/targetting_datum/basic(),
-		BB_PET_TARGETTING_DATUM = new /datum/targetting_datum/not_friends(),
+		BB_TARGETING_STRATEGY = /datum/targeting_strategy/basic,
+		BB_PET_TARGETING_STRATEGY = /datum/targeting_strategy/basic/not_friends,
 		BB_BASIC_MOB_CURRENT_TARGET = null, // heathen
 		BB_CURRENT_HUNTING_TARGET = null, // cheese
 		BB_LOW_PRIORITY_HUNTING_TARGET = null, // cable

@@ -1,3 +1,4 @@
+/*
 /mob/living/basic/sheep
 	name = "sheep"
 	desc = "Known for their soft wool and use in sacrifical rituals. Big fan of grass."
@@ -81,8 +82,7 @@
 
 /datum/ai_controller/basic_controller/sheep
 	blackboard = list(
-		BB_BASIC_MOB_FLEEING = TRUE,
-		BB_TARGETTING_DATUM = new /datum/targetting_datum/basic/ignore_faction(),
+		BB_TARGETING_STRATEGY = /datum/targeting_strategy/basic,
 	)
 	ai_traits = STOP_MOVING_WHEN_PULLED
 	ai_movement = /datum/ai_movement/basic_avoidance
@@ -92,3 +92,5 @@
 		/datum/ai_planning_subtree/find_nearest_thing_which_attacked_me_to_flee,
 		/datum/ai_planning_subtree/flee_target,
 	)
+
+*/

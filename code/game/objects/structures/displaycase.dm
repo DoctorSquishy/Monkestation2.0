@@ -374,8 +374,10 @@
 	data["max_length"] = MAX_PLAQUE_LEN
 	data["has_showpiece"] = showpiece ? TRUE : FALSE
 	if(showpiece)
-		data["showpiece_name"] = capitalize(format_text(showpiece.name))
-		data["showpiece_description"] = trophy_message ? format_text(trophy_message) : null
+		// monkestation start: fix double-encoded trophy info
+		data["showpiece_name"] = capitalize(html_decode(format_text(showpiece.name)))
+		data["showpiece_description"] = trophy_message ? html_decode(format_text(trophy_message)) : null
+		// monkestation end
 	return data
 
 /obj/structure/displaycase/trophy/ui_static_data(mob/user)
@@ -626,11 +628,13 @@
 		to_chat(user, span_notice("[src] must be open to move it."))
 		return
 
-/obj/structure/displaycase/forsale/emag_act(mob/user)
+/obj/structure/displaycase/forsale/emag_act(mob/user, obj/item/card/emag/emag_card)
 	. = ..()
 	payments_acc = null
 	req_access = list()
-	to_chat(user, span_warning("[src]'s card reader fizzles and smokes, and the account owner is reset."))
+	balloon_alert(user, "account owner reset")
+	to_chat(user, span_warning("[src]'s card reader fizzles and smokes."))
+	return TRUE
 
 /obj/structure/displaycase/forsale/examine(mob/user)
 	. = ..()

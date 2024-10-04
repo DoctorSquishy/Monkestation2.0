@@ -29,6 +29,10 @@
 	name = "double-barrel shotgun internal magazine (slugs)"
 	ammo_type = /obj/item/ammo_casing/shotgun
 
+/obj/item/ammo_box/magazine/internal/shot/dual/breacherslug
+	name = "double-barrel shotgun internal magazine (breacher)"
+	ammo_type = /obj/item/ammo_casing/shotgun/breacher
+
 /obj/item/ammo_box/magazine/internal/shot/riot
 	name = "riot shotgun internal magazine"
 	ammo_type = /obj/item/ammo_casing/shotgun/rubbershot
@@ -38,3 +42,9 @@
 	name = "triple-barrel shotgun internal magazine"
 	ammo_type = /obj/item/ammo_casing/shotgun/incapacitate
 	max_ammo = 3
+
+/obj/item/ammo_box/magazine/internal/shot/levergun
+	name = "brush gun internal magazine"
+	ammo_type = /obj/item/ammo_casing/g45l
+	caliber = CALIBER_45L
+	max_ammo = 6

@@ -7,19 +7,8 @@
  *
  **/
 
-//Init the debugger datum first so we can debug Master
-//You might wonder why not just create the debugger datum global in its own file, since its loaded way earlier than this DM file
-//Well for whatever reason then the Master gets created first and then the debugger when doing that
-//So thats why this code lives here now, until someone finds out how Byond inits globals
-GLOBAL_REAL(Debugger, /datum/debugger) = new
-//This is the ABSOLUTE ONLY THING that should init globally like this
-//2019 update: the failsafe,config and Global controllers also do it
-GLOBAL_REAL(Master, /datum/controller/master) = new
-
-//THIS IS THE INIT ORDER
-//Master -> SSPreInit -> GLOB -> world -> config -> SSInit -> Failsafe
-//GOT IT MEMORIZED?
-
+// See initialization order in /code/game/world.dm
+GLOBAL_REAL(Master, /datum/controller/master)
 /datum/controller/master
 	name = "Master"
 
@@ -88,7 +77,7 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 
 	if(!random_seed)
 		#ifdef UNIT_TESTS
-		random_seed = 29051994
+		random_seed = 29051994 // How about 22475?
 		#else
 		random_seed = rand(1, 1e9)
 		#endif
@@ -245,6 +234,13 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 		// Initialize subsystems.
 		for (var/datum/controller/subsystem/subsystem in stage_sorted_subsystems[current_init_stage])
 			init_subsystem(subsystem)
+			if(world.system_type == MS_WINDOWS)
+				var/ss_name = "[subsystem.name]"
+				var/memory_summary = call_ext("memorystats", "get_memory_stats")()
+				var/file = file("data/mem_stat/[GLOB.round_id]-memstat.txt")
+
+				var/string = "[ss_name] [memory_summary]"
+				WRITE_FILE(file, string)
 
 			CHECK_TICK
 		current_initializing_subsystem = null
@@ -261,8 +257,17 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 
 
 	var/msg = "Initializations complete within [time] second[time == 1 ? "" : "s"]!"
+
+	initialize_cooking_recipes()
+
 	to_chat(world, span_boldannounce("[msg]"))
 	log_world(msg)
+
+	// monkestation edit below
+	// basically, most songs end around the 5 minute mark,
+	// so lets give them time to actually play. we're resetting the countdown back to default
+	// because who knows how long we took for initializations, and whatever.
+	SSticker.SetTimeLeft(CONFIG_GET(number/lobby_countdown) * 10) // monkestation edit
 
 
 	if(world.system_type == MS_WINDOWS && CONFIG_GET(flag/toast_notification_on_init) && !length(GLOB.clients))
@@ -282,8 +287,7 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 	if(sleep_offline_after_initializations && CONFIG_GET(flag/resume_after_initializations))
 		world.sleep_offline = FALSE
 	initializations_finished_with_no_players_logged_in = initialized_tod < REALTIMEOFDAY - 10
-	/// run votes
-	SSvote.initiate_vote(/datum/vote/storyteller, "pick round storyteller", forced = TRUE) // idk where else to run this lol
+	SSgamemode.handle_picking_storyteller() //monkestation edit
 
 /**
  * Initialize a given subsystem and handle the results.
@@ -685,9 +689,15 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 
 			queue_node.state = SS_RUNNING
 
+			if(queue_node.profiler_focused)
+				world.Profile(PROFILE_START)
+
 			tick_usage = TICK_USAGE
 			var/state = queue_node.ignite(queue_node_paused)
 			tick_usage = TICK_USAGE - tick_usage
+
+			if(queue_node.profiler_focused)
+				world.Profile(PROFILE_STOP)
 
 			if (state == SS_RUNNING)
 				state = SS_IDLE

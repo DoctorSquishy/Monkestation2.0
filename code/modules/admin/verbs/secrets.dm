@@ -1,4 +1,4 @@
-GLOBAL_DATUM(everyone_a_traitor, /datum/everyone_is_a_traitor_controller)
+GLOBAL_DATUM(everyone_an_antag, /datum/everyone_is_an_antag_controller)
 
 /client/proc/secrets() //Creates a verb for admins to open up the ui
 	set name = "Secrets"
@@ -55,9 +55,9 @@ GLOBAL_DATUM(everyone_a_traitor, /datum/everyone_is_a_traitor_controller)
 		//Generic Buttons anyone can use.
 		if("admin_log")
 			var/dat = "<meta charset='UTF-8'><B>Admin Log<HR></B>"
-			for(var/l in GLOB.admin_log)
+			for(var/l in GLOB.admin_activities)
 				dat += "<li>[l]</li>"
-			if(!GLOB.admin_log.len)
+			if(!GLOB.admin_activities.len)
 				dat += "No-one has done anything this round!"
 			holder << browse(dat, "window=admin_log")
 		if("show_admins")
@@ -94,12 +94,16 @@ GLOBAL_DATUM(everyone_a_traitor, /datum/everyone_is_a_traitor_controller)
 
 		//Buttons for helpful stuff. This is where people land in the tgui
 		if("clear_virus")
-			var/choice = tgui_alert(usr, "Are you sure you want to cure all disease?",, list("Yes", "Cancel"))
+			var/choice = tgui_alert(usr, "Are you sure you want to cure all disease (Only clears players diseases)?",, list("Yes", "Cancel"))
 			if(choice == "Yes")
 				message_admins("[key_name_admin(holder)] has cured all diseases.")
-				for(var/thing in SSdisease.active_diseases)
-					var/datum/disease/D = thing
-					D.cure(0)
+				for(var/mob/living/living as anything in GLOB.alive_mob_list)
+					if(!isliving(living))
+						continue
+					if(!length(living.diseases))
+						continue
+					for(var/datum/disease/advanced/disease as anything in living.diseases)
+						disease.cure(target = living)
 
 		if("list_bombers")
 			holder.list_bombers()
@@ -207,12 +211,11 @@ GLOBAL_DATUM(everyone_a_traitor, /datum/everyone_is_a_traitor_controller)
 				if("Make Your Own")
 					AdminCreateVirus(holder)
 				if("Random")
-					var/datum/round_event_control/disease_outbreak/DC = locate(/datum/round_event_control/disease_outbreak) in SSevents.control
-					E = DC.runEvent()
+					force_event(/datum/round_event_control/disease_outbreak)
 				if("Choose")
 					var/virus = input("Choose the virus to spread", "BIOHAZARD") as null|anything in sort_list(typesof(/datum/disease), GLOBAL_PROC_REF(cmp_typepaths_asc))
 					var/datum/round_event_control/disease_outbreak/DC = locate(/datum/round_event_control/disease_outbreak) in SSevents.control
-					var/datum/round_event/disease_outbreak/DO = DC.runEvent()
+					var/datum/round_event/disease_outbreak/DO = DC.run_event()
 					DO.virus_type = virus
 					E = DO
 		if("allspecies")
@@ -253,11 +256,6 @@ GLOBAL_DATUM(everyone_a_traitor, /datum/everyone_is_a_traitor_controller)
 				return
 			holder.anon_names()
 			SSblackbox.record_feedback("nested tally", "admin_secrets_fun_used", 1, list("Anonymous Names"))
-		if("tripleAI")
-			if(!is_funmin)
-				return
-			holder.triple_ai()
-			SSblackbox.record_feedback("nested tally", "admin_secrets_fun_used", 1, list("Triple AI"))
 		if("onlyone")
 			if(!is_funmin)
 				return
@@ -403,7 +401,7 @@ GLOBAL_DATUM(everyone_a_traitor, /datum/everyone_is_a_traitor_controller)
 				var/list/candidates = list()
 
 				if (prefs["offerghosts"]["value"] == "Yes")
-					candidates = poll_ghost_candidates(replacetext(prefs["ghostpoll"]["value"], "%TYPE%", initial(pathToSpawn.name)), ROLE_TRAITOR)
+					candidates = SSpolling.poll_ghost_candidates(replacetext(prefs["ghostpoll"]["value"], "%TYPE%", initial(pathToSpawn.name)), check_jobban = ROLE_TRAITOR, alert_pic = pathToSpawn, role_name_text = "portal storm")
 
 				if (prefs["playersonly"]["value"] == "Yes" && length(candidates) < prefs["minplayers"]["value"])
 					message_admins("Not enough players signed up to create a portal storm, the minimum was [prefs["minplayers"]["value"]] and the number of signups [length(candidates)]")
@@ -455,24 +453,35 @@ GLOBAL_DATUM(everyone_a_traitor, /datum/everyone_is_a_traitor_controller)
 			for(var/i in GLOB.human_list)
 				var/mob/living/carbon/human/H = i
 				INVOKE_ASYNC(H, TYPE_PROC_REF(/mob/living/carbon, monkeyize))
-		if("traitor_all")
+		if("antag_all")
 			if(!is_funmin)
 				return
 			if(!SSticker.HasRoundStarted())
 				tgui_alert(usr,"The game hasn't started yet!")
 				return
-			if(GLOB.everyone_a_traitor)
-				tgui_alert(usr, "The everyone is a traitor secret has already been triggered")
+			if(GLOB.everyone_an_antag)
+				var/are_we_antagstacking = tgui_alert(usr, "The everyone is antag secret has already been triggered. Do you want to stack antags?", "DANGER ZONE. Are you sure about this?", list("Confirm", "Abort"))
+				if(are_we_antagstacking != "Confirm")
+					return
+
+			var/chosen_antag = tgui_input_list(usr, "Choose antag", "Chose antag", list(ROLE_TRAITOR, ROLE_CHANGELING, ROLE_HERETIC, ROLE_CULTIST, ROLE_NINJA, ROLE_WIZARD, ROLE_NIGHTMARE))
+			if(!chosen_antag)
 				return
-			var/objective = tgui_input_text(holder, "Enter an objective", "Objective")
+			var/objective = tgui_input_text(usr, "Enter an objective", "Objective")
 			if(!objective)
 				return
-			GLOB.everyone_a_traitor = new /datum/everyone_is_a_traitor_controller(objective)
-			SSblackbox.record_feedback("nested tally", "admin_secrets_fun_used", 1, list("Traitor All", "[objective]"))
+			var/confirmation = tgui_alert(usr, "Make everyone in to [chosen_antag] with objective: [objective]", "Are you sure about this?", list("Confirm", "Abort"))
+			if(confirmation != "Confirm")
+				return
+			var/keep_generic_objecives = tgui_alert(usr, "Generate normal objectives?", "Give default objectives?", list("Yes", "No"))
+			keep_generic_objecives = (keep_generic_objecives != "Yes") ? FALSE : TRUE
+
+			GLOB.everyone_an_antag = new /datum/everyone_is_an_antag_controller(chosen_antag, objective, keep_generic_objecives)
+			SSblackbox.record_feedback("nested tally", "admin_secrets_fun_used", 1, list("[chosen_antag] All", "[objective]"))
 			for(var/mob/living/player in GLOB.player_list)
-				GLOB.everyone_a_traitor.make_traitor(null, player)
-			message_admins(span_adminnotice("[key_name_admin(holder)] used everyone is a traitor secret. Objective is [objective]"))
-			log_admin("[key_name(holder)] used everyone is a traitor secret. Objective is [objective]")
+				GLOB.everyone_an_antag.make_antag(null, player)
+			message_admins(span_adminnotice("[key_name_admin(holder)] used everyone is antag secret. Antag is [chosen_antag]. Objective is [objective]. Generate default objectives: [keep_generic_objecives]"))
+			log_admin("[key_name(holder)] used everyone is antag secret: [chosen_antag] . Objective is [objective]. Generate default objectives: [keep_generic_objecives]. ")
 		if("massbraindamage")
 			if(!is_funmin)
 				return
@@ -541,7 +550,7 @@ GLOBAL_DATUM(everyone_a_traitor, /datum/everyone_is_a_traitor_controller)
 			var/spawnpoint = pick(GLOB.blobstart)
 			var/list/mob/dead/observer/candidates
 			var/mob/dead/observer/chosen_candidate
-			var/mob/living/simple_animal/drone/nerd
+			var/mob/living/basic/drone/nerd
 			var/teamsize
 
 			teamsize = input(usr, "How many drones?", "N.E.R.D. team size", 2) as num|null
@@ -549,7 +558,7 @@ GLOBAL_DATUM(everyone_a_traitor, /datum/everyone_is_a_traitor_controller)
 			if(teamsize <= 0)
 				return FALSE
 
-			candidates = poll_ghost_candidates("Do you wish to be considered for a Nanotrasen emergency response drone?", "Drone")
+			candidates = SSpolling.poll_ghost_candidates("Do you wish to be considered for a Nanotrasen emergency response drone?", check_jobban = ROLE_DRONE, alert_pic = /mob/living/basic/drone/classic, role_name_text = "nanotrasen emergency response drone")
 
 			if(length(candidates) == 0)
 				return FALSE
@@ -557,7 +566,7 @@ GLOBAL_DATUM(everyone_a_traitor, /datum/everyone_is_a_traitor_controller)
 			while(length(candidates) && teamsize)
 				chosen_candidate = pick(candidates)
 				candidates -= chosen_candidate
-				nerd = new /mob/living/simple_animal/drone/classic(spawnpoint)
+				nerd = new /mob/living/basic/drone/classic(spawnpoint)
 				nerd.key = chosen_candidate.key
 				nerd.log_message("has been selected as a Nanotrasen emergency response drone.", LOG_GAME)
 				teamsize--
@@ -625,38 +634,79 @@ GLOBAL_DATUM(everyone_a_traitor, /datum/everyone_is_a_traitor_controller)
 	T.flick_overlay_static(portal_appearance[GET_TURF_PLANE_OFFSET(T) + 1], 15)
 	playsound(T, 'sound/magic/lightningbolt.ogg', rand(80, 100), TRUE)
 
-///Makes sure latejoining crewmembers also become traitors.
-/datum/everyone_is_a_traitor_controller
+/datum/everyone_is_an_antag_controller
+	var/chosen_antag = ""
 	var/objective = ""
+	var/keep_generic_objecives
 
-/datum/everyone_is_a_traitor_controller/New(objective)
+/datum/everyone_is_an_antag_controller/New(chosen_antag, objective, keep_generic_objecives)
+	. = ..()
+	src.chosen_antag = chosen_antag
 	src.objective = objective
-	RegisterSignal(SSdcs, COMSIG_GLOB_CREWMEMBER_JOINED, PROC_REF(make_traitor))
+	src.keep_generic_objecives = keep_generic_objecives
+	RegisterSignal(SSdcs, COMSIG_GLOB_CREWMEMBER_JOINED, PROC_REF(make_antag_delay))
 
-/datum/everyone_is_a_traitor_controller/Destroy()
+/datum/everyone_is_an_antag_controller/Destroy()
 	UnregisterSignal(SSdcs, COMSIG_GLOB_CREWMEMBER_JOINED)
 	return ..()
 
-/datum/everyone_is_a_traitor_controller/proc/make_traitor(datum/source, mob/living/player)
+/datum/everyone_is_an_antag_controller/proc/assign_admin_objective_and_antag(mob/living/player, datum/antagonist/antag_datum)
+	var/datum/objective/new_objective = new(objective)
+	new_objective.team = player
+	new_objective.team_explanation_text = objective
+	antag_datum.objectives += new_objective
+	player.mind.add_antag_datum(antag_datum)
+
+/datum/everyone_is_an_antag_controller/proc/make_antag_delay(datum/source, mob/living/player)
 	SIGNAL_HANDLER
+	INVOKE_ASYNC(src, PROC_REF(make_antag), source, player)
+
+
+/datum/everyone_is_an_antag_controller/proc/make_antag(datum/source, mob/living/player)
 	if(player.stat == DEAD || !player.mind)
 		return
-	if(is_special_character(player))
-		return
+	sleep(1)
 	if(ishuman(player))
-		var/datum/antagonist/traitor/traitor_datum = new(give_objectives = FALSE)
-		var/datum/objective/new_objective = new
-		new_objective.owner = player
-		new_objective.explanation_text = objective
-		traitor_datum.objectives += new_objective
-		player.mind.add_antag_datum(traitor_datum)
-		var/datum/uplink_handler/uplink = traitor_datum.uplink_handler
-		uplink.has_progression = FALSE
-		uplink.has_objectives = FALSE
+		switch(chosen_antag)
+			if(ROLE_TRAITOR)
+				var/datum/antagonist/traitor/antag_datum = new(give_objectives = keep_generic_objecives)
+				assign_admin_objective_and_antag(player, antag_datum)
+				var/datum/uplink_handler/uplink = antag_datum.uplink_handler
+				uplink.has_progression = FALSE
+				uplink.has_objectives = FALSE
+			if(ROLE_CHANGELING)
+				var/datum/antagonist/changeling/antag_datum = new
+				antag_datum.give_objectives = keep_generic_objecives
+				assign_admin_objective_and_antag(player, antag_datum)
+			if(ROLE_HERETIC)
+				var/datum/antagonist/heretic/antag_datum = new
+				antag_datum.give_objectives = keep_generic_objecives
+				assign_admin_objective_and_antag(player, antag_datum)
+			if(ROLE_CULTIST)
+				var/datum/antagonist/cult/antag_datum = new
+				assign_admin_objective_and_antag(player, antag_datum)
+			if(ROLE_NINJA)
+				var/datum/antagonist/ninja/antag_datum = new
+				antag_datum.give_objectives = keep_generic_objecives
+				for(var/obj/item/item_to_drop in player)
+					if(!istype(item_to_drop, /obj/item/implant)) //avoid removing implanted uplinks
+						player.dropItemToGround(item_to_drop, FALSE)
+				assign_admin_objective_and_antag(player, antag_datum)
+			if(ROLE_WIZARD)
+				var/datum/antagonist/wizard/antag_datum = new
+				antag_datum.give_objectives = keep_generic_objecives
+				antag_datum.move_to_lair = FALSE
+				for(var/obj/item/item_to_drop in player) //avoid deleting player's items
+					if(!istype(item_to_drop, /obj/item/implant))
+						player.dropItemToGround(item_to_drop, FALSE)
+				assign_admin_objective_and_antag(player, antag_datum)
+			if(ROLE_NIGHTMARE)
+				var/datum/antagonist/nightmare/antag_datum = new
+				assign_admin_objective_and_antag(player, antag_datum)
+				player.set_species(/datum/species/shadow/nightmare)
+
 	else if(isAI(player))
-		var/datum/antagonist/malf_ai/malfunction_datum = new(give_objectives = FALSE)
-		var/datum/objective/new_objective = new
-		new_objective.owner = player
-		new_objective.explanation_text = objective
-		malfunction_datum.objectives += new_objective
-		player.mind.add_antag_datum(malfunction_datum)
+		var/datum/antagonist/malf_ai/antag_datum = new
+		antag_datum.give_objectives = keep_generic_objecives
+		assign_admin_objective_and_antag(player, antag_datum)
+

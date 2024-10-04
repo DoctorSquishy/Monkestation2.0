@@ -38,6 +38,18 @@
 	/// The icon file to take fill icon appearances from
 	var/fill_icon = 'icons/obj/reagentfillings.dmi'
 
+/obj/item/reagent_containers/apply_fantasy_bonuses(bonus)
+	. = ..()
+	if(reagents)
+		reagents.maximum_volume = modify_fantasy_variable("maximum_volume", reagents.maximum_volume, bonus * 10, minimum = 5)
+	volume = modify_fantasy_variable("maximum_volume_beaker", volume, bonus * 10, minimum = 5)
+
+/obj/item/reagent_containers/remove_fantasy_bonuses(bonus)
+	if(reagents)
+		reagents.maximum_volume = reset_fantasy_variable("maximum_volume", reagents.maximum_volume)
+	volume = reset_fantasy_variable("maximum_volume_beaker", volume)
+	return ..()
+
 /obj/item/reagent_containers/Initialize(mapload, vol)
 	. = ..()
 	if(isnum(vol) && vol > 0)
@@ -91,7 +103,7 @@
 /obj/item/reagent_containers/create_reagents(max_vol, flags)
 	. = ..()
 	RegisterSignals(reagents, list(COMSIG_REAGENTS_NEW_REAGENT, COMSIG_REAGENTS_ADD_REAGENT, COMSIG_REAGENTS_DEL_REAGENT, COMSIG_REAGENTS_REM_REAGENT), PROC_REF(on_reagent_change))
-	RegisterSignal(reagents, COMSIG_PARENT_QDELETING, PROC_REF(on_reagents_del))
+	RegisterSignal(reagents, COMSIG_QDELETING, PROC_REF(on_reagents_del))
 
 /obj/item/reagent_containers/attack(mob/living/target_mob, mob/living/user, params)
 	if (!(user.istate & ISTATE_HARM))
@@ -100,7 +112,7 @@
 
 /obj/item/reagent_containers/proc/on_reagents_del(datum/reagents/reagents)
 	SIGNAL_HANDLER
-	UnregisterSignal(reagents, list(COMSIG_REAGENTS_NEW_REAGENT, COMSIG_REAGENTS_ADD_REAGENT, COMSIG_REAGENTS_DEL_REAGENT, COMSIG_REAGENTS_REM_REAGENT, COMSIG_PARENT_QDELETING))
+	UnregisterSignal(reagents, list(COMSIG_REAGENTS_NEW_REAGENT, COMSIG_REAGENTS_ADD_REAGENT, COMSIG_REAGENTS_DEL_REAGENT, COMSIG_REAGENTS_REM_REAGENT, COMSIG_QDELETING))
 	return NONE
 
 /obj/item/reagent_containers/proc/add_initial_reagents()
@@ -134,7 +146,7 @@
 /obj/item/reagent_containers/pre_attack_secondary(atom/target, mob/living/user, params)
 	if(HAS_TRAIT(target, TRAIT_DO_NOT_SPLASH))
 		return ..()
-	if(!(user.istate & ISTATE_HARM))
+	if(!(user.istate & ISTATE_HARM) && istype(user.client?.imode, /datum/interaction_mode/combat_mode))
 		return ..()
 	if (try_splash(user, target))
 		return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
@@ -275,7 +287,11 @@
 			reagents.expose(target, TOUCH)
 			var/turf/targets_loc = target.loc
 			if(istype(targets_loc, /turf/open))
-				targets_loc.add_liquid_from_reagents(reagents)
+				if(thrown_by && !target.can_atmos_pass)
+					var/turf/open/open = get_step(src, get_dir(src, thrown_by))
+					open.add_liquid_from_reagents(reagents)
+				else
+					targets_loc.add_liquid_from_reagents(reagents)
 			else
 				targets_loc = get_step_towards(targets_loc, thrown_by)
 				targets_loc.add_liquid_from_reagents(reagents) //not perfect but i can't figure out how to move something to the nearest visible turf from throw_target
@@ -305,10 +321,9 @@
 	SIGNAL_HANDLER
 	update_appearance()
 
-	if(reasses_processing())
-		START_PROCESSING(SSobj, src)
-	else if(datum_flags & DF_ISPROCESSING)
-		STOP_PROCESSING(SSobj, src)
+	//Monkestation Addition: For Australium
+	reagent_processing()
+	//End Monkestation Addition
 
 	return NONE
 
@@ -331,3 +346,9 @@
 
 	filling.color = mix_color_from_reagents(reagents.reagent_list)
 	. += filling
+
+/obj/item/reagent_containers/afterattack(atom/target, mob/user, proximity_flag, click_parameters)
+	. = ..()
+	after_attack_pour(user, target)
+
+/obj/item/reagent_containers/proc/after_attack_pour(mob/user, atom/target)

@@ -28,22 +28,32 @@
 	var/operating = FALSE
 	var/glass = FALSE
 	var/welded = FALSE
-	var/heat_proof = FALSE // For rglass-windowed airlocks and firedoors
-	var/emergency = FALSE // Emergency access override
-	var/sub_door = FALSE // true if it's meant to go under another door.
+	/// For rglass-windowed airlocks and firedoors
+	var/heat_proof = FALSE
+	/// Emergency access override
+	var/emergency = FALSE
+	/// true if it's meant to go under another door.
+	var/sub_door = FALSE
 	var/closingLayer = CLOSED_DOOR_LAYER
-	var/autoclose = FALSE //does it automatically close after some time
-	var/safe = TRUE //whether the door detects things and mobs in its way and reopen or crushes them.
-	var/locked = FALSE //whether the door is bolted or not.
+	///does it automatically close after some time
+	var/autoclose = FALSE
+	///whether the door detects things and mobs in its way and reopen or crushes them.
+	var/safe = TRUE
+	///whether the door is bolted or not.
+	var/locked = FALSE
 	var/datum/effect_system/spark_spread/spark_system
-	var/real_explosion_block //ignore this, just use explosion_block
-	var/red_alert_access = FALSE //if TRUE, this door will always open on red alert
+	///ignore this, just use explosion_block
+	var/real_explosion_block
+	///if TRUE, this door will always open on red alert
+	var/red_alert_access = FALSE
 	/// Checks to see if this airlock has an unrestricted "sensor" within (will set to TRUE if present).
 	var/unres_sensor = FALSE
 	/// Unrestricted sides. A bitflag for which direction (if any) can open the door with no access
 	var/unres_sides = NONE
-	var/can_crush = TRUE /// Whether or not the door can crush mobs.
-	var/can_open_with_hands = TRUE /// Whether or not the door can be opened by hand (used for blast doors and shutters)
+	/// Whether or not the door can crush mobs.
+	var/can_crush = TRUE
+	/// Whether or not the door can be opened by hand (used for blast doors and shutters)
+	var/can_open_with_hands = TRUE
 	/// Whether or not this door can be opened through a door remote, ever
 	var/opens_with_door_remote = FALSE
 	/// Special operating mode for elevator doors
@@ -301,6 +311,10 @@
 		forced_open = crowbar.force_opens
 	if(istype(tool, /obj/item/slasher_machette))
 		forced_open = TRUE
+	if(istype(tool, /obj/item/mantis_blade/chromata))
+		var/obj/item/mantis_blade/chromata/attacker = tool
+		forced_open = attacker.check_can_crowbar(user)
+
 	try_to_crowbar(tool, user, forced_open)
 	return TOOL_ACT_TOOLTYPE_SUCCESS
 
@@ -314,7 +328,7 @@
 	else if(weapon.item_flags & NOBLUDGEON || (user.istate & ISTATE_HARM))
 		return ..()
 	else if(!(user.istate & ISTATE_HARM) && istype(weapon, /obj/item/stack/sheet/mineral/wood))
-		return ..() // we need this so our can_barricade element can be called using COMSIG_PARENT_ATTACKBY
+		return ..() // we need this so our can_barricade element can be called using COMSIG_ATOM_ATTACKBY
 	else if(try_to_activate_door(user))
 		return TRUE
 	return ..()
@@ -387,10 +401,10 @@
 	use_power(active_power_usage)
 	do_animate("opening")
 	set_opacity(0)
-	sleep(0.5 SECONDS)
+	SLEEP_NOT_DEL(0.5 SECONDS)
 	set_density(FALSE)
 	flags_1 &= ~PREVENT_CLICK_UNDER_1
-	sleep(0.5 SECONDS)
+	SLEEP_NOT_DEL(0.5 SECONDS)
 	layer = initial(layer)
 	update_appearance()
 	set_opacity(0)
@@ -438,10 +452,10 @@
 			turfs_group.check_edges(direction_turf)
 
 	layer = closingLayer
-	sleep(0.5 SECONDS)
+	SLEEP_NOT_DEL(0.5 SECONDS)
 	set_density(TRUE)
 	flags_1 |= PREVENT_CLICK_UNDER_1
-	sleep(0.5 SECONDS)
+	SLEEP_NOT_DEL(0.5 SECONDS)
 	update_appearance()
 	if(visible && !glass)
 		set_opacity(1)
@@ -469,25 +483,29 @@
 		open()
 
 /obj/machinery/door/proc/crush()
-	for(var/mob/living/L in get_turf(src))
-		L.visible_message(span_warning("[src] closes on [L], crushing [L.p_them()]!"), span_userdanger("[src] closes on you and crushes you!"))
-		SEND_SIGNAL(L, COMSIG_LIVING_DOORCRUSHED, src)
-		if(isalien(L))  //For xenos
-			L.adjustBruteLoss(DOOR_CRUSH_DAMAGE * 1.5) //Xenos go into crit after aproximately the same amount of crushes as humans.
-			L.emote("roar")
-		else if(ishuman(L)) //For humans
-			L.adjustBruteLoss(DOOR_CRUSH_DAMAGE)
-			L.emote("scream")
-			L.Paralyze(100)
+	for(var/mob/living/future_pancake in get_turf(src))
+		future_pancake.visible_message(span_warning("[src] closes on [future_pancake], crushing [future_pancake.p_them()]!"), span_userdanger("[src] closes on you and crushes you!"))
+		SEND_SIGNAL(future_pancake, COMSIG_LIVING_DOORCRUSHED, src)
+		if(isalien(future_pancake))  //For xenos
+			future_pancake.adjustBruteLoss(DOOR_CRUSH_DAMAGE * 1.5) //Xenos go into crit after aproximately the same amount of crushes as humans.
+			future_pancake.emote("roar")
+		else if(ismonkey(future_pancake))
+			future_pancake.emote("screech")
+			future_pancake.adjustBruteLoss(DOOR_CRUSH_DAMAGE)
+			future_pancake.Paralyze(100)
+		else if(ishuman(future_pancake)) //For humans
+			future_pancake.adjustBruteLoss(DOOR_CRUSH_DAMAGE)
+			future_pancake.emote("scream")
+			future_pancake.Paralyze(100)
 		else //for simple_animals & borgs
-			L.adjustBruteLoss(DOOR_CRUSH_DAMAGE)
+			future_pancake.adjustBruteLoss(DOOR_CRUSH_DAMAGE)
 		var/turf/location = get_turf(src)
 		//add_blood doesn't work for borgs/xenos, but add_blood_floor does.
-		L.add_splatter_floor(location)
-		log_combat(src, L, "crushed")
-	for(var/obj/vehicle/sealed/mecha/M in get_turf(src))
-		M.take_damage(DOOR_CRUSH_DAMAGE)
-		log_combat(src, M, "crushed")
+		future_pancake.add_splatter_floor(location)
+		log_combat(src, future_pancake, "crushed")
+	for(var/obj/vehicle/sealed/mecha/mech in get_turf(src))
+		mech.take_damage(DOOR_CRUSH_DAMAGE)
+		log_combat(src, mech, "crushed")
 
 /obj/machinery/door/proc/autoclose()
 	if(!QDELETED(src) && !density && !operating && !locked && !welded && autoclose)
@@ -513,6 +531,10 @@
 
 /obj/machinery/door/morgue
 	icon = 'icons/obj/doors/doormorgue.dmi'
+
+/obj/machinery/door/morgue/Initialize(mapload)
+	. = ..()
+	AddComponent(/datum/component/redirect_attack_hand_from_turf)
 
 /obj/machinery/door/get_dumping_location()
 	return null
@@ -545,7 +567,7 @@
 	. = ..()
 
 /// Signal proc for [COMSIG_ATOM_MAGICALLY_UNLOCKED]. Open up when someone casts knock.
-/obj/machinery/door/proc/on_magic_unlock(datum/source, datum/action/cooldown/spell/aoe/knock/spell, mob/living/caster)
+/obj/machinery/door/proc/on_magic_unlock(datum/source, datum/action/cooldown/spell/aoe/knock/spell, atom/caster)
 	SIGNAL_HANDLER
 
 	INVOKE_ASYNC(src, PROC_REF(open))

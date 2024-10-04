@@ -281,7 +281,7 @@ SUBSYSTEM_DEF(id_access)
 	desc_by_access["[ACCESS_LIBRARY]"] = "Library"
 	desc_by_access["[ACCESS_LAWYER]"] = "Law Office"
 	desc_by_access["[ACCESS_ROBOTICS]"] = "Robotics"
-	desc_by_access["[ACCESS_VIROLOGY]"] = "Virology"
+	desc_by_access["[ACCESS_VIROLOGY]"] = "Pathology"
 	desc_by_access["[ACCESS_PSYCHOLOGY]"] = "Psychology"
 	desc_by_access["[ACCESS_CMO]"] = "CMO Office"
 	desc_by_access["[ACCESS_QM]"] = "Quartermaster"
@@ -323,6 +323,7 @@ SUBSYSTEM_DEF(id_access)
 	desc_by_access["[ACCESS_CENT_CAPTAIN]"] = "Code Gold"
 	desc_by_access["[ACCESS_CENT_BAR]"] = "Code Scotch"
 	desc_by_access["[ACCESS_BIT_DEN]"] = "Bitrunner Den"
+	desc_by_access["[ACCESS_PERMABRIG]"] = "Permabrig" // monkestation edit: add permabrig-only access
 
 /**
  * Returns the access bitflags associated with any given access level.

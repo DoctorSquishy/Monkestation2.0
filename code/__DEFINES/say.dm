@@ -72,6 +72,8 @@
 #define SPAN_SINGING "singing"
 #define SPAN_TAPE_RECORDER "tape_recorder"
 #define SPAN_HELIUM "small"
+#define SPAN_SOAPBOX "soapbox"
+#define SPAN_BOLD "bold" // monkestation addition
 
 //bitflag #defines for return value of the radio() proc.
 #define ITALICS (1<<0)
@@ -104,3 +106,4 @@
 
 //Used in visible_message_flags, audible_message_flags and runechat_flags
 #define EMOTE_MESSAGE (1<<0)
+#define LOOC_MESSAGE (1<<1) //monke: looc

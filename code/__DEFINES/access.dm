@@ -51,6 +51,8 @@
 #define ACCESS_HOS "hos"
 /// Access for the detective to get into their office, the medical data console, and some other detective-related stuff.
 #define ACCESS_DETECTIVE "detective"
+/// Access for the brig physician to get basic access to medical tools, but not all encompassing access to medical under normal manning. MONKESTATION EDIT
+#define ACCESS_BRIG_PHYSICIAN "brig_physician" /// MONKESTATION EDIT
 
 /// Engineering General Access, grants access to the standard parts of engineering (as well as the Supermatter and related equipment).
 #define ACCESS_ENGINEERING "engineering"
@@ -84,7 +86,7 @@
 /// Allows access to the larger room for Chemistry plumbing machinery setups.
 #define ACCESS_PLUMBING "plumbing"
 /// Access to the Virology portion of the medical department, as well as the virology crate.
-#define ACCESS_VIROLOGY "virology"
+#define ACCESS_VIROLOGY "pathology"
 /// Access to the Psychologist's office.
 #define ACCESS_PSYCHOLOGY "psychology"
 /// Access for the Chief Medical Officer's personal quarters in mapping, as well as some other CMO-related things.
@@ -290,8 +292,9 @@
 	ACCESS_COURT, \
 	ACCESS_CREMATORIUM, \
 	ACCESS_DETECTIVE, \
-	ACCESS_ENGINE_EQUIP, \
 	ACCESS_ENGINEERING, \
+	ACCESS_ENGINE_EQUIP, \
+	ACCESS_EVA, \
 	ACCESS_EXTERNAL_AIRLOCKS, \
 	ACCESS_GENETICS, \
 	ACCESS_HYDROPONICS, \
@@ -300,11 +303,11 @@
 	ACCESS_LAWYER, \
 	ACCESS_LIBRARY, \
 	ACCESS_MAINT_TUNNELS, \
-	ACCESS_MECH_MINING, \
-	ACCESS_MECH_MEDICAL, \
-	ACCESS_MECH_SECURITY, \
-	ACCESS_MECH_SCIENCE, \
 	ACCESS_MECH_ENGINE, \
+	ACCESS_MECH_MEDICAL, \
+	ACCESS_MECH_MINING, \
+	ACCESS_MECH_SCIENCE, \
+	ACCESS_MECH_SECURITY, \
 	ACCESS_MEDICAL, \
 	ACCESS_MINERAL_STOREROOM, \
 	ACCESS_MINING, \
@@ -313,6 +316,7 @@
 	ACCESS_NETWORK, \
 	ACCESS_ORDNANCE, \
 	ACCESS_ORDNANCE_STORAGE, \
+	ACCESS_PERMABRIG, \
 	ACCESS_PHARMACY, \
 	ACCESS_PLUMBING, \
 	ACCESS_PSYCHOLOGY, \
@@ -328,7 +332,7 @@
 	ACCESS_VIROLOGY, \
 	ACCESS_WEAPONS, \
 	ACCESS_XENOBIOLOGY, \
-)
+)  /* monkestation edit: add permabrig-only access */
 
 /// Command staff/secure accesses, think bridge/armoury, ai_upload, notably access to modify ID cards themselves. Do not use direct, access via SSid_access.get_flag_access_list(ACCESS_FLAG_COMMAND)
 #define COMMAND_ACCESS list( \
@@ -434,9 +438,11 @@
 	ACCESS_DETECTIVE, \
 	ACCESS_HOS, \
 	ACCESS_MECH_SECURITY, \
+	ACCESS_PERMABRIG, \
 	ACCESS_SECURITY, \
 	ACCESS_WEAPONS, \
-)
+) /* monkestation edit: add permabrig-only access */
+
 /// Name for the Medbay region.
 #define REGION_MEDBAY "Medbay"
 /// Used to seed the accesses_by_region list in SSid_access. A list of all medbay regional accesses that are overseen by the CMO.
@@ -526,6 +532,9 @@
  * If a PDA is in this list, it can always be painted with ACCESS_CHANGE_IDS.
  * Used to see pda_region in [/datum/controller/subsystem/id_access/proc/setup_tgui_lists]
  */
+
+///Monkestation Edit - adding non-head QM to the list so it may be properly painted. may require removal of the old head version.
+
 #define PDA_PAINTING_REGIONS list( \
 	/obj/item/modular_computer/pda = list(REGION_GENERAL), \
 	/obj/item/modular_computer/pda/clown = list(REGION_GENERAL), \
@@ -558,8 +567,8 @@
 	/obj/item/modular_computer/pda/atmos = list(REGION_ENGINEERING), \
 	/obj/item/modular_computer/pda/chemist = list(REGION_MEDBAY), \
 	/obj/item/modular_computer/pda/geneticist = list(REGION_RESEARCH), \
+	/obj/item/modular_computer/pda/quartermaster = list(REGION_SUPPLY), \
 )
-
 /// All regions that make up the station area. Helper define to quickly designate a region as part of the station or not. Access via SSid_access.station_regions.
 #define REGION_AREA_STATION list( \
 	REGION_COMMAND, \

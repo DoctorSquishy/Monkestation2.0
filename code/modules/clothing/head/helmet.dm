@@ -14,6 +14,8 @@
 	clothing_flags = SNUG_FIT | PLASMAMAN_HELMET_EXEMPT
 	flags_cover = HEADCOVERSEYES
 	flags_inv = HIDEHAIR
+	supports_variations_flags = CLOTHING_SNOUTED_VARIATION
+	resistance_flags = FIRE_PROOF // monkestation edit so helmets don't burn, not sure how tf that happened
 
 	dog_fashion = /datum/dog_fashion/head/helmet
 
@@ -123,6 +125,14 @@
 	name = "marine medic helmet"
 	icon_state = "marine_medic"
 
+/obj/item/clothing/head/helmet/marine/pmc
+	icon_state = "marine"
+	desc = "A tactical black helmet, designed to protect one's head from various injuries sustained in operations. Its stellar survivability making up is for it's lack of space worthiness"
+	min_cold_protection_temperature = HELMET_MIN_TEMP_PROTECT
+	max_heat_protection_temperature = HELMET_MAX_TEMP_PROTECT
+	clothing_flags = null
+	armor_type = /datum/armor/pmc
+
 /obj/item/clothing/head/helmet/old
 	name = "degrading helmet"
 	desc = "Standard issue security helmet. Due to degradation the helmet's visor obstructs the users ability to see long distances."
@@ -135,6 +145,12 @@
 	inhand_icon_state = "blueshift_helmet"
 	custom_premium_price = PAYCHECK_COMMAND
 
+/obj/item/clothing/head/helmet/guardmanhelmet
+	name = "guardman's helmet"
+	desc = "Keeps your brain intact when fighting heretics"
+	icon = 'monkestation/icons/obj/clothing/hats.dmi'
+	worn_icon = 'monkestation/icons/mob/clothing/head.dmi'
+	icon_state = "guardman_helmet"
 
 /obj/item/clothing/head/helmet/toggleable
 	dog_fashion = null
@@ -173,10 +189,10 @@
 	toggle_message = "You pull the visor down on"
 	alt_toggle_message = "You push the visor up on"
 	armor_type = /datum/armor/toggleable_riot
-	flags_inv = HIDEEARS|HIDEFACE|HIDESNOUT
+	flags_inv = HIDEEARS|HIDEFACE
 	strip_delay = 80
 	actions_types = list(/datum/action/item_action/toggle)
-	visor_flags_inv = HIDEFACE|HIDESNOUT
+	visor_flags_inv = HIDEFACE
 	flags_cover = HEADCOVERSEYES | HEADCOVERSMOUTH | PEPPERPROOF
 	visor_flags_cover = HEADCOVERSEYES | HEADCOVERSMOUTH | PEPPERPROOF
 
@@ -241,11 +257,12 @@
 	clothing_flags = STOPSPRESSUREDAMAGE | PLASMAMAN_HELMET_EXEMPT
 	strip_delay = 80
 	resistance_flags = FIRE_PROOF | ACID_PROOF
+	flags_inv = HIDEHAIR //monkestation edit
 	dog_fashion = null
 
 /datum/armor/helmet_swat
 	melee = 40
-	bullet = 30
+	bullet = 40 //monkestation edit, 30 to 40
 	laser = 30
 	energy = 40
 	bomb = 50
@@ -259,13 +276,16 @@
 	desc = "An extremely robust helmet with the Nanotrasen logo emblazoned on the top."
 	icon_state = "swat"
 	inhand_icon_state = "swat_helmet"
-	clothing_flags = PLASMAMAN_HELMET_EXEMPT
+	clothing_flags = PLASMAMAN_HELMET_EXEMPT | SNUG_FIT //monkestation edit
 	cold_protection = HEAD
 	min_cold_protection_temperature = SPACE_HELM_MIN_TEMP_PROTECT
 	heat_protection = HEAD
 	max_heat_protection_temperature = SPACE_HELM_MAX_TEMP_PROTECT
-	flags_cover = HEADCOVERSEYES | HEADCOVERSMOUTH | PEPPERPROOF
+	flags_cover = HEADCOVERSEYES | PEPPERPROOF //monkestation edit
 
+/obj/item/clothing/head/helmet/swat/nanotrasen/Initialize(mapload) //monkestation edit
+	. = ..()
+	AddComponent(/datum/component/seclite_attachable, light_icon_state = "flight")
 
 /obj/item/clothing/head/helmet/thunderdome
 	name = "\improper Thunderdome helmet"
@@ -516,12 +536,12 @@
 	flags_cover = HEADCOVERSEYES | HEADCOVERSMOUTH
 
 /datum/armor/helmet_elder_atmosian
-	melee = 25
-	bullet = 20
+	melee = 30
+	bullet = 30
 	laser = 30
 	energy = 30
 	bomb = 85
 	bio = 10
-	fire = 65
+	fire = 100
 	acid = 40
 	wound = 15

@@ -26,6 +26,7 @@
 	pass_flags = PASSTABLE
 	light_color = LIGHT_COLOR_DIM_YELLOW
 	light_power = 3
+	anchored_tabletop_offset = 6
 	var/wire_disabled = FALSE // is its internal wire cut?
 	var/operating = FALSE
 	/// How dirty is it?
@@ -50,11 +51,9 @@
 /obj/machinery/microwave/Initialize(mapload)
 	. = ..()
 
-	wires = new /datum/wires/microwave(src)
+	set_wires(new /datum/wires/microwave(src))
 	create_reagents(100)
 	soundloop = new(src, FALSE)
-	set_on_table()
-
 	update_appearance(UPDATE_ICON)
 
 /obj/machinery/microwave/Exited(atom/movable/gone, direction)
@@ -69,7 +68,7 @@
 
 
 /obj/machinery/microwave/on_deconstruction()
-	eject()
+	// eject() // monkestation edit: overrided in module
 	return ..()
 
 /obj/machinery/microwave/Destroy()
@@ -77,10 +76,6 @@
 	QDEL_NULL(wires)
 	QDEL_NULL(soundloop)
 	return ..()
-
-/obj/machinery/microwave/set_anchored(anchorvalue)
-	. = ..()
-	set_on_table()
 
 /obj/machinery/microwave/RefreshParts()
 	. = ..()
@@ -292,9 +287,16 @@
 		balloon_alert(user, "it's too dirty!")
 		return TRUE
 
-	if(istype(O, /obj/item/storage/bag/tray))
+	if(istype(O, /obj/item/storage))
 		var/obj/item/storage/T = O
 		var/loaded = 0
+
+		if(!istype(O, /obj/item/storage/bag/tray))
+			// Non-tray dumping requires a do_after
+			to_chat(user, span_notice("You start dumping out the contents of [O] into [src]..."))
+			if(!do_after(user, 2 SECONDS, target = T))
+				return
+
 		for(var/obj/S in T.contents)
 			if(!IS_EDIBLE(S))
 				continue
@@ -358,6 +360,11 @@
 	usr.set_machine(src)
 	switch(choice)
 		if("eject")
+			// monkestation edit start: microwave "enhancements"
+			if (!can_eject)
+				balloon_alert(user, "the lock is stuck!")
+				return
+			// monkestation end
 			eject()
 		if("use")
 			cook(user)
@@ -395,6 +402,16 @@
 	for(var/atom/movable/potential_fooditem as anything in ingredients)
 		if(IS_EDIBLE(potential_fooditem))
 			non_food_ingedients--
+		/* monkestation: uncomment whenever this is ported
+		if(istype(potential_fooditem, /obj/item/modular_computer/pda) && prob(75))
+			pda_failure = TRUE
+			notify_ghosts(
+				"[cooker] has overheated their PDA!",
+				source = src,
+				notify_flags = NOTIFY_CATEGORY_NOFLASH,
+				header = "Hunger Games: Catching Fire",
+			)
+		*/
 
 	// If we're cooking non-food items we can fail randomly
 	if(length(non_food_ingedients) && prob(min(dirty * 5, 100)))
@@ -454,20 +471,38 @@
 	. = ..()
 	if((machine_stat & NOPOWER) && operating)
 		pre_fail()
-		eject()
+		eject(force = TRUE) // monkestation edit: microwave "enhancements"
 
 /obj/machinery/microwave/proc/loop_finish(mob/cooker)
 	operating = FALSE
 
 	var/metal_amount = 0
+	var/shouldnt_open = FALSE // monkestation edit: microwave "enhancements"
+	var/dont_eject = FALSE // monkestation edit: microwave "enhancements"
 	for(var/obj/item/cooked_item in ingredients)
+		// monkestation original start
+			// var/sigreturn = cooked_item.microwave_act(src, cooker, randomize_pixel_offset = ingredients.len)
+			// if(sigreturn & COMPONENT_MICROWAVE_SUCCESS)
+			// 	if(isstack(cooked_item))
+			// 		var/obj/item/stack/cooked_stack = cooked_item
+			// 		dirty += cooked_stack.amount
+			// 	else
+			// 		dirty++
+		// monkestation original end
+		// monkestation start: microwave "enhancements"
 		var/sigreturn = cooked_item.microwave_act(src, cooker, randomize_pixel_offset = ingredients.len)
 		if(sigreturn & COMPONENT_MICROWAVE_SUCCESS)
+			var/should_dirty = !(sigreturn & COMPONENT_MICROWAVE_DONTDIRTY)
 			if(isstack(cooked_item))
 				var/obj/item/stack/cooked_stack = cooked_item
-				dirty += cooked_stack.amount
+				if (should_dirty) dirty += cooked_stack.amount
 			else
-				dirty++
+				if (should_dirty) dirty++
+		if (sigreturn & COMPONENT_MICROWAVE_DONTEJECT)
+			dont_eject = TRUE
+		if (sigreturn & COMPONENT_MICROWAVE_DONTOPEN)
+			shouldnt_open = TRUE
+		// monkestation end
 
 		metal_amount += (cooked_item.custom_materials?[GET_MATERIAL_REF(/datum/material/iron)] || 0)
 
@@ -481,10 +516,10 @@
 		broken = REALLY_BROKEN
 		if(HAS_TRAIT(cooker, TRAIT_CURSED) || prob(max(metal_amount / 2, 33))) // If we're unlucky and have metal, we're guaranteed to explode
 			explosion(src, heavy_impact_range = 1, light_impact_range = 2)
-	else
+	else if (!dont_eject) // monkestation edit: microwave "enhancements" - + if (!dont_eject)
 		dump_inventory_contents()
 
-	after_finish_loop()
+	after_finish_loop(dontopen = shouldnt_open) // monkestation edit: microwave "enhancements" - () -> (dontopen = shouldnt_open)
 
 /obj/machinery/microwave/proc/pre_fail()
 	broken = REALLY_BROKEN
@@ -517,14 +552,6 @@
 /obj/machinery/microwave/proc/close()
 	open = FALSE
 	update_appearance()
-
-/// Go on top of a table if we're anchored & not varedited
-/obj/machinery/microwave/proc/set_on_table()
-	var/obj/structure/table/counter = locate(/obj/structure/table) in get_turf(src)
-	if(anchored && counter && !pixel_y)
-		pixel_y = 6
-	else if(!anchored)
-		pixel_y = initial(pixel_y)
 
 /// Type of microwave that automatically turns it self on erratically. Probably don't use this outside of the holodeck program "Microwave Paradise".
 /// You could also live your life with a microwave that will continously run in the background of everything while also not having any power draw. I think the former makes more sense.

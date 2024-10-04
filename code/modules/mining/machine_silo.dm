@@ -97,7 +97,7 @@ GLOBAL_LIST_EMPTY(silo_access_logs)
 	for(var/M in materials.materials)
 		var/datum/material/mat = M
 		var/amount = materials.materials[M]
-		var/sheets = round(amount) / MINERAL_MATERIAL_AMOUNT
+		var/sheets = round(amount) / SHEET_MATERIAL_AMOUNT
 		var/ref = REF(M)
 		if (sheets)
 			if (sheets >= 1)
@@ -173,7 +173,7 @@ GLOBAL_LIST_EMPTY(silo_access_logs)
 		var/datum/component/material_container/materials = GetComponent(/datum/component/material_container)
 		var/count = materials.retrieve_sheets(text2num(href_list["eject_amt"]), eject_sheet, drop_location())
 		var/list/matlist = list()
-		matlist[eject_sheet] = MINERAL_MATERIAL_AMOUNT
+		matlist[eject_sheet] = SHEET_MATERIAL_AMOUNT * count
 		silo_log(src, "ejected", -count, "sheets", matlist)
 		return TRUE
 	else if(href_list["page"])
@@ -229,6 +229,20 @@ GLOBAL_LIST_EMPTY(silo_access_logs)
 	for(var/each in materials)
 		materials[each] *= abs(_amount)
 	format()
+	var/list/data = list(
+		"machine_name" = machine_name,
+		"area_name" = AREACOORD(M),
+		"action" = action,
+		"amount" = abs(amount),
+		"noun" = noun,
+		"raw_materials" = get_raw_materials(""),
+		"direction" = amount < 0 ? "withdrawn" : "deposited",
+	)
+	logger.Log(
+		LOG_CATEGORY_SILO,
+		"[machine_name] in \[[AREACOORD(M)]\] [action] [abs(amount)]x [noun] | [get_raw_materials("")]",
+		data,
+	)
 
 /datum/ore_silo_log/proc/merge(datum/ore_silo_log/other)
 	if (other == src || action != other.action || noun != other.noun)
@@ -245,13 +259,14 @@ GLOBAL_LIST_EMPTY(silo_access_logs)
 
 /datum/ore_silo_log/proc/format()
 	name = "[machine_name]: [action] [amount]x [noun]"
+	formatted = "([timestamp]) <b>[machine_name]</b> in [area_name]<br>[action] [abs(amount)]x [noun]<br> [get_raw_materials("")]"
 
-	var/list/msg = list("([timestamp]) <b>[machine_name]</b> in [area_name]<br>[action] [abs(amount)]x [noun]<br>")
-	var/sep = ""
+/datum/ore_silo_log/proc/get_raw_materials(separator)
+	var/list/msg = list()
 	for(var/key in materials)
 		var/datum/material/M = key
-		var/val = round(materials[key]) / MINERAL_MATERIAL_AMOUNT
-		msg += sep
-		sep = ", "
+		var/val = round(materials[key])
+		msg += separator
+		separator = ", "
 		msg += "[amount < 0 ? "-" : "+"][val] [M.name]"
-	formatted = msg.Join()
+	return msg.Join()

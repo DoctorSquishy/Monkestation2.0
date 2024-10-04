@@ -36,28 +36,16 @@
 	is_dimorphic = FALSE
 	should_draw_greyscale = FALSE
 	bodypart_traits = list(TRAIT_DISFIGURED, TRAIT_BALD, TRAIT_SHAVED)
+	head_flags = HEAD_LIPS|HEAD_EYEHOLES|HEAD_DEBRAIN
 
 /obj/item/bodypart/head/psyker/try_attach_limb(mob/living/carbon/new_head_owner, special, abort)
 	. = ..()
 	if(!.)
 		return
 	new_head_owner.become_blind(limb_id)
-	if(!new_head_owner.dna?.species)
-		return
 
-	new_head_owner.dna.species.species_traits |= NOEYESPRITES //MAKE VISUALS TIED TO BODYPARTS ARGHH
-	new_head_owner.update_body()
-
-/obj/item/bodypart/head/psyker/drop_limb(special, dismembered)
+/obj/item/bodypart/head/psyker/drop_limb(special, dismembered, violent)
 	owner.cure_blind(limb_id)
-	if(!owner.dna?.species)
-		return ..()
-
-	if(initial(owner.dna.species.species_traits) & NOEYESPRITES)
-		return ..()
-
-	owner.dna.species.species_traits &= ~NOEYESPRITES
-	owner.update_body()
 	return ..()
 
 /// flavorful variant of psykerizing that deals damage and sends messages before calling psykerize()
@@ -141,7 +129,7 @@
 	icon_state = "chaplain"
 	force = 10
 	fire_sound = 'sound/weapons/gun/revolver/shot.ogg'
-	mag_type = /obj/item/ammo_box/magazine/internal/cylinder/rev77
+	accepted_magazine_type = /obj/item/ammo_box/magazine/internal/cylinder/rev77
 	obj_flags = UNIQUE_RENAME
 	custom_materials = null
 	actions_types = list(/datum/action/item_action/pray_refill)
@@ -185,7 +173,8 @@
 
 /obj/item/gun/ballistic/revolver/chaplain/Initialize(mapload)
 	. = ..()
-	AddComponent(/datum/component/anti_magic, MAGIC_RESISTANCE_HOLY)
+	AddComponent(/datum/component/anti_magic, MAGIC_RESISTANCE|MAGIC_RESISTANCE_HOLY)
+	AddElement(/datum/element/bane, target_type = /mob/living/basic/revenant, damage_multiplier = 0, added_damage = 25)
 	name = pick(possible_names)
 	desc = possible_names[name]
 

@@ -21,6 +21,7 @@
 	obj_damage = 50
 	melee_damage_lower = 20
 	melee_damage_upper = 20
+	melee_attack_cooldown = CLICK_CD_MELEE
 
 	// Oh you KNOW it's gonna be real green
 	lighting_cutoff_red = 10
@@ -57,6 +58,7 @@
 
 	AddElement(/datum/element/ai_retaliate)
 	AddElement(/datum/element/content_barfer)
+	AddElement(/datum/element/prevent_attacking_of_types, GLOB.typecache_general_bad_hostile_attack_targets, "this tastes awful!") // MONKESTATION ADDITION
 
 	disguise_ability = new(src)
 	disguise_ability.Grant(src)
@@ -145,7 +147,7 @@
 	SIGNAL_HANDLER
 
 	// linters hate this if it's not async for some reason even though nothing blocks
-	INVOKE_ASYNC(disguise_ability, TYPE_PROC_REF(/datum/action/cooldown, InterceptClickOn), caller = source, target = target)
+	INVOKE_ASYNC(disguise_ability, TYPE_PROC_REF(/datum/action/cooldown, InterceptClickOn), user = source, target = target)
 	return COMSIG_MOB_CANCEL_CLICKON
 
 /// Handles the logic for attacking anything.
@@ -199,7 +201,7 @@
 /// Only real human-powered intelligence is capable of playing prop hunt in SS13 (until further notice).
 /datum/ai_controller/basic_controller/morph
 	blackboard = list(
-		BB_TARGETTING_DATUM = new /datum/targetting_datum/basic,
+		BB_TARGETING_STRATEGY = /datum/targeting_strategy/basic,
 	)
 
 	ai_movement = /datum/ai_movement/basic_avoidance

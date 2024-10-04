@@ -19,7 +19,7 @@
 #define THERMAL_PROTECTION_HAND_RIGHT 0.025
 
 /mob/living/carbon/human/Life(seconds_per_tick = SSMOBS_DT, times_fired)
-	if(notransform)
+	if(HAS_TRAIT(src, TRAIT_NO_TRANSFORM))
 		return
 
 	. = ..()
@@ -29,7 +29,7 @@
 	//Body temperature stability and damage
 	dna.species.handle_body_temperature(src, seconds_per_tick, times_fired)
 
-	if(!IS_IN_STASIS(src))
+	if(!HAS_TRAIT(src, TRAIT_STASIS))
 		if(.) //not dead
 
 			for(var/datum/mutation/human/HM in dna.mutations) // Handle active genes
@@ -48,6 +48,7 @@
 
 	//Update our name based on whether our face is obscured/disfigured
 	name = get_visible_name()
+	update_name_tag(name) // monkestation edit: name tags
 
 	if(stat != DEAD)
 		return TRUE

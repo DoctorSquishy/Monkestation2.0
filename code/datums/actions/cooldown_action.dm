@@ -66,10 +66,10 @@
 /datum/action/cooldown/create_button()
 	var/atom/movable/screen/movable/action_button/button = ..()
 	button.maptext = ""
-	button.maptext_x = 6
+	button.maptext_x = 4
 	button.maptext_y = 2
-	button.maptext_width = 24
-	button.maptext_height = 12
+	button.maptext_width = 32
+	button.maptext_height = 16
 	return button
 
 /datum/action/cooldown/update_button_status(atom/movable/screen/movable/action_button/button, force = FALSE)
@@ -79,9 +79,9 @@
 		button.maptext = ""
 	else
 		if (cooldown_rounding > 0)
-			button.maptext = MAPTEXT("<b>[round(time_left/10, cooldown_rounding)]</b>")
+			button.maptext = MAPTEXT_TINY_UNICODE("[round(time_left/10, cooldown_rounding)]")
 		else
-			button.maptext = MAPTEXT("<b>[round(time_left/10)]</b>")
+			button.maptext = MAPTEXT_TINY_UNICODE("[round(time_left/10)]")
 
 	if(!IsAvailable() || !is_action_active(button))
 		return
@@ -177,6 +177,8 @@
 /// Starts a cooldown time for other abilities that share a cooldown with this. Has some niche usage with more complicated attack ai!
 /// Will use default cooldown time if an override is not specified
 /datum/action/cooldown/proc/StartCooldownOthers(override_cooldown_time)
+	if(!length(owner.actions))
+		return // Possible if they have an action they don't control
 	for(var/datum/action/cooldown/shared_ability in owner.actions - src)
 		if(!(shared_cooldown & shared_ability.shared_cooldown))
 			continue
@@ -220,7 +222,7 @@
 	return PreActivate(user)
 
 /// Intercepts client owner clicks to activate the ability
-/datum/action/cooldown/proc/InterceptClickOn(mob/living/caller, params, atom/target)
+/datum/action/cooldown/proc/InterceptClickOn(mob/living/user, params, atom/target)
 	if(!IsAvailable(feedback = TRUE))
 		return FALSE
 	if(!target)
@@ -231,8 +233,8 @@
 
 	// And if we reach here, the action was complete successfully
 	if(unset_after_click)
-		unset_click_ability(caller, refund_cooldown = FALSE)
-	caller.next_click = world.time + click_cd_override
+		unset_click_ability(user, refund_cooldown = FALSE)
+	user.next_click = world.time + click_cd_override
 
 	return TRUE
 
@@ -264,7 +266,7 @@
 		return COMPONENT_HOSTILE_NO_ATTACK
 
 /datum/action/cooldown/process()
-	if(!owner || (next_use_time - world.time) <= 0)
+	if(QDELETED(owner) || (next_use_time - world.time) <= 0)
 		build_all_button_icons(UPDATE_BUTTON_STATUS)
 		STOP_PROCESSING(SSfastprocess, src)
 		return

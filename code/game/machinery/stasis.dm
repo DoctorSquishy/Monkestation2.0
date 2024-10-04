@@ -22,6 +22,7 @@
 
 /obj/machinery/stasis/Initialize(mapload)
 	. = ..()
+	AddElement(/datum/element/elevation, pixel_shift = 6)
 	for(var/direction in GLOB.alldirs)
 		op_computer = locate(/obj/machinery/computer/operating) in get_step(src, direction)
 		if(op_computer)
@@ -68,7 +69,7 @@
 /obj/machinery/stasis/Exited(atom/movable/gone, direction)
 	if(gone == occupant)
 		var/mob/living/L = gone
-		if(IS_IN_STASIS(L))
+		if(HAS_TRAIT(L, TRAIT_STASIS))
 			thaw_them(L)
 	return ..()
 
@@ -137,19 +138,21 @@
 	if(target == occupant)
 		update_use_power(IDLE_POWER_USE)
 
-/obj/machinery/stasis/post_buckle_mob(mob/living/L)
-	if(!can_be_occupant(L))
+/obj/machinery/stasis/post_buckle_mob(mob/living/buckled)
+	if(!can_be_occupant(buckled))
 		return
-	set_occupant(L)
+	set_occupant(buckled)
 	if(stasis_running() && check_nap_violations())
-		chill_out(L)
+		chill_out(buckled)
 	update_appearance()
+	buckled.pixel_y -= 2
 
-/obj/machinery/stasis/post_unbuckle_mob(mob/living/L)
-	thaw_them(L)
-	if(L == occupant)
+/obj/machinery/stasis/post_unbuckle_mob(mob/living/buckled)
+	thaw_them(buckled)
+	if(buckled == occupant)
 		set_occupant(null)
 	update_appearance()
+	buckled.pixel_y += 2
 
 /obj/machinery/stasis/process()
 	if(!(occupant && isliving(occupant) && check_nap_violations()))
@@ -157,9 +160,9 @@
 		return
 	var/mob/living/L_occupant = occupant
 	if(stasis_running())
-		if(!IS_IN_STASIS(L_occupant))
+		if(!HAS_TRAIT(L_occupant, TRAIT_STASIS))
 			chill_out(L_occupant)
-	else if(IS_IN_STASIS(L_occupant))
+	else if(HAS_TRAIT(L_occupant, TRAIT_STASIS))
 		thaw_them(L_occupant)
 
 /obj/machinery/stasis/screwdriver_act(mob/living/user, obj/item/I)

@@ -82,6 +82,17 @@ INITIALIZE_IMMEDIATE(/mob/living/carbon/human/dummy)
 /mob/living/carbon/human/dummy/log_mob_tag(text)
 	return
 
+
+/mob/living/carbon/human/dummy/apply_height_filters(image/appearance, only_apply_in_prefs = FALSE)
+	if(QDELETED(src))
+		return
+	if(only_apply_in_prefs)
+		return ..()
+
+// Not necessary with above
+/mob/living/carbon/human/dummy/apply_height_offsets(image/appearance, upper_torso)
+	return
+
 /proc/create_consistent_human_dna(mob/living/carbon/human/target)
 	target.dna.initialize_dna(skip_index = TRUE)
 	target.dna.features["body_markings"] = "None"
@@ -100,6 +111,8 @@ INITIALIZE_IMMEDIATE(/mob/living/carbon/human/dummy)
 	target.dna.features["tail_lizard"] = "Smooth"
 	target.dna.features["tail_monkey"] = "Chimp" //Monkestation Addition
 	target.dna.features["pod_hair"] = "Ivy"
+	target.dna.features["ethereal_horns"] = "None" //Monkestation Addition
+	target.dna.features["ethereal_tail"] = "None" //Monkestation Addition
 	target.dna.features["ipc_screen"] = "BSOD" //Monkestation Addition
 	target.dna.features["ipc_chassis"] = "Bishop Cyberkinetics" //Monkestation Addition
 	target.dna.features["ipc_antenna"] = "None" //Monkestation Addition
@@ -109,6 +122,10 @@ INITIALIZE_IMMEDIATE(/mob/living/carbon/human/dummy)
 	target.dna.features["arachnid_appendages"] = "Long" //Monkestation Addition
 	target.dna.features["arachnid_chelicerae"] = "Basic" //Monkestation Addition
 	target.dna.features["goblin_ears"] = "Normal" //Monkestation Addition
+	target.dna.features["floran_leaves"] = "Furnivour" //Monkestation Addition
+	target.dna.features["satyr_fluff"] = "Normal" //Monkestation Addition
+	target.dna.features["satyr_tail"] = "Short" //Monkestation Addition
+	target.dna.features["satyr_horns"] = "Back" //Monkestation Addition
 
 /// Provides a dummy that is consistently bald, white, naked, etc.
 /mob/living/carbon/human/dummy/consistent
@@ -196,3 +213,7 @@ GLOBAL_LIST_EMPTY(dummy_mob_list)
 	bound_height = 64
 
 	var/list/extra_bodyparts = list()
+
+/mob/living/carbon/human/dummy/extra_tall/Destroy()
+	. = ..()
+	extra_bodyparts = null

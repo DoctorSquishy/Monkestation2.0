@@ -77,8 +77,9 @@
 	required_temp = 450
 	strengthdiv = 3
 
-/datum/chemical_reaction/reagent_explosion/tatp/update_info()
-	required_temp = 450 + rand(-49,49)  //this gets loaded only on round start
+/datum/chemical_reaction/reagent_explosion/tatp/New()
+	. = ..()
+	required_temp = 450 + rand(-49, 49)
 
 /datum/chemical_reaction/reagent_explosion/tatp/on_reaction(datum/reagents/holder, datum/equilibrium/reaction, created_volume)
 	if(holder.has_reagent(/datum/reagent/exotic_stabilizer,round(created_volume / 50, CHEMICAL_QUANTISATION_LEVEL))) // we like exotic stabilizer
@@ -91,14 +92,14 @@
 	required_temp = 550 // this makes making tatp before pyro nades, and extreme pain in the ass to make
 	strengthdiv = 3
 
+/datum/chemical_reaction/reagent_explosion/tatp_explosion/New()
+	. = ..()
+	required_temp = 550 + rand(-49, 49)
+
 /datum/chemical_reaction/reagent_explosion/tatp_explosion/on_reaction(datum/reagents/holder, datum/equilibrium/reaction, created_volume)
 	var/strengthdiv_adjust = created_volume / ( 2100 / initial(strengthdiv))
-	strengthdiv = max(initial(strengthdiv) - strengthdiv_adjust + 1.5 ,1.5) //Slightly better than nitroglycerin
-	. = ..()
-	return
-
-/datum/chemical_reaction/reagent_explosion/tatp_explosion/update_info()
-	required_temp = 550 + rand(-49,49)
+	strengthdiv = max(initial(strengthdiv) - strengthdiv_adjust + 1.5, 1.5) // Slightly better than nitroglycerin.
+	return ..()
 
 /datum/chemical_reaction/reagent_explosion/penthrite_explosion_epinephrine
 	required_reagents = list(/datum/reagent/medicine/c2/penthrite = 1, /datum/reagent/medicine/epinephrine = 1)
@@ -125,16 +126,16 @@
 		///special size for anti cult effect
 		var/effective_size = round(created_volume/48)
 		playsound(T, 'sound/effects/pray.ogg', 80, FALSE, effective_size)
-		for(var/mob/living/simple_animal/revenant/R in get_hearers_in_view(7,T))
+		for(var/mob/living/basic/revenant/ghostie in get_hearers_in_view(7,T))
 			var/deity
 			if(GLOB.deity)
 				deity = GLOB.deity
 			else
 				deity = "Christ"
-			to_chat(R, span_userdanger("The power of [deity] compels you!"))
-			R.stun(20)
-			R.reveal(100)
-			R.adjustHealth(50)
+			to_chat(ghostie, span_userdanger("The power of [deity] compels you!"))
+			ghostie.apply_status_effect(/datum/status_effect/incapacitating/paralyzed/revenant, 2 SECONDS)
+			ghostie.apply_status_effect(/datum/status_effect/revenant/revealed, 10 SECONDS)
+			ghostie.adjust_health(50)
 		for(var/mob/living/carbon/C in get_hearers_in_view(effective_size,T))
 			if(IS_CULTIST(C))
 				to_chat(C, span_userdanger("The divine explosion sears you!"))
@@ -294,7 +295,7 @@
 	var/range = created_volume/3
 	if(isatom(holder.my_atom))
 		var/atom/A = holder.my_atom
-		A.flash_lighting_fx(_range = (range + 2))
+		A.flash_lighting_fx(range = (range + 2))
 	for(var/mob/living/C in get_hearers_in_view(range, location))
 		if(C.flash_act(affect_silicon = TRUE))
 			if(get_dist(C, location) < 4)
@@ -314,7 +315,7 @@
 	var/range = created_volume/10
 	if(isatom(holder.my_atom))
 		var/atom/A = holder.my_atom
-		A.flash_lighting_fx(_range = (range + 2))
+		A.flash_lighting_fx(range = (range + 2))
 	for(var/mob/living/C in get_hearers_in_view(range, location))
 		if(C.flash_act(affect_silicon = TRUE))
 			if(get_dist(C, location) < 4)

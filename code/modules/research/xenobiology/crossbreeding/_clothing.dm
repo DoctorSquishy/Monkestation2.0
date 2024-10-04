@@ -74,7 +74,7 @@ Slimecrossing Armor
 	if(!IsAvailable(feedback = TRUE))
 		return
 	var/obj/item/clothing/glasses/prism_glasses/glasses = target
-	var/new_color = input(owner, "Choose the lens color:", "Color change",glasses.glasses_color) as color|null
+	var/new_color = tgui_color_picker(owner, "Choose the lens color:", "Color change", glasses.glasses_color)
 	if(!new_color)
 		return
 	glasses.glasses_color = new_color
@@ -140,12 +140,12 @@ Slimecrossing Armor
 	worn_icon = 'icons/mob/clothing/suits/armor.dmi'
 	inhand_icon_state = null
 	flags_inv = NONE
-	obj_flags = IMMUTABLE_SLOW
+	item_flags = IMMUTABLE_SLOW
 	slowdown = 4
 	var/hit_reflect_chance = 40
 
 /obj/item/clothing/suit/armor/heavy/adamantine/IsReflect(def_zone)
-	if(def_zone in list(BODY_ZONE_CHEST, BODY_ZONE_R_ARM, BODY_ZONE_L_ARM, BODY_ZONE_R_LEG, BODY_ZONE_L_LEG) && prob(hit_reflect_chance))
+	if((def_zone in list(BODY_ZONE_CHEST, BODY_ZONE_R_ARM, BODY_ZONE_L_ARM, BODY_ZONE_R_LEG, BODY_ZONE_L_LEG)) && prob(hit_reflect_chance))
 		return TRUE
 	else
 		return FALSE

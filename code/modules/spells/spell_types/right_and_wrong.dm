@@ -172,7 +172,7 @@ GLOBAL_LIST_INIT(summoned_magic_objectives, list(
 		else
 			message_admins("Summon Ghosts was triggered!")
 			log_game("Summon Ghosts was triggered!")
-		ghost_event.runEvent()
+		ghost_event.run_event(event_cause = "a wizard's incantation")
 	else
 		stack_trace("Unable to run summon ghosts, due to being unable to locate the associated event.")
 		if(user)
@@ -266,7 +266,7 @@ GLOBAL_LIST_INIT(summoned_magic_objectives, list(
 /datum/summon_things_controller/New()
 	RegisterSignal(SSdcs, COMSIG_GLOB_CREWMEMBER_JOINED, PROC_REF(on_latejoin))
 
-/datum/summon_things_controller/Destroy(force, ...)
+/datum/summon_things_controller/Destroy(force)
 	. = ..()
 	UnregisterSignal(SSdcs, COMSIG_GLOB_CREWMEMBER_JOINED)
 

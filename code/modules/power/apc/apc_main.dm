@@ -176,7 +176,7 @@
 		name = "\improper [get_area_name(area, TRUE)] APC"
 
 	//Initialize its electronics
-	wires = new /datum/wires/apc(src)
+	set_wires(new /datum/wires/apc(src))
 	alarm_manager = new(src)
 	AddElement(/datum/element/atmos_sensitive, mapload)
 	// for apcs created during map load make them fully functional
@@ -264,6 +264,11 @@
 /obj/machinery/power/apc/examine(mob/user)
 	. = ..()
 	if(machine_stat & BROKEN)
+		if(opened != APC_COVER_REMOVED)
+			. += "The cover is broken and can probably be <i>pried</i> off with enough force."
+			return
+		if(terminal && has_electronics)
+			. += "The cover is missing but can be replaced using a new frame."
 		return
 	if(opened)
 		if(has_electronics && terminal)
@@ -448,11 +453,13 @@
 			update()
 		if("emergency_lighting")
 			emergency_lights = !emergency_lights
-			for(var/obj/machinery/light/L in area)
-				if(!initial(L.no_low_power)) //If there was an override set on creation, keep that override
-					L.no_low_power = emergency_lights
-					INVOKE_ASYNC(L, TYPE_PROC_REF(/obj/machinery/light/, update), FALSE)
-				CHECK_TICK
+			for (var/list/zlevel_turfs as anything in area.get_zlevel_turf_lists())
+				for(var/turf/area_turf as anything in zlevel_turfs)
+					for(var/obj/machinery/light/area_light in area_turf)
+						if(!initial(area_light.no_low_power)) //If there was an override set on creation, keep that override
+							area_light.no_low_power = emergency_lights
+							INVOKE_ASYNC(area_light, TYPE_PROC_REF(/obj/machinery/light/, update), FALSE)
+					CHECK_TICK
 	return TRUE
 
 /obj/machinery/power/apc/ui_close(mob/user)
@@ -652,10 +659,12 @@
 		INVOKE_ASYNC(src, PROC_REF(break_lights))
 
 /obj/machinery/power/apc/proc/break_lights()
-	for(var/obj/machinery/light/breaked_light in area)
-		breaked_light.on = TRUE
-		breaked_light.break_light_tube()
-		stoplag()
+	for (var/list/zlevel_turfs as anything in area.get_zlevel_turf_lists())
+		for(var/turf/area_turf as anything in zlevel_turfs)
+			for(var/obj/machinery/light/breaked_light in area_turf)
+				breaked_light.on = TRUE
+				breaked_light.break_light_tube()
+				stoplag()
 
 /obj/machinery/power/apc/should_atmos_process(datum/gas_mixture/air, exposed_temperature)
 	return (exposed_temperature > 2000)
@@ -707,7 +716,7 @@
 
 /// Used for full_charge apc helper, which sets apc charge to 100%.
 /obj/machinery/power/apc/proc/set_full_charge()
-	cell.charge = 100
+	cell.charge = cell.maxcharge
 
 /*Power module, used for APC construction*/
 /obj/item/electronics/apc

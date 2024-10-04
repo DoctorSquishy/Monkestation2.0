@@ -81,9 +81,13 @@
 	for(var/turf/cordon_turf as anything in cordon_turfs)
 		var/area/misc/cordon/cordon_area = GLOB.areas_by_type[/area/misc/cordon] || new
 		var/area/old_area = cordon_turf.loc
-		old_area.turfs_to_uncontain += cordon_turf
-		cordon_area.contained_turfs += cordon_turf
+
+		LISTASSERTLEN(old_area.turfs_to_uncontain_by_zlevel, cordon_turf.z, list())
+		LISTASSERTLEN(cordon_area.turfs_by_zlevel, cordon_turf.z, list())
+		old_area.turfs_to_uncontain_by_zlevel[cordon_turf.z] += cordon_turf
+		cordon_area.turfs_by_zlevel[cordon_turf.z] += cordon_turf
 		cordon_area.contents += cordon_turf
+
 		// Its no longer unused, but its also not "used"
 		cordon_turf.turf_flags &= ~UNUSED_RESERVATION_TURF
 		cordon_turf.ChangeTurf(/turf/cordon, /turf/cordon)
@@ -100,7 +104,7 @@
 	SHOULD_CALL_PARENT(TRUE)
 	//Okay so hear me out. If we place a special turf IN the reserved area, it will be overwritten, so we can't do that
 	//But signals are preserved even between turf changes, so even if we register a signal now it will stay even if that turf is overriden by the template
-	RegisterSignals(pre_cordon_turf, list(COMSIG_PARENT_QDELETING, COMSIG_TURF_RESERVATION_RELEASED), PROC_REF(on_stop_repel))
+	RegisterSignals(pre_cordon_turf, list(COMSIG_QDELETING, COMSIG_TURF_RESERVATION_RELEASED), PROC_REF(on_stop_repel))
 
 /datum/turf_reservation/proc/on_stop_repel(turf/pre_cordon_turf)
 	SHOULD_CALL_PARENT(TRUE)
@@ -110,12 +114,12 @@
 
 ///Unregister all the signals we added in RegisterRepelSignals
 /datum/turf_reservation/proc/stop_repel(turf/pre_cordon_turf)
-	UnregisterSignal(pre_cordon_turf, list(COMSIG_PARENT_QDELETING, COMSIG_TURF_RESERVATION_RELEASED))
+	UnregisterSignal(pre_cordon_turf, list(COMSIG_QDELETING, COMSIG_TURF_RESERVATION_RELEASED))
 
 /datum/turf_reservation/transit/make_repel(turf/pre_cordon_turf)
 	..()
 
-	RegisterSignal(pre_cordon_turf, COMSIG_ATOM_ENTERED, PROC_REF(space_dump))
+	RegisterSignal(pre_cordon_turf, COMSIG_ATOM_ENTERED, PROC_REF(space_dump_soft))
 
 /datum/turf_reservation/transit/stop_repel(turf/pre_cordon_turf)
 	..()
@@ -127,6 +131,11 @@
 
 	dump_in_space(enterer)
 
+/datum/turf_reservation/transit/proc/space_dump_soft(atom/source, atom/movable/enterer)
+	SIGNAL_HANDLER
+
+	if(!HAS_TRAIT(enterer, TRAIT_FREE_HYPERSPACE_SOFTCORDON_MOVEMENT))
+		space_dump(source, enterer)
 
 /// Internal proc which handles reserving the area for the reservation.
 /datum/turf_reservation/proc/_reserve_area(width, height, zlevel)

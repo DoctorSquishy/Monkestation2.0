@@ -1,7 +1,7 @@
 /obj/item/reagent_containers/spray
 	name = "spray bottle"
 	desc = "A spray bottle, with an unscrewable top."
-	icon = 'icons/obj/janitor.dmi'
+	icon = 'icons/obj/service/janitor.dmi'
 	icon_state = "sprayer_large"
 	inhand_icon_state = "cleaner"
 	worn_icon_state = "spraybottle"
@@ -28,7 +28,7 @@
 
 /obj/item/reagent_containers/spray/afterattack(atom/target, mob/user, proximity_flag, click_parameters)
 	. = ..()
-	if(istype(target, /obj/structure/sink) || istype(target, /obj/structure/mop_bucket/janitorialcart) || istype(target, /obj/machinery/hydroponics))
+	if(istype(target, /obj/structure/sink) || istype(target, /obj/structure/mop_bucket/janitorialcart))
 		return
 
 	. |= AFTERATTACK_PROCESSED_ITEM
@@ -89,7 +89,7 @@
 	reagent_puff.sprayer = src
 	reagent_puff.lifetime = puff_reagent_left
 	reagent_puff.stream = stream_mode
-	reagent_puff.RegisterSignal(our_loop, COMSIG_PARENT_QDELETING, TYPE_PROC_REF(/obj/effect/decal/chempuff, loop_ended))
+	reagent_puff.RegisterSignal(our_loop, COMSIG_QDELETING, TYPE_PROC_REF(/obj/effect/decal/chempuff, loop_ended))
 	reagent_puff.RegisterSignal(our_loop, COMSIG_MOVELOOP_POSTPROCESS, TYPE_PROC_REF(/obj/effect/decal/chempuff, check_move))
 
 /obj/item/reagent_containers/spray/attack_self(mob/user)

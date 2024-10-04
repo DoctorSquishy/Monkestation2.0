@@ -39,7 +39,7 @@
 		var/datum/action/added_action = item_parent.add_item_action(action)
 		linked_action_ref = WEAKREF(added_action)
 
-/datum/component/cult_ritual_item/Destroy(force, silent)
+/datum/component/cult_ritual_item/Destroy(force)
 	cleanup_shields()
 	QDEL_NULL(linked_action_ref)
 	return ..()
@@ -51,7 +51,7 @@
 	RegisterSignal(parent, COMSIG_ITEM_ATTACK_EFFECT, PROC_REF(try_clear_rune))
 
 	if(examine_message)
-		RegisterSignal(parent, COMSIG_PARENT_EXAMINE, PROC_REF(on_examine))
+		RegisterSignal(parent, COMSIG_ATOM_EXAMINE, PROC_REF(on_examine))
 
 /datum/component/cult_ritual_item/UnregisterFromParent()
 	UnregisterSignal(parent, list(
@@ -59,11 +59,11 @@
 		COMSIG_ITEM_ATTACK,
 		COMSIG_ITEM_ATTACK_OBJ,
 		COMSIG_ITEM_ATTACK_EFFECT,
-		COMSIG_PARENT_EXAMINE,
+		COMSIG_ATOM_EXAMINE,
 		))
 
 /*
- * Signal proc for [COMSIG_PARENT_EXAMINE].
+ * Signal proc for [COMSIG_ATOM_EXAMINE].
  * Gives the examiner, if they're a cultist, our set examine message.
  * Usually, this will include various instructions on how to use the thing.
  */
@@ -304,7 +304,7 @@
 		)
 
 	if(cultist.blood_volume)
-		cultist.apply_damage(initial(rune_to_scribe.scribe_damage), BRUTE, pick(BODY_ZONE_L_ARM, BODY_ZONE_R_ARM), wound_bonus = CANT_WOUND) // *cuts arm* *bone explodes* ever have one of those days?
+		cultist.apply_damage(initial(rune_to_scribe.scribe_damage), BRUTE, pick(GLOB.arm_zones), wound_bonus = CANT_WOUND) // *cuts arm* *bone explodes* ever have one of those days?
 
 	var/scribe_mod = initial(rune_to_scribe.scribe_delay)
 	if(!initial(rune_to_scribe.no_scribe_boost) && (our_turf.type in turfs_that_boost_us))
@@ -357,9 +357,22 @@
 	if(!check_if_in_ritual_site(cultist, cult_team))
 		return FALSE
 	var/area/summon_location = get_area(cultist)
-	priority_announce("Figments from an eldritch god are being summoned by [cultist.real_name] into [summon_location.get_original_area_name()] from an unknown dimension. Disrupt the ritual at all costs!", "Central Command Higher Dimensional Affairs", ANNOUNCER_SPANOMALIES, has_important_message = TRUE)
+	priority_announce(
+		text = "Figments from an eldritch god are being summoned by [cultist.real_name] into [summon_location.get_original_area_name()] from an unknown dimension. Disrupt the ritual at all costs!",
+		sound = 'sound/ambience/antag/bloodcult/bloodcult_scribe.ogg',
+		sender_override = "[command_name()] Higher Dimensional Affairs",
+		has_important_message = TRUE,
+	)
 	for(var/shielded_turf in spiral_range_turfs(1, cultist, 1))
 		LAZYADD(shields, new /obj/structure/emergency_shield/cult/narsie(shielded_turf))
+
+	notify_ghosts(
+		"[cultist] has begun scribing a Nar'Sie rune!",
+		source = cultist,
+		action = NOTIFY_ORBIT,
+		header = "Maranax Infirmux!",
+		notify_flags = NOTIFY_CATEGORY_NOFLASH,
+	)
 
 	return TRUE
 

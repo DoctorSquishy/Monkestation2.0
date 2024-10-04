@@ -18,7 +18,7 @@
 /datum/supply_pack/imports/wt550
 	name = "WT-550 Autorifle Crate"
 	desc = "A proper ballistic option for a proper ballistic officer."
-	cost = CARGO_CRATE_VALUE * 30
+	cost = CARGO_CRATE_VALUE * 21
 	contains = list(
 		/obj/item/gun/ballistic/automatic/wt550/no_mag = 2,
 		/obj/item/ammo_box/magazine/wt550m9/wtrub = 4,
@@ -51,6 +51,35 @@
 		/obj/item/ammo_box/magazine/wt550m9/wtic = 2,
 	)
 	crate_name = "wt-550 ammo crate"
+	access = ACCESS_ARMORY
+	access_view = ACCESS_ARMORY
+	crate_type = /obj/structure/closet/crate/secure/weapon
+
+
+/datum/supply_pack/imports/Lrevolvercrate
+	name = "Long Revolver Crate"
+	desc = "We got these old revolvers from a unnamed man, enjoy them"
+	cost = CARGO_CRATE_VALUE * 10
+	contains = list(
+		/obj/item/gun/ballistic/revolver/r45l = 2,
+		/obj/item/ammo_box/g45l = 1,
+		/obj/item/ammo_box/g45l/rubber = 1,
+	)
+	crate_name = "Long Revolver crate"
+	access = ACCESS_ARMORY
+	access_view = ACCESS_ARMORY
+	crate_type = /obj/structure/closet/crate/secure/weapon
+
+/datum/supply_pack/imports/Briflecrate
+	name = "Bush Rifle Crate"
+	desc = "These old rifles were sold to us by a unnamed man, quite the bargin"
+	cost = CARGO_CRATE_VALUE * 7
+	contains = list(
+		/obj/item/gun/ballistic/shotgun/leveraction = 3,
+		/obj/item/ammo_box/g45l = 2,
+		/obj/item/ammo_box/g45l/rubber = 1,
+	)
+	crate_name = "Bush Rifle crate"
 	access = ACCESS_ARMORY
 	access_view = ACCESS_ARMORY
 	crate_type = /obj/structure/closet/crate/secure/weapon

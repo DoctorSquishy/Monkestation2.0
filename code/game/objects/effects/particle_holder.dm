@@ -22,7 +22,7 @@
 	var/atom/movable/lie_about_areas = loc
 	lie_about_areas.vis_contents += src
 	if(!ismovable(loc))
-		RegisterSignal(loc, COMSIG_PARENT_QDELETING, PROC_REF(immovable_deleted))
+		RegisterSignal(loc, COMSIG_QDELETING, PROC_REF(immovable_deleted))
 
 	if(particle_flags & PARTICLE_ATTACH_MOB)
 		RegisterSignal(loc, COMSIG_MOVABLE_MOVED, PROC_REF(on_move))
@@ -55,7 +55,6 @@
 		var/mob/particle_mob = attached.loc
 		particle_mob.vis_contents += src
 
-/// Sets the particles position to the passed coordinate list (X, Y, Z)
-/// See [https://www.byond.com/docs/ref/#/{notes}/particles] for position documentation
-/obj/effect/abstract/particle_holder/proc/set_particle_position(list/pos)
-	particles.position = pos
+/// Sets the particles position to the passed coordinates
+/obj/effect/abstract/particle_holder/proc/set_particle_position(x = 0, y = 0, z = 0)
+	particles.position = list(x, y, z)

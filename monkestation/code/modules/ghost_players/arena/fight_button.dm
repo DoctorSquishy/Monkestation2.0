@@ -1,6 +1,6 @@
 /obj/structure/fight_button
 	name = "duel requestor 3000"
-	desc = "A button that displays your intent to duel aswell as the weapon of choice and stakes of the duel."
+	desc = "A button that displays your intent to duel as well as the weapon of choice and stakes of the duel."
 
 	icon_state = "comp_button1"
 	icon = 'goon/icons/obj/mechcomp.dmi'
@@ -15,12 +15,23 @@
 	var/obj/item/weapon_of_choice = /obj/item/storage/toolbox
 	///the wager in monkecoins thats paid out to the winner
 	var/payout = 0
+	///list of weakrefs to spawned weapons for deletion on duel end
+	var/list/spawned_weapons = list()
 
+	///what weapons can players choose to duel with
 	var/list/weapon_choices = list(
 		/obj/item/storage/toolbox,
 		/obj/item/knife/shiv,
 		/obj/item/grenade/clusterbuster,
 		/obj/item/spear/bamboospear,
+		/obj/item/reagent_containers/spray/chemsprayer/magical, //unsure if this would cause issues but they do already have access to a full chem lab so it should be fine
+//		/obj/item/gun/energy/laser/instakill, //first to hit the other wins, very fast matches
+		/obj/item/melee/baton/security/loaded,
+		/obj/item/chainsaw,
+		/obj/item/melee/energy/sword/saber,
+		/obj/item/book/granter/martial/cqc/fast_read,
+		/obj/item/gun/ballistic/revolver,
+		/obj/item/melee/energy/axe,
 	)
 
 /obj/structure/fight_button/Initialize(mapload)
@@ -106,8 +117,8 @@
 
 /obj/structure/fight_button/proc/set_rules(mob/living/carbon/human/ghost/user)
 	var/max_amount = user.client.prefs.metacoins
-	var/choice = tgui_input_number(user, "How much would you like to wager?", "[src.name]", 100, max_amount, 100)
-	if(!choice)
+	var/choice = tgui_input_number(user, "How much would you like to wager?", "[src.name]", default = min(max_amount, 100), max_value = max_amount, min_value = 0)
+	if(!isnum(choice))
 		return FALSE
 	payout = choice
 
@@ -123,37 +134,37 @@
 		say("One or more of the players have left the area, match has been cancelled!")
 		return
 
-
 	if(!player_one.client.prefs.adjust_metacoins(player_one.ckey, -payout, "Added to the Payout"))
 		return
-	if(!player_two.client.prefs.adjust_metacoins(player_one.ckey, -payout, "Added to the Payout"))
+	if(!player_two.client.prefs.adjust_metacoins(player_two.ckey, -payout, "Added to the Payout"))
 		player_one.client.prefs.adjust_metacoins(player_one.ckey, payout, "Opponent left, reimbursed.")
 		return
 
+	var/turf/player_one_spot = locate(148, 34, SSmapping.levels_by_trait(ZTRAIT_CENTCOM)[1])
+	prep_player(player_one, player_one_spot)
+	var/turf/player_two_spot = locate(164, 34, SSmapping.levels_by_trait(ZTRAIT_CENTCOM)[1])
+	prep_player(player_two, player_two_spot)
 
-	player_one.unequip_everything()
-	player_one.fully_heal()
+/obj/structure/fight_button/proc/prep_player(mob/living/carbon/human/ghost/player, turf/move_to)
+	player.unequip_everything()
+	player.fully_heal()
 
-	player_two.unequip_everything()
-	player_two.fully_heal()
+	if(HAS_TRAIT(player, TRAIT_PACIFISM))
+		to_chat(player, span_notice("Your pacifism has been removed."))
+		// null will remove the trait from all sources
+		REMOVE_TRAIT(player, TRAIT_PACIFISM, null)
 
-	var/obj/item/one_weapon = new weapon_of_choice(src)
-	var/turf/one_spot = locate(148, 34, SSmapping.levels_by_trait(ZTRAIT_CENTCOM)[1])
-	player_one.forceMove(one_spot)
-	player_one.equipOutfit(/datum/outfit/job/assistant)
-	player_one.put_in_active_hand(one_weapon, TRUE)
-	player_one.dueling = TRUE
-
-	var/obj/item/two_weapon = new weapon_of_choice(src)
-	var/turf/two_spot = locate(164, 34, SSmapping.levels_by_trait(ZTRAIT_CENTCOM)[1])
-	player_two.forceMove(two_spot)
-	player_two.equipOutfit(/datum/outfit/job/assistant)
-	player_two.put_in_active_hand(two_weapon, TRUE)
-	player_two.dueling = TRUE
+	var/obj/item/weapon = new weapon_of_choice(src)
+	spawned_weapons += WEAKREF(weapon)
+	player.forceMove(move_to)
+	player.equipOutfit(/datum/outfit/ghost_player)
+	player.put_in_active_hand(weapon, TRUE)
+	player.dueling = TRUE
+	SEND_SIGNAL(player, COMSIG_HUMAN_BEGIN_DUEL)
 
 /obj/structure/fight_button/proc/end_duel(mob/living/carbon/human/ghost/loser)
 	if(loser == player_one)
-		player_two.client.prefs.adjust_metacoins(player_one.ckey, payout * 2, "Won Duel.", donator_multipler = FALSE)
+		player_two.client.prefs.adjust_metacoins(player_two.ckey, payout * 2, "Won Duel.", donator_multipler = FALSE)
 	else if(loser == player_two)
 		player_one.client.prefs.adjust_metacoins(player_one.ckey, payout * 2, "Won Duel.", donator_multipler = FALSE)
 	addtimer(CALLBACK(src, GLOBAL_PROC_REF(reset_arena_area)), 5 SECONDS)
@@ -162,9 +173,15 @@
 	player_two.linked_button = null
 	player_one.dueling = FALSE
 	player_two.dueling = FALSE
+	SEND_SIGNAL(player_one, COMSIG_HUMAN_END_DUEL)
+	SEND_SIGNAL(player_two, COMSIG_HUMAN_END_DUEL)
 
 	player_one = null
 	player_two = null
 
 	payout = 0
 	update_maptext()
+	for(var/datum/weakref/weapon in spawned_weapons)
+		var/obj/item/spawned_weapon = weapon?.resolve()
+		if(spawned_weapon)
+			qdel(spawned_weapon)

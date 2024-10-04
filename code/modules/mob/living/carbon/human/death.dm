@@ -47,6 +47,7 @@ GLOBAL_LIST_EMPTY(dead_players_during_shift)
 				<b>Blood volume</b>: [src.blood_volume]cl ([round((src.blood_volume / BLOOD_VOLUME_NORMAL) * 100, 0.1)]%)<br>\
 				<b>Reagents</b>:<br>[reagents_readout()]", INVESTIGATE_DEATHS)
 	to_chat(src, span_warning("You have died. Barring complete bodyloss, you can in most cases be revived by other players. If you do not wish to be brought back, use the \"Do Not Resuscitate\" verb in the ghost tab."))
+	to_chat(src, span_greentext("You can no longer recall who was responsible for your death.")) // MONKESTATION EDIT: making an explicit request that someone review DA RULEZ.
 
 /mob/living/carbon/human/proc/reagents_readout()
 	var/readout = "Blood:"
@@ -73,6 +74,6 @@ GLOBAL_LIST_EMPTY(dead_players_during_shift)
 	return TRUE
 
 /mob/living/carbon/proc/makeUncloneable()
-	ADD_TRAIT(src, TRAIT_BADDNA, MADE_UNCLONEABLE)
+	ADD_TRAIT(src, TRAIT_BADDNA, UNCLONEABLE_TRAIT)
 	blood_volume = 0
 	return TRUE

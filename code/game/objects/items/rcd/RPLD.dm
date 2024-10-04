@@ -10,7 +10,7 @@
 	icon = 'icons/obj/tools.dmi'
 	slot_flags = ITEM_SLOT_BELT
 	///it does not make sense why any of these should be installed.
-	banned_upgrades = RCD_UPGRADE_FRAMES | RCD_UPGRADE_SIMPLE_CIRCUITS  | RCD_UPGRADE_FURNISHING
+	banned_upgrades = RCD_UPGRADE_FRAMES | RCD_UPGRADE_SIMPLE_CIRCUITS  | RCD_UPGRADE_FURNISHING | RCD_UPGRADE_ANTI_INTERRUPT | RCD_UPGRADE_NO_FREQUENT_USE_COOLDOWN
 	matter = 200
 	max_matter = 200
 
@@ -102,7 +102,7 @@
 /obj/item/construction/plumbing/ui_interact(mob/user, datum/tgui/ui)
 	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, "PlumbingService", name)
+		ui = new(user, src, "RapidPlumbingDevice", name)
 		ui.open()
 
 /obj/item/construction/plumbing/ui_assets(mob/user)
@@ -293,12 +293,16 @@
 /obj/item/construction/plumbing/research/set_plumbing_designs()
 	plumbing_design_types = list(
 		//category 1 synthesizers
+		/obj/machinery/plumbing/synthesizer = 15,
 		/obj/machinery/plumbing/reaction_chamber = 15,
 		/obj/machinery/plumbing/grinder_chemical = 30,
 		/obj/machinery/plumbing/disposer = 10,
 		/obj/machinery/plumbing/growing_vat = 20,
 
 		//category 2 Distributors
+		/obj/machinery/plumbing/ooze_sucker = 5,
+		/obj/machinery/plumbing/slime_grinder = 5,
+		/obj/machinery/plumbing/ooze_compressor = 20,
 		/obj/machinery/duct = 1,
 		/obj/machinery/plumbing/input = 5,
 		/obj/machinery/plumbing/filter = 5,

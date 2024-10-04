@@ -70,10 +70,18 @@
 #else
 #define TEST_OUTPUT_GREEN(text) (text)
 #endif
+/// Change color to yellow on ANSI terminal output, if enabled with -DANSICOLORS.
+#ifdef ANSICOLORS
+#define TEST_OUTPUT_YELLOW(text) "\x1B\x5B1;33m[text]\x1B\x5B0m"
+#else
+#define TEST_OUTPUT_YELLOW(text) (text)
+#endif
 
 /// A trait source when adding traits through unit tests
 #define TRAIT_SOURCE_UNIT_TESTS "unit_tests"
 
+// BEGIN_INCLUDE
+#include "abductor_baton_spell.dm"
 #include "ablative_hud.dm"
 #include "achievements.dm"
 #include "anchored_mobs.dm"
@@ -99,7 +107,6 @@
 #include "closets.dm"
 #include "combat.dm"
 #include "component_tests.dm"
-#include "confusion.dm"
 #include "connect_loc.dm"
 #include "container_sanity.dm"
 #include "crayons.dm"
@@ -124,6 +131,7 @@
 #include "hallucination_icons.dm"
 #include "heretic_knowledge.dm"
 #include "heretic_rituals.dm"
+#include "high_five.dm"
 #include "holidays.dm"
 #include "human_through_recycler.dm"
 #include "hunger_curse.dm"
@@ -133,10 +141,13 @@
 #include "json_savefile_importing.dm"
 #include "keybinding_init.dm"
 #include "knockoff_component.dm"
+#include "language_key_conflicts.dm"
+#include "leash.dm"
 #include "lesserform.dm"
 #include "limbsanity.dm"
-#include "lungs.dm"
+#include "linked_xenobio_pens.dm"
 #include "load_map_security.dm"
+#include "lungs.dm"
 #include "machine_disassembly.dm"
 #include "mapload_space_verification.dm"
 #include "mapping.dm"
@@ -145,11 +156,12 @@
 #include "merge_type.dm"
 #include "mindbound_actions.dm"
 #include "missing_icons.dm"
+#include "mob_chains.dm"
 #include "mob_faction.dm"
 #include "mob_spawn.dm"
+#include "modify_fantasy_variable.dm"
 #include "modsuit.dm"
 #include "modular_map_loader.dm"
-#include "monkey_business.dm"
 #include "mouse_bite_cable.dm"
 #include "mutant_hands_consistency.dm"
 #include "mutant_organs.dm"
@@ -158,9 +170,7 @@
 #include "objectives.dm"
 #include "operating_table.dm"
 #include "orderable_items.dm"
-#include "organs.dm"
 #include "organ_set_bonus.dm"
-#include "outfit_sanity.dm"
 #include "paintings.dm"
 #include "pills.dm"
 #include "plane_double_transform.dm"
@@ -178,6 +188,7 @@
 #include "reagent_names.dm"
 #include "reagent_recipe_collisions.dm"
 #include "reagent_transfer.dm"
+#include "required_map_items.dm"
 #include "resist.dm"
 #include "say.dm"
 #include "screenshot_antag_icons.dm"
@@ -186,11 +197,10 @@
 #include "screenshot_humanoids.dm"
 #include "screenshot_husk.dm"
 #include "screenshot_saturnx.dm"
-#include "security_officer_distribution.dm"
 #include "security_levels.dm"
+#include "security_officer_distribution.dm"
 #include "serving_tray.dm"
 #include "siunit.dm"
-#include "slime_mood.dm"
 #include "slips.dm"
 #include "spawn_humans.dm"
 #include "spawn_mobs.dm"
@@ -200,9 +210,11 @@
 #include "species_unique_id.dm"
 #include "species_whitelists.dm"
 #include "spell_invocations.dm"
+#include "spell_jaunt.dm"
 #include "spell_mindswap.dm"
 #include "spell_names.dm"
 #include "spell_shapeshift.dm"
+#include "spell_timestop.dm"
 #include "spritesheets.dm"
 #include "stack_singular_name.dm"
 #include "station_trait_tests.dm"
@@ -224,6 +236,7 @@
 #include "verify_emoji_names.dm"
 #include "wizard_loadout.dm"
 #include "worn_icons.dm"
+// END_INCLUDE
 #ifdef REFERENCE_TRACKING_DEBUG //Don't try and parse this file if ref tracking isn't turned on. IE: don't parse ref tracking please mr linter
 #include "find_reference_sanity.dm"
 #endif

@@ -215,7 +215,7 @@
 	pixel_y = -4;
 	pixel_x = -7
 	},
-/obj/item/camera_bug{
+/obj/item/computer_disk/syndicate/camera_app{
 	pixel_x = -5;
 	pixel_y = 9
 	},
@@ -233,9 +233,6 @@
 /area/ruin/space/unpowered)
 "pl" = (
 /obj/structure/table,
-/obj/item/relic{
-	pixel_y = 5
-	},
 /turf/open/floor/mineral/plastitanium/red/airless,
 /area/ruin/space/unpowered)
 "qL" = (

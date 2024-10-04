@@ -15,7 +15,7 @@
 		'icons/obj/objects.dmi' = list("bed"),
 		'icons/obj/smooth_structures/catwalk.dmi' = list("catwalk-0"),
 		'icons/hud/radial.dmi' = list("cnorth", "csouth", "ceast", "cwest", "chair", "secure_windoor", "stool", "wallfloor", "windowsize", "windowtype", "windoor"),
-		'icons/obj/structures.dmi' = list("glass_table", "rack", "rwindow0", "reflector_base", "table", "window0"),
+		'icons/obj/structures.dmi' = list("glass_table", "rack", "rwindow0", "reflector_base", "table", "window0", "girder"),
 	)
 
 	var/icon/icon
@@ -37,7 +37,7 @@
 		"Medical" = 'icons/obj/doors/airlocks/station/medical.dmi',
 		"Research" = 'icons/obj/doors/airlocks/station/research.dmi',
 		"Freezer" = 'icons/obj/doors/airlocks/station/freezer.dmi',
-		"Virology" = 'icons/obj/doors/airlocks/station/virology.dmi',
+		"Pathology" = 'icons/obj/doors/airlocks/station/virology.dmi',
 		"Mining" = 'icons/obj/doors/airlocks/station/mining.dmi',
 		"Maintenance" = 'icons/obj/doors/airlocks/station/maintenance.dmi',
 		"External" = 'icons/obj/doors/airlocks/external/external.dmi',

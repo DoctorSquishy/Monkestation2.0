@@ -38,8 +38,7 @@
 		machine_stat |= BROKEN
 
 /obj/machinery/media/jukebox/Destroy()
-	qdel(wires)
-	wires = null
+	QDEL_NULL(wires)
 	return ..()
 
 /obj/machinery/media/jukebox/proc/getTracksList()
@@ -96,9 +95,9 @@
 /obj/machinery/media/jukebox/attackby(obj/item/W as obj, mob/user as mob)
 	src.add_fingerprint(user)
 
-	if(default_deconstruction_screwdriver(user, W))
+	if(default_deconstruction_screwdriver(user, "[state_base]-broken", state_base, W))
 		return
-	if(default_deconstruction_crowbar(user, W))
+	if(default_deconstruction_crowbar(W))
 		return
 	if(W.tool_behaviour == TOOL_WRENCH)
 		if(playing)
@@ -135,6 +134,10 @@
 		add_overlay("[state_base]-running")
 	if (panel_open)
 		add_overlay("panel_open")
+
+/obj/machinery/media/jukebox/on_set_panel_open(old_value)
+	. = ..()
+	update_icon()
 
 /obj/machinery/media/jukebox/attack_hand(mob/user)
 	if(machine_stat & (NOPOWER | BROKEN))
@@ -218,9 +221,9 @@
 /obj/machinery/media/jukebox/attackby(obj/item/W as obj, mob/user as mob)
 	src.add_fingerprint(user)
 
-	if(default_deconstruction_screwdriver(user, W))
+	if(default_deconstruction_screwdriver(user, icon_state, icon_state, W))
 		return
-	if(default_deconstruction_crowbar(user, W))
+	if(default_deconstruction_crowbar(W))
 		return
 	if(W.tool_behaviour == TOOL_WRENCH)
 		if(playing)
@@ -238,6 +241,7 @@
 		obj_flags |= EMAGGED
 		StopPlaying()
 		visible_message("<span class='danger'>\The [src] makes a fizzling sound.</span>")
+		set_hacked(1)
 		update_icon()
 		return 1
 
@@ -278,7 +282,7 @@
 		start_stop_song()
 	updateDialog()
 
-//Pre-hacked Jukebox, has the full sond list unlocked
+//Pre-hacked Jukebox, has the full song list unlocked
 /obj/machinery/media/jukebox/hacked
 	name = "DRM free space jukebox"
 	desc = "Filled with songs both past and present! Unlocked for your convenience!"

@@ -46,6 +46,28 @@
 		return FALSE
 	return TRUE
 
+/obj/item/debug/omnitool/get_all_tool_behaviours()
+	return list(TOOL_ANALYZER,
+	TOOL_BLOODFILTER,
+	TOOL_BONESET,
+	TOOL_CAUTERY,
+	TOOL_CROWBAR,
+	TOOL_DRILL,
+	TOOL_HEMOSTAT,
+	TOOL_KNIFE,
+	TOOL_MINING,
+	TOOL_MULTITOOL,
+	TOOL_RETRACTOR,
+	TOOL_ROLLINGPIN,
+	TOOL_RUSTSCRAPER,
+	TOOL_SAW,
+	TOOL_SCALPEL,
+	TOOL_SCREWDRIVER,
+	TOOL_SHOVEL,
+	TOOL_WELDER,
+	TOOL_WIRECUTTER,
+	TOOL_WRENCH,
+	)
 
 /obj/item/debug/omnitool/attack_self(mob/user)
 	if(!user)
@@ -146,4 +168,21 @@
 	var/turf/loc_turf = get_turf(src)
 	for(var/spawn_atom in (choice == "No" ? typesof(path) : subtypesof(path)))
 		new spawn_atom(loc_turf)
+
+
+/obj/item/debug/artifact_activator
+	name = "artifact activation wand"
+	desc = "Aim at an artifact and click to activate it."
+	icon = 'icons/obj/weapons/guns/magic.dmi'
+	icon_state = "nothingwand"
+	inhand_icon_state = "wand"
+	lefthand_file = 'icons/mob/inhands/items_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/items_righthand.dmi'
+	w_class = WEIGHT_CLASS_SMALL
+
+/obj/item/debug/artifact_activator/afterattack(atom/target, mob/user, proximity)
+	..()
+	var/datum/component/artifact/artifact = target.GetComponent(/datum/component/artifact)
+	if(isobj(target) && artifact)
+		artifact.artifact_activate()
 

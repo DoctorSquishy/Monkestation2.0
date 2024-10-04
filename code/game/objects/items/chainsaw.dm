@@ -15,7 +15,7 @@
 	throw_speed = 2
 	throw_range = 4
 	demolition_mod = 1.5
-	custom_materials = list(/datum/material/iron=13000)
+	custom_materials = list(/datum/material/iron= SHEET_MATERIAL_AMOUNT * 6.5)
 	attack_verb_continuous = list("saws", "tears", "lacerates", "cuts", "chops", "dices")
 	attack_verb_simple = list("saw", "tear", "lacerate", "cut", "chop", "dice")
 	hitsound = SFX_SWING_HIT
@@ -26,6 +26,18 @@
 	var/on = FALSE
 	///The looping sound for our chainsaw when running
 	var/datum/looping_sound/chainsaw/chainsaw_loop
+
+/obj/item/chainsaw/apply_fantasy_bonuses(bonus)
+	. = ..()
+	force_on = modify_fantasy_variable("force_on", force_on, bonus)
+	if(on)
+		force = force_on
+
+/obj/item/chainsaw/remove_fantasy_bonuses(bonus)
+	force_on = reset_fantasy_variable("force_on", force_on)
+	if(on)
+		force = force_on
+	return ..()
 
 /obj/item/chainsaw/Initialize(mapload)
 	. = ..()

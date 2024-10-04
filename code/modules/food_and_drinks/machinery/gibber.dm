@@ -173,7 +173,9 @@
 
 	if(ishuman(occupant))
 		var/mob/living/carbon/human/gibee = occupant
-		if(gibee.dna && gibee.dna.species)
+		if(prob(40) && (sourcejob in list(JOB_SECURITY_OFFICER,JOB_WARDEN,JOB_HEAD_OF_SECURITY,JOB_SECURITY_ASSISTANT))) // monkestation edit: add secass
+			typeofmeat = /obj/item/food/meat/slab/pig
+		else if(gibee.dna && gibee.dna.species)
 			typeofmeat = gibee.dna.species.meat
 			typeofskin = gibee.dna.species.skinned_type
 
@@ -190,7 +192,7 @@
 	for (var/i=1 to meat_produced)
 		var/obj/item/food/meat/slab/newmeat = new typeofmeat
 		newmeat.name = "[sourcename] [newmeat.name]"
-		newmeat.set_custom_materials(list(GET_MATERIAL_REF(/datum/material/meat/mob_meat, occupant) = 4 * MINERAL_MATERIAL_AMOUNT))
+		newmeat.set_custom_materials(list(GET_MATERIAL_REF(/datum/material/meat/mob_meat, occupant) = 4 * SHEET_MATERIAL_AMOUNT))
 		if(istype(newmeat))
 			newmeat.subjectname = sourcename
 			newmeat.reagents.add_reagent (/datum/reagent/consumable/nutriment, sourcenutriment / meat_produced) // Thehehe. Fat guys go first

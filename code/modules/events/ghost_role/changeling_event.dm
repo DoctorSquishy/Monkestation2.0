@@ -11,12 +11,9 @@
 	weight = 8
 	max_occurrences = 3
 	min_players = 20
-	dynamic_should_hijack = TRUE
+	//dynamic_should_hijack = TRUE
 	category = EVENT_CATEGORY_ENTITIES
 	description = "A meteor containing a changeling is summoned and thrown at the exterior of the station."
-	track = EVENT_TRACK_MAJOR
-	tags = list(TAG_COMBAT)
-	checks_antag_cap = TRUE
 
 /datum/round_event/ghost_role/changeling
 	minimum_required = 1
@@ -24,7 +21,7 @@
 	fakeable = FALSE
 
 /datum/round_event/ghost_role/changeling/spawn_role()
-	var/list/mob/dead/observer/candidate = get_candidates(ROLE_CHANGELING, ROLE_CHANGELING_MIDROUND)
+	var/list/mob/dead/observer/candidate = SSpolling.poll_ghost_candidates(check_jobban = ROLE_CHANGELING, role = ROLE_CHANGELING_MIDROUND, alert_pic = /obj/item/melee/arm_blade, role_name_text = role_name)
 
 	if(!candidate.len)
 		return NOT_ENOUGH_PLAYERS

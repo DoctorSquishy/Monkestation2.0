@@ -14,6 +14,8 @@
 	var/key = ""
 	/// This will also call the emote.
 	var/key_third_person = ""
+	/// Needed for more user-friendly emote names, so emotes with keys like "aflap" will show as "flap angry". Defaulted to key.
+	var/name = ""
 	/// Message displayed when emote is used.
 	var/message = ""
 	/// Message displayed if the user is a mime.
@@ -71,6 +73,9 @@
 	mob_type_blacklist_typecache = typecacheof(mob_type_blacklist_typecache)
 	mob_type_ignore_stat_typecache = typecacheof(mob_type_ignore_stat_typecache)
 
+	if(!name)
+		name = key
+
 /**
  * Handles the modifications and execution of emotes.
  *
@@ -86,6 +91,8 @@
 	. = TRUE
 	if(!can_run_emote(user, TRUE, intentional))
 		return FALSE
+	if(SEND_SIGNAL(user, COMSIG_MOB_PRE_EMOTED, key, params, type_override, intentional) & COMPONENT_CANT_EMOTE)
+		return // We don't return FALSE because the error output would be incorrect, provide your own if necessary.
 	var/msg = select_message_type(user, message, intentional)
 	if(params && message_param)
 		msg = select_param(user, params)
@@ -101,7 +108,11 @@
 	var/tmp_sound = get_sound(user)
 	if(tmp_sound && should_play_sound(user, intentional) && !TIMER_COOLDOWN_CHECK(user, type))
 		TIMER_COOLDOWN_START(user, type, audio_cooldown)
-		playsound(user, tmp_sound, 50, vary)
+		//MONKESTATION EDIT START - Allows sounds to vary based on their calling conditions.
+		//playsound(user, tmp_sound, 50, vary, mixer_channel = CHANNEL_MOB_SOUNDS) //MONKESTATION EDIT ORIGINAL
+		var/tmp_vary = should_vary(user)
+		playsound(user, tmp_sound, 50, tmp_vary, mixer_channel = get_mixer_channel(user, params, type_override, intentional))
+		//MONKESTATION EDIT END
 
 	var/user_turf = get_turf(user)
 	if (user.client)
@@ -120,6 +131,7 @@
 				to_chat(viewer, msg)
 
 	SEND_SIGNAL(user, COMSIG_MOB_EMOTED(key))
+	SSblackbox.record_feedback("tally", "emote_used", 1, name)
 
 /**
  * For handling emote cooldown, return true to allow the emote to happen.
@@ -203,7 +215,7 @@
 		. = message_monkey
 
 	// Monkestation Edit start
-	else if((ismoth(user) || isflyperson(user) || istype(user, /mob/living/basic/mothroach)) && message_insect)
+	else if((ismoth(user) || isflyperson(user) || isarachnid(user) || istype(user, /mob/living/basic/mothroach)) && message_insect)
 		. = message_insect
 	else if(isipc(user) && message_ipc)
 		. = message_ipc

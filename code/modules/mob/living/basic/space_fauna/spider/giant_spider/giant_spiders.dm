@@ -225,7 +225,6 @@
 		heal_brute = 15,\
 		heal_burn = 15,\
 		heal_time = 3 SECONDS,\
-		self_targetting = HEALING_TOUCH_SELF_ONLY,\
 		interaction_key = DOAFTER_SOURCE_SPIDER,\
 		valid_targets_typecache = typecacheof(list(/mob/living/basic/spider/growing/young/tangle, /mob/living/basic/spider/giant/tangle)),\
 		extra_checks = CALLBACK(src, PROC_REF(can_mend)),\
@@ -279,7 +278,7 @@
 	charge = new /datum/action/cooldown/mob_cooldown/charge/basic_charge()
 	charge.Grant(src)
 
-	AddElement(/datum/element/tear_wall)
+	AddElement(/datum/element/wall_tearer)
 	AddElement(/datum/element/web_walker, /datum/movespeed_modifier/slow_web)
 
 /mob/living/basic/spider/giant/tarantula/Destroy()
@@ -468,55 +467,6 @@
 	desc = "Furry and black, it makes you shudder to look at it. This one has brilliant green eyes, and looks abnormally thin and frail."
 	menu_description = "Weaker version of the nurse spider, specializing in healing their brethren and placing webbings very swiftly, but has very low amount of health and deals low damage."
 	ai_controller = /datum/ai_controller/basic_controller/giant_spider/weak
-
-/**
- * ### Flesh Spider
- *
- * A subtype of giant spider which only occurs from changelings.
- * Has the base stats of a hunter, but they can heal themselves and spin webs faster.
- * They also occasionally leave puddles of blood when they walk around. Flavorful!
- */
-/mob/living/basic/spider/giant/hunter/flesh
-	name = "flesh spider"
-	desc = "A odd fleshy creature in the shape of a spider. Its eyes are pitch black and soulless."
-	icon = 'icons/mob/simple/arachnoid.dmi'
-	icon_state = "flesh"
-	icon_living = "flesh"
-	icon_dead = "flesh_dead"
-	web_speed = 0.7
-	maxHealth = 90
-	health = 90
-	menu_description = "Self-sufficient spider variant capable of healing themselves and producing webbbing fast."
-
-/mob/living/basic/spider/giant/hunter/flesh/Initialize(mapload)
-	. = ..()
-	AddComponent(/datum/component/blood_walk, \
-		blood_type = /obj/effect/decal/cleanable/blood/bubblegum, \
-		blood_spawn_chance = 5)
-	// It might be easier and more fitting to just replace this with Regenerator
-	AddComponent(/datum/component/healing_touch,\
-		heal_brute = 45,\
-		heal_burn = 45,\
-		self_targetting = HEALING_TOUCH_SELF_ONLY,\
-		interaction_key = DOAFTER_SOURCE_SPIDER,\
-		valid_targets_typecache = typecacheof(list(/mob/living/basic/spider/giant/hunter/flesh)),\
-		extra_checks = CALLBACK(src, PROC_REF(can_mend)),\
-		action_text = "%SOURCE% begins mending themselves...",\
-		complete_text = "%SOURCE%'s wounds mend together.",\
-	)
-
-	var/datum/action/cooldown/mob_cooldown/lay_web/web_spikes/spikes_web = new(src)
-	spikes_web.Grant(src)
-
-	var/datum/action/cooldown/mob_cooldown/lay_web/sticky_web/web_sticky = new(src)
-	web_sticky.Grant(src)
-
-/// Prevent you from healing other flesh spiders, or healing when on fire
-/mob/living/basic/spider/giant/hunter/flesh/proc/can_mend(mob/living/source, mob/living/target)
-	if (on_fire)
-		balloon_alert(src, "on fire!")
-		return FALSE
-	return TRUE
 
 /**
  * ### Viper Spider (Wizard)

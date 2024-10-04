@@ -26,6 +26,8 @@
 	var/is_slow = FALSE
 	///Item slots that are available for this corgi to equip stuff into
 	var/list/strippable_inventory_slots = list()
+	///can this mob breed?
+	var/can_breed = TRUE
 
 /mob/living/basic/pet/dog/corgi/Initialize(mapload)
 	. = ..()
@@ -34,6 +36,13 @@
 	AddElement(/datum/element/swabable, CELL_LINE_TABLE_CORGI, CELL_VIRUS_TABLE_GENERIC_MOB, 1, 5)
 	RegisterSignal(src, COMSIG_MOB_TRIED_ACCESS, PROC_REF(on_tried_access))
 	RegisterSignals(src, list(COMSIG_BASICMOB_LOOK_ALIVE, COMSIG_BASICMOB_LOOK_DEAD), PROC_REF(on_appearance_change))
+	if(!can_breed)
+		return
+	AddComponent(\
+		/datum/component/breed,\
+		can_breed_with = typecacheof(list(/mob/living/basic/pet/dog/corgi)),\
+		baby_path = /mob/living/basic/pet/dog/corgi/puppy,\
+	)
 
 /mob/living/basic/pet/dog/corgi/Destroy()
 	QDEL_NULL(inventory_head)
@@ -344,6 +353,7 @@
 
 /mob/living/basic/pet/dog/corgi/ian/Initialize(mapload)
 	. = ..()
+	REGISTER_REQUIRED_MAP_ITEM(1, 1)
 	//parent call must happen first to ensure IAN
 	//is not in nullspace when child puppies spawn
 	Read_Memory()
@@ -369,7 +379,7 @@
 
 /mob/living/basic/pet/dog/corgi/ian/Destroy()
 	LAZYREMOVE(SSticker.round_end_events, i_will_survive) //cleanup the survival callback
-	QDEL_NULL(i_will_survive)
+	i_will_survive = null
 	return ..()
 
 /mob/living/basic/pet/dog/corgi/ian/death()
@@ -521,9 +531,11 @@
 	icon_dead = "puppy_dead"
 	density = FALSE
 	pass_flags = PASSMOB
+	ai_controller = /datum/ai_controller/basic_controller/dog/puppy
 	mob_size = MOB_SIZE_SMALL
 	collar_icon_state = "puppy"
 	strippable_inventory_slots = list(/datum/strippable_item/pet_collar, /datum/strippable_item/corgi_id) //puppies are too small to handle hats and back slot items
+	can_breed = FALSE
 
 //PUPPY IAN! SQUEEEEEEEEE~
 /mob/living/basic/pet/dog/corgi/puppy/ian

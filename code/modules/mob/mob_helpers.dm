@@ -207,20 +207,38 @@
 	return ""
 
 // moved out of admins.dm because things other than admin procs were calling this.
-/// Returns TRUE if the game has started and we're either an AI with a 0th law, or we're someone with a special role/antag datum
-/proc/is_special_character(mob/M)
+/**
+ * Returns TRUE if the game has started and we're either an AI with a 0th law, or we're someone with a special role/antag datum
+ * If allow_fake_antags is set to FALSE, Valentines, ERTs, and any such roles with FLAG_FAKE_ANTAG won't pass.
+*/
+/proc/is_special_character(mob/M, allow_fake_antags = FALSE)
 	if(!SSticker.HasRoundStarted())
 		return FALSE
 	if(!istype(M))
 		return FALSE
 	if(iscyborg(M)) //as a borg you're now beholden to your laws rather than greentext
 		return FALSE
+
+
+	// Returns TRUE if AI has a zeroth law *and* either has a special role *or* an antag datum.
 	if(isAI(M))
 		var/mob/living/silicon/ai/A = M
 		return (A.laws?.zeroth && (A.mind?.special_role || !isnull(M.mind?.antag_datums)))
-	if(M.mind?.special_role || !isnull(M.mind?.antag_datums)) //they have an antag datum!
+
+	if(M.mind?.special_role)
 		return TRUE
-	return FALSE
+
+	// Turns 'faker' to TRUE if the antag datum is fake. If it's not fake, returns TRUE directly.
+	var/faker = FALSE
+	for(var/datum/antagonist/antag_datum as anything in M.mind?.antag_datums)
+		if((antag_datum.antag_flags & FLAG_FAKE_ANTAG))
+			faker = TRUE
+		else
+			return TRUE
+
+	// If 'faker' was assigned TRUE in the above loop and the argument 'allow_fake_antags' is set to TRUE, this passes.
+	// Else, return FALSE.
+	return (faker && allow_fake_antags)
 
 
 /mob/proc/reagent_check(datum/reagent/R, seconds_per_tick, times_fired) // utilized in the species code
@@ -239,62 +257,58 @@
  * * source The source of the notification
  * * alert_overlay The alert overlay to show in the alert message
  * * action What action to take upon the ghost interacting with the notification, defaults to NOTIFY_JUMP
- * * flashwindow Flash the byond client window
  * * ignore_key  Ignore keys if they're in the GLOB.poll_ignore list
  * * header The header of the notifiaction
- * * notify_suiciders If it should notify suiciders (who do not qualify for many ghost roles)
  * * notify_volume How loud the sound should be to spook the user
  */
-/proc/notify_ghosts(message, ghost_sound, enter_link, atom/source, mutable_appearance/alert_overlay, action = NOTIFY_JUMP, flashwindow = TRUE, ignore_mapload = TRUE, ignore_key, header, notify_suiciders = TRUE, notify_volume = 100) //Easy notification of ghosts.
+/proc/notify_ghosts(
+	message,
+	ghost_sound,
+	enter_link,
+	atom/source,
+	mutable_appearance/alert_overlay,
+	action = NOTIFY_JUMP,
+	notify_flags = NOTIFY_CATEGORY_DEFAULT,
+	ignore_key,
+	header = "",
+	notify_volume = 100
+)
 
-	if(ignore_mapload && SSatoms.initialized != INITIALIZATION_INNEW_REGULAR) //don't notify for objects created during a map load
+	if(notify_flags & GHOST_NOTIFY_IGNORE_MAPLOAD && SSatoms.initialized != INITIALIZATION_INNEW_REGULAR) //don't notify for objects created during a map load
 		return
+
 	for(var/mob/dead/observer/ghost in GLOB.player_list)
-		if(!notify_suiciders && HAS_TRAIT(ghost, TRAIT_SUICIDED))
+		if(!(notify_flags & GHOST_NOTIFY_NOTIFY_SUICIDERS) && HAS_TRAIT(ghost, TRAIT_SUICIDED))
 			continue
 		if(ignore_key && (ghost.ckey in GLOB.poll_ignore[ignore_key]))
 			continue
-		var/orbit_link
-		if(source && action == NOTIFY_ORBIT)
-			orbit_link = " <a href='?src=[REF(ghost)];follow=[REF(source)]'>(Orbit)</a>"
-		to_chat(ghost, span_ghostalert("[message][(enter_link) ? " [enter_link]" : ""][orbit_link]"))
+
+		if(notify_flags & GHOST_NOTIFY_FLASH_WINDOW)
+			window_flash(ghost.client)
+
 		if(ghost_sound)
 			SEND_SOUND(ghost, sound(ghost_sound, volume = notify_volume))
-		if(flashwindow)
-			window_flash(ghost.client)
-		if(!source)
-			continue
-		var/atom/movable/screen/alert/notify_action/alert = ghost.throw_alert("[REF(source)]_notify_action", /atom/movable/screen/alert/notify_action)
-		if(!alert)
-			continue
-		var/ui_style = ghost.client?.prefs?.read_preference(/datum/preference/choiced/ui_style)
-		if(ui_style)
-			alert.icon = ui_style2icon(ui_style)
-		if (header)
-			alert.name = header
-		alert.desc = message
-		alert.action = action
-		alert.target = source
-		if(!alert_overlay)
-			alert_overlay = new(source)
-			var/icon/size_check = icon(source.icon, source.icon_state)
-			var/scale = 1
-			var/width = size_check.Width()
-			var/height = size_check.Height()
-			if(width > world.icon_size || height > world.icon_size)
-				if(width >= height)
-					scale = world.icon_size / width
-				else
-					scale = world.icon_size / height
-			alert_overlay.transform = alert_overlay.transform.Scale(scale)
-			alert_overlay.appearance_flags |= TILE_BOUND
-		alert_overlay.layer = FLOAT_LAYER
-		alert_overlay.plane = FLOAT_PLANE
-		alert.add_overlay(alert_overlay)
 
-/**
- * Heal a robotic body part on a mob
- */
+		if(isnull(source))
+			to_chat(ghost, span_ghostalert(message))
+			continue
+
+		var/custom_link = enter_link ? " [enter_link]" : ""
+		var/link = " <a href='?src=[REF(ghost)];[action]=[REF(source)]'>([capitalize(action)])</a>"
+
+		to_chat(ghost, span_ghostalert("[message][custom_link][link]"))
+
+		var/atom/movable/screen/alert/notify_action/toast = ghost.throw_alert(
+			category = "[REF(source)]_notify_action",
+			type = /atom/movable/screen/alert/notify_action,
+			new_master = source,
+		)
+		toast.action = action
+		toast.desc = "[message] -- Click to [action]."
+		toast.name = header
+		toast.target = source
+
+/// Heals a robotic limb on a mob
 /proc/item_heal_robotic(mob/living/carbon/human/human, mob/user, brute_heal, burn_heal)
 	var/obj/item/bodypart/affecting = human.get_bodypart(check_zone(user.zone_selected))
 	if(!affecting || IS_ORGANIC_LIMB(affecting))
@@ -348,14 +362,13 @@
 			var/datum/antagonist/A = M.mind.has_antag_datum(/datum/antagonist/)
 			if(A)
 				poll_message = "[poll_message] Status: [A.name]."
-	var/list/mob/dead/observer/candidates = poll_candidates_for_mob(poll_message, ROLE_PAI, FALSE, 10 SECONDS, M)
+	var/mob/chosen_one = SSpolling.poll_ghosts_for_target(poll_message, check_jobban = ROLE_PAI, poll_time = 10 SECONDS, checked_target = M, alert_pic = M, role_name_text = "ghost control", chat_text_border_icon = M)
 
-	if(LAZYLEN(candidates))
-		var/mob/dead/observer/C = pick(candidates)
+	if(chosen_one)
 		to_chat(M, "Your mob has been taken over by a ghost!")
-		message_admins("[key_name_admin(C)] has taken control of ([ADMIN_LOOKUPFLW(M)])")
+		message_admins("[key_name_admin(chosen_one)] has taken control of ([ADMIN_LOOKUPFLW(M)])")
 		M.ghostize(FALSE)
-		M.key = C.key
+		M.key = chosen_one.key
 		M.client?.init_verbs()
 		return TRUE
 	else
@@ -513,7 +526,7 @@
 			"name" = offhand.name,
 		)
 
-	GLOB.logger.Log(
+	logger.Log(
 		LOG_CATEGORY_TARGET_ZONE_SWITCH,
 		"[key_name(src)] manually changed selected zone",
 		data,

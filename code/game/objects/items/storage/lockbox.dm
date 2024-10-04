@@ -30,7 +30,10 @@
 			balloon_alert(user, "broken!")
 			return
 		if(allowed(user))
-			atom_storage.locked = !locked
+			if(atom_storage.locked)
+				atom_storage.locked = STORAGE_NOT_LOCKED
+			else
+				atom_storage.locked = STORAGE_FULLY_LOCKED
 			locked = atom_storage.locked
 			if(locked)
 				icon_state = icon_locked
@@ -49,14 +52,16 @@
 	else
 		balloon_alert(user, "locked!")
 
-/obj/item/storage/lockbox/emag_act(mob/user)
+/obj/item/storage/lockbox/emag_act(mob/user, obj/item/card/emag/emag_card)
 	if(!broken)
 		broken = TRUE
-		atom_storage.locked = FALSE
+		atom_storage.locked = STORAGE_NOT_LOCKED
 		icon_state = src.icon_broken
-		if(user)
-			visible_message(span_warning("\The [src] is broken by [user] with an electromagnetic card!"))
-			return
+		balloon_alert(user, "lock destroyed")
+		if (emag_card && user)
+			user.visible_message(span_warning("[user] swipes [emag_card] over [src], breaking it!"))
+		return TRUE
+	return FALSE
 
 /obj/item/storage/lockbox/examine(mob/user)
 	. = ..()
@@ -185,6 +190,8 @@
 /obj/item/storage/lockbox/medal/med/PopulateContents()
 	new /obj/item/clothing/accessory/medal/med_medal(src)
 	new /obj/item/clothing/accessory/medal/med_medal2(src)
+	for(var/i in 1 to 3)
+		new /obj/item/clothing/accessory/medal/silver/emergency_services/medical(src)
 
 /obj/item/storage/lockbox/medal/sec/PopulateContents()
 	for(var/i in 1 to 3)
@@ -215,6 +222,16 @@
 	for(var/i in 1 to 3)
 		new /obj/item/clothing/accessory/medal/plasma/nobel_science(src)
 
+/obj/item/storage/lockbox/medal/engineering
+	name = "engineering medal box"
+	desc = "A locked box used to store awards to be given to members of the engineering department."
+	req_access = list(ACCESS_CE)
+
+/obj/item/storage/lockbox/medal/engineering/PopulateContents()
+	for(var/i in 1 to 3)
+		new /obj/item/clothing/accessory/medal/silver/emergency_services/engineering(src)
+	new /obj/item/clothing/accessory/medal/silver/elder_atmosian(src)
+
 /obj/item/storage/lockbox/order
 	name = "order lockbox"
 	desc = "A box used to secure small cargo orders from being looted by those who didn't order it. Yeah, cargo tech, that means you."
@@ -237,17 +254,22 @@
 	if(!id_card)
 		return ..()
 
-	if(iscarbon(user))
-		add_fingerprint(user)
-
 	if(id_card.registered_account != buyer_account)
 		balloon_alert(user, "incorrect bank account!")
-		return
+		return FALSE
 
-	atom_storage.locked = !privacy_lock
+	if(privacy_lock)
+		atom_storage.locked = STORAGE_NOT_LOCKED
+		icon_state = icon_locked
+	else
+		atom_storage.locked = STORAGE_FULLY_LOCKED
+		icon_state = icon_closed
 	privacy_lock = atom_storage.locked
-	user.visible_message(span_notice("[user] [privacy_lock ? "" : "un"]locks [src]'s privacy lock."),
-					span_notice("You [privacy_lock ? "" : "un"]lock [src]'s privacy lock."))
+	user.visible_message(
+		span_notice("[user] [privacy_lock ? "" : "un"]locks [src]'s privacy lock."),
+		span_notice("You [privacy_lock ? "" : "un"]lock [src]'s privacy lock."),
+	)
+	return FALSE
 
 ///screentips for lockboxes
 /obj/item/storage/lockbox/add_context(atom/source, list/context, obj/item/held_item, mob/user)

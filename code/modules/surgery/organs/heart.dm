@@ -88,8 +88,8 @@
 			owner.stop_sound_channel(CHANNEL_HEARTBEAT)
 			beat = BEAT_NONE
 
-	if(organ_flags & ORGAN_FAILING && owner.can_heartattack() && !(HAS_TRAIT(src, TRAIT_STABLEHEART))) //heart broke, stopped beating, death imminent... unless you have veins that pump blood without a heart
-		if(owner.stat == CONSCIOUS)
+	if((organ_flags & ORGAN_FAILING) && owner.can_heartattack() && !(HAS_TRAIT(src, TRAIT_STABLEHEART))) //heart broke, stopped beating, death imminent... unless you have veins that pump blood without a heart
+		if(owner.stat == CONSCIOUS && beating) // monkestation edit: antispam
 			owner.visible_message(span_danger("[owner] clutches at [owner.p_their()] chest as if [owner.p_their()] heart is stopping!"), \
 				span_userdanger("You feel a terrible pain in your chest, as if your heart has stopped!"))
 		owner.set_heartattack(TRUE)
@@ -241,11 +241,14 @@
 		owner.losebreath += 10
 		COOLDOWN_START(src, severe_cooldown, 20 SECONDS)
 	if(prob(emp_vulnerability/severity)) //Chance of permanent effects
-		organ_flags |= ORGAN_SYNTHETIC_EMP //Starts organ faliure - gonna need replacing soon.
-		Stop()
-		owner.visible_message(span_danger("[owner] clutches at [owner.p_their()] chest as if [owner.p_their()] heart is stopping!"), \
-						span_userdanger("You feel a terrible pain in your chest, as if your heart has stopped!"))
-		addtimer(CALLBACK(src, PROC_REF(Restart)), 10 SECONDS)
+		organ_flags |= ORGAN_SYNTHETIC_EMP //Starts organ faliure - gonna need replacing soon
+		// monkestation edit: antispam
+		if(beating)
+			owner.visible_message(span_danger("[owner] clutches at [owner.p_their()] chest as if [owner.p_their()] heart is stopping!"), \
+									span_userdanger("You feel a terrible pain in your chest, as if your heart has stopped!"))
+			Stop()
+			addtimer(CALLBACK(src, PROC_REF(Restart)), 10 SECONDS)
+		// monkestation end
 
 /obj/item/organ/internal/heart/cybernetic/on_life(seconds_per_tick, times_fired)
 	. = ..()
@@ -303,10 +306,10 @@
 		return
 	RegisterSignal(heart_owner, COMSIG_MOB_STATCHANGE, PROC_REF(on_stat_change))
 	RegisterSignal(heart_owner, COMSIG_LIVING_POST_FULLY_HEAL, PROC_REF(on_owner_fully_heal))
-	RegisterSignal(heart_owner, COMSIG_PARENT_QDELETING, PROC_REF(owner_deleted))
+	RegisterSignal(heart_owner, COMSIG_QDELETING, PROC_REF(owner_deleted))
 
 /obj/item/organ/internal/heart/ethereal/Remove(mob/living/carbon/heart_owner, special = FALSE)
-	UnregisterSignal(heart_owner, list(COMSIG_MOB_STATCHANGE, COMSIG_LIVING_POST_FULLY_HEAL, COMSIG_PARENT_QDELETING))
+	UnregisterSignal(heart_owner, list(COMSIG_MOB_STATCHANGE, COMSIG_LIVING_POST_FULLY_HEAL, COMSIG_QDELETING))
 	REMOVE_TRAIT(heart_owner, TRAIT_CORPSELOCKED, SPECIES_TRAIT)
 	stop_crystalization_process(heart_owner)
 	QDEL_NULL(current_crystal)
@@ -366,7 +369,7 @@
 	crystalize_timer_id = addtimer(CALLBACK(src, PROC_REF(crystalize), victim), CRYSTALIZE_PRE_WAIT_TIME, TIMER_STOPPABLE)
 
 	RegisterSignal(victim, COMSIG_HUMAN_DISARM_HIT, PROC_REF(reset_crystalizing))
-	RegisterSignal(victim, COMSIG_PARENT_EXAMINE, PROC_REF(on_examine), override = TRUE)
+	RegisterSignal(victim, COMSIG_ATOM_EXAMINE, PROC_REF(on_examine), override = TRUE)
 	RegisterSignal(victim, COMSIG_MOB_APPLY_DAMAGE, PROC_REF(on_take_damage))
 
 ///Ran when disarmed, prevents the ethereal from reviving
@@ -388,10 +391,18 @@
 	if(!COOLDOWN_FINISHED(src, crystalize_cooldown) || ethereal.stat != DEAD)
 		return //Should probably not happen, but lets be safe.
 
-	if(ismob(location) || isitem(location) || HAS_TRAIT_FROM(src, TRAIT_HUSK, CHANGELING_DRAIN)) //Stops crystallization if they are eaten by a dragon, turned into a legion, consumed by his grace, etc.
+	//Monkestation Edit Begin
+	if(IS_BLOODSUCKER(ethereal) && SSsunlight.sunlight_active)
+		to_chat(ethereal, span_warning("You were unable to finish your crystallization as Sol has halted your attempt to crystallize."))
+		stop_crystalization_process(ethereal, FALSE)
+		return
+	//Monkestation Edit End
+
+	if(ismob(location) || isitem(location) || iseffect(location) || HAS_TRAIT_FROM(src, TRAIT_HUSK, CHANGELING_DRAIN)) //Stops crystallization if they are eaten by a dragon, turned into a legion, consumed by his grace, etc.
 		to_chat(ethereal, span_warning("You were unable to finish your crystallization, for obvious reasons."))
 		stop_crystalization_process(ethereal, FALSE)
 		return
+
 	COOLDOWN_START(src, crystalize_cooldown, INFINITY) //Prevent cheeky double-healing until we get out, this is against stupid admemery
 	current_crystal = new(get_turf(ethereal), src)
 	stop_crystalization_process(ethereal, TRUE)
@@ -399,7 +410,7 @@
 ///Stop the crystalization process, unregistering any signals and resetting any variables.
 /obj/item/organ/internal/heart/ethereal/proc/stop_crystalization_process(mob/living/ethereal, succesful = FALSE)
 	UnregisterSignal(ethereal, COMSIG_HUMAN_DISARM_HIT)
-	UnregisterSignal(ethereal, COMSIG_PARENT_EXAMINE)
+	UnregisterSignal(ethereal, COMSIG_ATOM_EXAMINE)
 	UnregisterSignal(ethereal, COMSIG_MOB_APPLY_DAMAGE)
 
 	crystalization_process_damage = 0 //Reset damage taken during crystalization

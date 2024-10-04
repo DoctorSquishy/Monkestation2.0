@@ -22,18 +22,18 @@
 		var/datum/pet_command/new_command = new command_path(parent)
 		available_commands[new_command.command_name] = new_command
 
-/datum/component/obeys_commands/Destroy(force, silent)
+/datum/component/obeys_commands/Destroy(force)
 	. = ..()
 	QDEL_NULL(available_commands)
 
 /datum/component/obeys_commands/RegisterWithParent()
 	RegisterSignal(parent, COMSIG_LIVING_BEFRIENDED, PROC_REF(add_friend))
 	RegisterSignal(parent, COMSIG_LIVING_UNFRIENDED, PROC_REF(remove_friend))
-	RegisterSignal(parent, COMSIG_PARENT_EXAMINE, PROC_REF(on_examine))
+	RegisterSignal(parent, COMSIG_ATOM_EXAMINE, PROC_REF(on_examine))
 	RegisterSignal(parent, COMSIG_CLICK_ALT, PROC_REF(display_menu))
 
 /datum/component/obeys_commands/UnregisterFromParent()
-	UnregisterSignal(parent, list(COMSIG_LIVING_BEFRIENDED, COMSIG_LIVING_UNFRIENDED, COMSIG_PARENT_EXAMINE, COMSIG_CLICK_ALT))
+	UnregisterSignal(parent, list(COMSIG_LIVING_BEFRIENDED, COMSIG_LIVING_UNFRIENDED, COMSIG_ATOM_EXAMINE, COMSIG_CLICK_ALT))
 
 /// Add someone to our friends list
 /datum/component/obeys_commands/proc/add_friend(datum/source, mob/living/new_friend)

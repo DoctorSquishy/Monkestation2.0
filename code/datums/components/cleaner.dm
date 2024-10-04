@@ -29,11 +29,9 @@
 	src.pre_clean_callback = pre_clean_callback
 	src.on_cleaned_callback = on_cleaned_callback
 
-/datum/component/cleaner/Destroy(force, silent)
-	if(pre_clean_callback)
-		QDEL_NULL(pre_clean_callback)
-	if(on_cleaned_callback)
-		QDEL_NULL(on_cleaned_callback)
+/datum/component/cleaner/Destroy(force)
+	pre_clean_callback = null
+	on_cleaned_callback = null
 	return ..()
 
 /datum/component/cleaner/RegisterWithParent()
@@ -118,14 +116,22 @@
 
 	//do the cleaning
 	user.visible_message(span_notice("[user] starts to clean [target]!"), span_notice("You start to clean [target]..."))
+	var/clean_succeeded = FALSE
 	if(do_after(user, cleaning_duration, target = target))
+		clean_succeeded = TRUE
 		user.visible_message(span_notice("[user] finishes cleaning [target]!"), span_notice("You finish cleaning [target]."))
 		if(clean_target)
 			for(var/obj/effect/decal/cleanable/cleanable_decal in target) //it's important to do this before you wash all of the cleanables off
 				user.mind?.adjust_experience(/datum/skill/cleaning, round(cleanable_decal.beauty / CLEAN_SKILL_BEAUTY_ADJUSTMENT))
 			if(target.wash(cleaning_strength))
 				user.mind?.adjust_experience(/datum/skill/cleaning, round(CLEAN_SKILL_GENERIC_WASH_XP))
-		on_cleaned_callback?.Invoke(source, target, user)
+		if(isitem(target))
+			var/obj/item/item= target
+			if(length(item.viruses))
+				for(var/datum/disease/advanced/D as anything in item.viruses)
+					item.remove_disease(D)
+
+	on_cleaned_callback?.Invoke(source, target, user, clean_succeeded)
 
 	//remove the cleaning overlay
 	target.cut_overlay(low_bubble)

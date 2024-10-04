@@ -5,9 +5,6 @@
 	max_occurrences = 1
 	category = EVENT_CATEGORY_INVASION
 	description = "A single nuclear operative assaults the station."
-	track = EVENT_TRACK_MAJOR
-	tags = list(TAG_DESTRUCTIVE, TAG_COMBAT)
-	checks_antag_cap = TRUE
 
 /datum/round_event/ghost_role/operative
 	minimum_required = 1
@@ -15,8 +12,8 @@
 	fakeable = FALSE
 
 /datum/round_event/ghost_role/operative/spawn_role()
-	var/list/candidates = get_candidates(ROLE_OPERATIVE, ROLE_LONE_OPERATIVE)
-	if(!candidates.len)
+	var/list/candidates = SSpolling.poll_ghost_candidates(check_jobban = ROLE_OPERATIVE, role = ROLE_LONE_OPERATIVE, alert_pic = /obj/machinery/nuclearbomb)
+	if(!length(candidates))
 		return NOT_ENOUGH_PLAYERS
 
 	var/mob/dead/selected = pick_n_take(candidates)

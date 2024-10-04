@@ -6,7 +6,7 @@
 	icon_screen = "supply_express"
 	circuit = /obj/item/circuitboard/computer/cargo/express
 	blockade_warning = "Bluespace instability detected. Delivery impossible."
-	req_access = list(ACCESS_CARGO)
+	req_access = list(ACCESS_QM) //MONKESTATION EDIT
 	is_express = TRUE
 	interface_type = "CargoExpress"
 
@@ -52,12 +52,13 @@
 			to_chat(user, span_alert("[src] is already linked to [sb]."))
 	..()
 
-/obj/machinery/computer/cargo/express/emag_act(mob/living/user)
+/obj/machinery/computer/cargo/express/emag_act(mob/user, obj/item/card/emag/emag_card)
 	if(obj_flags & EMAGGED)
-		return
+		return FALSE
 	if(user)
-		user.visible_message(span_warning("[user] swipes a suspicious card through [src]!"),
-		span_notice("You change the routing protocols, allowing the Supply Pod to land anywhere on the station."))
+		if (emag_card)
+			user.visible_message(span_warning("[user] swipes [emag_card] through [src]!"))
+		to_chat(user, span_notice("You change the routing protocols, allowing the Supply Pod to land anywhere on the station."))
 	obj_flags |= EMAGGED
 	contraband = TRUE
 	// This also sets this on the circuit board
@@ -65,6 +66,7 @@
 	board.obj_flags |= EMAGGED
 	board.contraband = TRUE
 	packin_up()
+	return TRUE
 
 /obj/machinery/computer/cargo/express/proc/packin_up() // oh shit, I'm sorry
 	meme_pack_data = list() // sorry for what?
@@ -183,7 +185,7 @@
 						if (!landingzone)
 							WARNING("[src] couldnt find a Quartermaster/Storage (aka cargobay) area on the station, and as such it has set the supplypod landingzone to the area it resides in.")
 							landingzone = get_area(src)
-						for(var/turf/open/floor/T in landingzone.get_contained_turfs())//uses default landing zone
+						for(var/turf/open/floor/T in landingzone.get_turfs_from_all_zlevels())//uses default landing zone
 							if(T.is_blocked_turf())
 								continue
 							LAZYADD(empty_turfs, T)
@@ -202,7 +204,7 @@
 			else
 				if(SO.pack.get_cost() * (0.72*MAX_EMAG_ROCKETS) <= points_to_check) // bulk discount :^)
 					landingzone = GLOB.areas_by_type[pick(GLOB.the_station_areas)]  //override default landing zone
-					for(var/turf/open/floor/T in landingzone.get_contained_turfs())
+					for(var/turf/open/floor/T in landingzone.get_turfs_from_all_zlevels())
 						if(T.is_blocked_turf())
 							continue
 						LAZYADD(empty_turfs, T)

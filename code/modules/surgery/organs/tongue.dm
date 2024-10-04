@@ -93,6 +93,8 @@
 	if (modifies_speech)
 		RegisterSignal(tongue_owner, COMSIG_MOB_SAY, PROC_REF(handle_speech))
 
+	if(!(organ_flags & ORGAN_FAILING))
+		ADD_TRAIT(tongue_owner, TRAIT_SPEAKS_CLEARLY, SPEAKING_FROM_TONGUE)
 	/* This could be slightly simpler, by making the removal of the
 	* NO_TONGUE_TRAIT conditional on the tongue's `sense_of_taste`, but
 	* then you can distinguish between ageusia from no tongue, and
@@ -124,7 +126,18 @@
 	say_mod = "hisses"
 	taste_sensitivity = 10 // combined nose + tongue, extra sensitive
 	modifies_speech = TRUE
-	languages_native = list(/datum/language/draconic)
+	languages_native = list(/datum/language/draconic, /datum/language/ashtongue)
+
+	//MONKESTATION EDIT START
+
+	/// How long is our hissssssss?
+	var/draw_length = 3
+
+/obj/item/organ/internal/tongue/lizard/Initialize(mapload)
+	. = ..()
+	draw_length = rand(2, 6)
+	if(prob(10))
+		draw_length += 2
 
 /obj/item/organ/internal/tongue/lizard/modify_speech(datum/source, list/speech_args)
 	var/static/regex/lizard_hiss = new("s+", "g")
@@ -135,13 +148,15 @@
 	var/static/regex/lizard_eckS = new(@"\bX([\-|r|R]|\b)", "g")
 	var/message = speech_args[SPEECH_MESSAGE]
 	if(message[1] != "*")
-		message = lizard_hiss.Replace(message, "sss")
-		message = lizard_hiSS.Replace(message, "SSS")
-		message = lizard_kss.Replace(message, "$1kss")
-		message = lizard_kSS.Replace(message, "$1KSS")
-		message = lizard_ecks.Replace(message, "ecks$1")
-		message = lizard_eckS.Replace(message, "ECKS$1")
+		message = lizard_hiss.Replace(message, repeat_string(draw_length, "s"))
+		message = lizard_hiSS.Replace(message, repeat_string(draw_length, "S"))
+		message = lizard_kss.Replace(message, "$1k[repeat_string(max(draw_length - 1, 1), "s")]")
+		message = lizard_kSS.Replace(message, "$1K[repeat_string(max(draw_length - 1, 1), "S")]")
+		message = lizard_ecks.Replace(message, "eck[repeat_string(max(draw_length - 2, 1), "s")]$1")
+		message = lizard_eckS.Replace(message, "ECK[repeat_string(max(draw_length - 2, 1), "S")]$1")
 	speech_args[SPEECH_MESSAGE] = message
+
+	//MONKESTATION EDIT END
 
 /obj/item/organ/internal/tongue/lizard/silver
 	name = "silver tongue"
@@ -159,10 +174,10 @@
 /datum/action/item_action/organ_action/statue/New(Target)
 	. = ..()
 	statue = new
-	RegisterSignal(statue, COMSIG_PARENT_QDELETING, PROC_REF(statue_destroyed))
+	RegisterSignal(statue, COMSIG_QDELETING, PROC_REF(statue_destroyed))
 
 /datum/action/item_action/organ_action/statue/Destroy()
-	UnregisterSignal(statue, COMSIG_PARENT_QDELETING)
+	UnregisterSignal(statue, COMSIG_QDELETING)
 	QDEL_NULL(statue)
 	. = ..()
 
@@ -189,7 +204,7 @@
 	if(statue.name == initial(statue.name)) //statue has not been set up
 		statue.name = "statue of [becoming_statue.real_name]"
 		statue.desc = "statue depicting [becoming_statue.real_name]"
-		statue.set_custom_materials(list(/datum/material/silver=MINERAL_MATERIAL_AMOUNT*5))
+		statue.set_custom_materials(list(/datum/material/silver=SHEET_MATERIAL_AMOUNT*5))
 
 	if(is_statue)
 		statue.visible_message(span_danger("[statue] becomes animated!"))

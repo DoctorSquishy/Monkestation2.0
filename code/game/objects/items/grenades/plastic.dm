@@ -23,15 +23,28 @@
 	/// Maximum timer for c4 charges
 	var/maximum_timer = 60000
 
+/obj/item/grenade/c4/apply_grenade_fantasy_bonuses(quality)
+	var/devIncrease = round(quality / 10)
+	var/heavyIncrease = round(quality / 5)
+	var/lightIncrease = round(quality / 2)
+	boom_sizes[1] = modify_fantasy_variable("devIncrease", boom_sizes[1], devIncrease)
+	boom_sizes[2] = modify_fantasy_variable("heavyIncrease", boom_sizes[2], heavyIncrease)
+	boom_sizes[3] = modify_fantasy_variable("lightIncrease", boom_sizes[3], lightIncrease)
+
+/obj/item/grenade/c4/remove_grenade_fantasy_bonuses(quality)
+	boom_sizes[1] = reset_fantasy_variable("devIncrease", boom_sizes[1])
+	boom_sizes[2] = reset_fantasy_variable("heavyIncrease", boom_sizes[2])
+	boom_sizes[3] = reset_fantasy_variable("lightIncrease", boom_sizes[3])
+
 /obj/item/grenade/c4/Initialize(mapload)
 	. = ..()
 	AddElement(/datum/element/empprotection, EMP_PROTECT_WIRES)
 	plastic_overlay = mutable_appearance(icon, "[inhand_icon_state]2", HIGH_OBJ_LAYER)
-	wires = new /datum/wires/explosive/c4(src)
+	set_wires(new /datum/wires/explosive/c4(src))
 
 /obj/item/grenade/c4/Destroy()
 	qdel(wires)
-	wires = null
+	set_wires(null)
 	target = null
 	return ..()
 
@@ -104,9 +117,24 @@
 		target = bomb_target
 		active = TRUE
 
+		//MONKESTATION EDIT START - This code should've been a call to `log_bomber`. Anyways, this
+		//now calls a targetted variant of `log_bomber`
+		/*
 		message_admins("[ADMIN_LOOKUPFLW(user)] planted [name] on [target.name] at [ADMIN_VERBOSEJMP(target)] with [det_time] second fuse")
 		user.log_message("planted [name] on [target.name] with a [det_time] second fuse.", LOG_ATTACK)
-		notify_ghosts("[user] has planted \a [src] on [target] with a [det_time] second fuse!", source = bomb_target, action = (isturf(target) ? NOTIFY_JUMP : NOTIFY_ORBIT), flashwindow = FALSE, header = "Explosive Planted")
+		*/ //MONKESTATION EDIT ORIGINAL
+		log_bomber_targeted(user, "planted", src, target, "with [det_time] second fuse")
+		//MONKESTATION EDIT END
+		var/icon/target_icon = icon(bomb_target.icon, bomb_target.icon_state)
+		target_icon.Blend(icon(icon, icon_state), ICON_OVERLAY)
+		var/image/bomb_target_image = image(target_icon)
+		notify_ghosts(
+			"[user] has planted \a [src] on [target] with a [det_time] second fuse!",
+			source = bomb_target_image,
+			action = (isturf(target) ? NOTIFY_JUMP : NOTIFY_ORBIT),
+			notify_flags = NOTIFY_CATEGORY_NOFLASH,
+			header = "Explosive Planted",
+		)
 
 		moveToNullspace() //Yep
 

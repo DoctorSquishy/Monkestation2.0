@@ -161,7 +161,7 @@
 		eth_stomach.adjust_charge(60)
 		did_we_charge = TRUE
 
-	//if we're not targetting a robot part we stop early
+	//if we're not targeting a robot part we stop early
 	var/obj/item/bodypart/bodypart = blessed.get_bodypart(chap.zone_selected)
 	if(!IS_ORGANIC_LIMB(bodypart))
 		if(!did_we_charge)
@@ -207,6 +207,14 @@
 	desired_items = list(/obj/item/flashlight/flare/candle = "already lit")
 	rites_list = list(/datum/religion_rites/fireproof, /datum/religion_rites/burning_sacrifice, /datum/religion_rites/infinite_candle)
 	altar_icon_state = "convertaltar-red"
+
+/datum/religion_sect/pyre/on_select()
+	. = ..()
+	AddComponent(/datum/component/sect_nullrod_bonus, list(
+		/obj/item/gun/ballistic/bow/divine/with_quiver = list(
+			/datum/religion_rites/blazing_star,
+		),
+	))
 
 //candle sect bibles don't heal or do anything special apart from the standard holy water blessings
 /datum/religion_sect/pyre/sect_bless(mob/living/target, mob/living/chap)

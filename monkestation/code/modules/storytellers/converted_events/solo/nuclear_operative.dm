@@ -1,12 +1,14 @@
 /datum/round_event_control/antagonist/solo/nuclear_operative
 	name = "Roundstart Nuclear Operative"
-	tags = list(TAG_DESTRUCTIVE, TAG_COMBAT, TAG_TEAM_ANTAG)
+	tags = list(TAG_DESTRUCTIVE, TAG_COMBAT, TAG_TEAM_ANTAG, TAG_EXTERNAL)
 	antag_flag = ROLE_OPERATIVE
 	antag_datum = /datum/antagonist/nukeop
 	typepath = /datum/round_event/antagonist/solo/nuclear_operative
+	shared_occurence_type = SHARED_HIGH_THREAT
 	restricted_roles = list(
 		JOB_AI,
 		JOB_CAPTAIN,
+		JOB_BLUESHIELD,
 		JOB_CHIEF_ENGINEER,
 		JOB_CHIEF_MEDICAL_OFFICER,
 		JOB_CYBORG,
@@ -17,6 +19,7 @@
 		JOB_RESEARCH_DIRECTOR,
 		JOB_SECURITY_OFFICER,
 		JOB_WARDEN,
+		JOB_BRIG_PHYSICIAN,
 	)
 	base_antags = 3
 	maximum_antags = 5
@@ -24,9 +27,11 @@
 		JOB_AI,
 		JOB_CYBORG,
 		JOB_CAPTAIN,
+		JOB_BLUESHIELD,
 		JOB_DETECTIVE,
 		JOB_HEAD_OF_SECURITY,
 		JOB_SECURITY_OFFICER,
+		JOB_SECURITY_ASSISTANT,
 		JOB_WARDEN,
 	)
 	required_enemies = 5
@@ -39,12 +44,14 @@
 
 /datum/round_event/antagonist/solo/nuclear_operative
 	excute_round_end_reports = TRUE
-	end_when = 60000 /// we will end on our own when revs win
 	var/static/datum/team/nuclear/nuke_team
 	var/set_leader = FALSE
 	var/required_role = ROLE_NUCLEAR_OPERATIVE
+	var/datum/mind/most_experienced
 
 /datum/round_event/antagonist/solo/nuclear_operative/add_datum_to_mind(datum/mind/antag_mind)
+	if(most_experienced == antag_mind)
+		return
 	var/mob/living/current_mob = antag_mind.current
 	SSjob.FreeRole(antag_mind.assigned_role.title)
 	var/list/items = current_mob.get_equipped_items(TRUE)
@@ -52,21 +59,30 @@
 	for(var/obj/item/item as anything in items)
 		qdel(item)
 
-	var/datum/mind/most_experienced = get_most_experienced(setup_minds, required_role)
-	antag_mind.set_assigned_role(SSjob.GetJobType(/datum/job/nuclear_operative))
-	antag_mind.special_role = ROLE_NUCLEAR_OPERATIVE
-
+	create_human_mob_copy(get_turf(current_mob), current_mob)
 	if(!most_experienced)
-		most_experienced = antag_mind
+		most_experienced = get_most_experienced(setup_minds, required_role) || antag_mind
 
 	if(!set_leader)
 		set_leader = TRUE
-		var/datum/antagonist/nukeop/leader/leader_antag_datum = new()
+		if(antag_mind != most_experienced)
+			var/mob/living/leader_mob = most_experienced.current
+			SSjob.FreeRole(most_experienced.assigned_role.title)
+			var/list/leader_items = leader_mob.get_equipped_items(TRUE)
+			leader_mob.unequip_everything()
+			for(var/obj/item/item as anything in leader_items)
+				qdel(item)
+			leader_mob = create_human_mob_copy(get_turf(leader_mob), leader_mob)
+		most_experienced.set_assigned_role(SSjob.GetJobType(/datum/job/nuclear_operative))
+		most_experienced.special_role = ROLE_NUCLEAR_OPERATIVE
+		var/datum/antagonist/nukeop/leader/leader_antag_datum = most_experienced.add_antag_datum(/datum/antagonist/nukeop/leader)
 		nuke_team = leader_antag_datum.nuke_team
-		most_experienced.add_antag_datum(leader_antag_datum)
 
 	if(antag_mind == most_experienced)
 		return
+
+	antag_mind.set_assigned_role(SSjob.GetJobType(/datum/job/nuclear_operative))
+	antag_mind.special_role = ROLE_NUCLEAR_OPERATIVE
 
 	var/datum/antagonist/nukeop/new_op = new antag_datum()
 	antag_mind.add_antag_datum(new_op)

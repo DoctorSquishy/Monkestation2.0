@@ -15,7 +15,11 @@
 	var/tk_throw_range = 10
 	var/mob/pulledby = null
 	var/initial_language_holder = /datum/language_holder
-	var/datum/language_holder/language_holder // Mindless mobs and objects need language too, some times. Mind holder takes prescedence.
+	/// Holds all languages this mob can speak and understand
+	var/datum/language_holder/language_holder
+	/// The list of factions this atom belongs to
+	var/list/faction
+
 	var/verb_say = "says"
 	var/verb_ask = "asks"
 	var/verb_exclaim = "exclaims"
@@ -167,10 +171,12 @@
 	if(opacity)
 		AddElement(/datum/element/light_blocking)
 	switch(light_system)
-		if(MOVABLE_LIGHT)
+		if(OVERLAY_LIGHT)
 			AddComponent(/datum/component/overlay_lighting)
-		if(MOVABLE_LIGHT_DIRECTIONAL)
+		if(OVERLAY_LIGHT_DIRECTIONAL)
 			AddComponent(/datum/component/overlay_lighting, is_directional = TRUE)
+		if(MOVABLE_LIGHT_BEAM)
+			AddComponent(/datum/component/overlay_lighting, is_directional = TRUE, is_beam = TRUE)
 
 /atom/movable/Destroy(force)
 	QDEL_NULL(language_holder)
@@ -207,7 +213,7 @@
 	if(spatial_grid_key)
 		SSspatial_grid.force_remove_from_cell(src)
 
-	LAZYCLEARLIST(client_mobs_in_contents)
+	LAZYNULL(client_mobs_in_contents)
 
 	. = ..()
 
@@ -219,7 +225,7 @@
 	//This absolutely must be after moveToNullspace()
 	//We rely on Entered and Exited to manage this list, and the copy of this list that is on any /atom/movable "Containers"
 	//If we clear this before the nullspace move, a ref to this object will be hung in any of its movable containers
-	LAZYCLEARLIST(important_recursive_contents)
+	LAZYNULL(important_recursive_contents)
 
 
 	vis_locs = null //clears this atom out of all viscontents
@@ -411,7 +417,7 @@
 			else
 				to_chat(src, span_warning("You are not Superman."))
 		return FALSE
-	if(!(z_move_flags & ZMOVE_IGNORE_OBSTACLES) && !(start.zPassOut(src, direction, destination, (z_move_flags & ZMOVE_ALLOW_ANCHORED)) && destination.zPassIn(src, direction, start)))
+	if((!(z_move_flags & ZMOVE_IGNORE_OBSTACLES) && !(start.zPassOut(direction) && destination.zPassIn(direction))) || (!(z_move_flags & ZMOVE_ALLOW_ANCHORED) && anchored))
 		if(z_move_flags & ZMOVE_FEEDBACK)
 			to_chat(rider || src, span_warning("You couldn't move there!"))
 		return FALSE
@@ -472,6 +478,8 @@
 /atom/movable/proc/start_pulling(atom/movable/pulled_atom, state, force = move_force, supress_message = FALSE)
 	if(QDELETED(pulled_atom))
 		return FALSE
+	if(!istype(pulled_atom))
+		return FALSE
 	if(!(pulled_atom.can_be_pulled(src, state, force)))
 		return FALSE
 
@@ -498,6 +506,7 @@
 	pulling = pulled_atom
 	pulled_atom.set_pulledby(src)
 	SEND_SIGNAL(src, COMSIG_ATOM_START_PULL, pulled_atom, state, force)
+	SEND_SIGNAL(pulled_atom, COMSIG_ATOM_PULLED, src, state, force)
 	setGrabState(state)
 	if(ismob(pulled_atom))
 		var/mob/pulled_mob = pulled_atom
@@ -569,14 +578,15 @@
 	if(!only_pulling && pulledby && moving_diagonally != FIRST_DIAG_STEP && (get_dist(src, pulledby) > 1 || z != pulledby.z)) //separated from our puller and not in the middle of a diagonal move.
 		pulledby.stop_pulling()
 
-/atom/movable/proc/set_glide_size(target = 8)
+/atom/movable/proc/set_glide_size(target = 8, recursed = FALSE)
 	if (HAS_TRAIT(src, TRAIT_NO_GLIDE))
 		return
 	SEND_SIGNAL(src, COMSIG_MOVABLE_UPDATE_GLIDE_SIZE, target)
 	glide_size = target
 
-	for(var/mob/buckled_mob as anything in buckled_mobs)
-		buckled_mob.set_glide_size(target)
+	if(!recursed)
+		for(var/mob/buckled_mob as anything in buckled_mobs)
+			buckled_mob.set_glide_size(target, TRUE)
 
 /**
  * meant for movement with zero side effects. only use for objects that are supposed to move "invisibly" (like camera mobs or ghosts)
@@ -632,8 +642,13 @@
 			if(SEND_SIGNAL(src, COMSIG_MOVABLE_PRE_MOVE, entering_loc) & COMPONENT_MOVABLE_BLOCK_PRE_MOVE)
 				return
 	else // Else just try to enter the single destination.
-		if(!newloc.Enter(src))
-			return
+		if(isliving(src))
+			var/mob/living/living = src
+			if(!newloc.Enter(src) && !living.buckled)
+				return
+		else
+			if(!newloc.Enter(src))
+				return
 		if(SEND_SIGNAL(src, COMSIG_MOVABLE_PRE_MOVE, newloc) & COMPONENT_MOVABLE_BLOCK_PRE_MOVE)
 			return
 
@@ -760,7 +775,6 @@
 					pulling.move_from_pull(src, target_turf, glide_size)
 			check_pulling()
 
-
 	//glide_size strangely enough can change mid movement animation and update correctly while the animation is playing
 	//This means that if you don't override it late like this, it will just be set back by the movement update that's called when you move turfs.
 	if(glide_size_override)
@@ -806,6 +820,7 @@
 	if (!moving_diagonally && client_mobs_in_contents)
 		update_parallax_contents()
 
+	SSdemo.mark_dirty(src) //Monkestation Edit: REPLAYS
 	SEND_SIGNAL(src, COMSIG_MOVABLE_MOVED, old_loc, movement_dir, forced, old_locs, momentum_change)
 
 	if(old_loc)
@@ -1589,6 +1604,11 @@
 			pulling.remove_traits(list(TRAIT_IMMOBILIZED, TRAIT_HANDS_BLOCKED), CHOKEHOLD_TRAIT)
 			if(. >= GRAB_NECK) // Previous state was a a neck-grab or higher.
 				REMOVE_TRAIT(pulling, TRAIT_FLOORED, CHOKEHOLD_TRAIT)
+			if(ismob(src))
+				var/mob/grabbed = src
+				if(grabbed.stat == SOFT_CRIT || grabbed.stat == HARD_CRIT)
+					pulling.add_traits(list(TRAIT_IMMOBILIZED, TRAIT_HANDS_BLOCKED), CHOKEHOLD_TRAIT)
+
 		if(GRAB_AGGRESSIVE)
 			if(. >= GRAB_NECK) // Grab got downgraded.
 				REMOVE_TRAIT(pulling, TRAIT_FLOORED, CHOKEHOLD_TRAIT)
@@ -1611,6 +1631,7 @@
 
 /atom/movable/vv_get_dropdown()
 	. = ..()
+	VV_DROPDOWN_OPTION(VV_HK_EDIT_MOVABLE_PHYSICS, "Edit Movable Physics")
 	VV_DROPDOWN_OPTION(VV_HK_EDIT_PARTICLES, "Edit Particles")
 	VV_DROPDOWN_OPTION(VV_HK_EDIT_DISPLACEMENT_LARGE, "Edit Large Displacement")
 	VV_DROPDOWN_OPTION(VV_HK_DEADCHAT_PLAYS, "Start/Stop Deadchat Plays")
@@ -1640,6 +1661,10 @@
 			else
 				return
 
+	if(href_list[VV_HK_EDIT_MOVABLE_PHYSICS] && check_rights(R_VAREDIT))
+		var/client/C = usr.client
+		C?.open_movable_physics_editor(src)
+
 	if(href_list[VV_HK_DEADCHAT_PLAYS] && check_rights(R_FUN))
 		if(tgui_alert(usr, "Allow deadchat to control [src] via chat commands?", "Deadchat Plays [src]", list("Allow", "Cancel")) != "Allow")
 			return
@@ -1664,3 +1689,20 @@
 */
 /atom/movable/proc/keybind_face_direction(direction)
 	setDir(direction)
+
+/**
+ * Check if the other atom/movable has any factions the same as us. Defined at the atom/movable level so it can be defined for just about anything.
+ *
+ * If exact match is set, then all our factions must match exactly
+ */
+/atom/movable/proc/faction_check_atom(atom/movable/target, exact_match)
+	if(!exact_match)
+		return faction_check(faction, target.faction, FALSE)
+
+	var/list/faction_src = LAZYCOPY(faction)
+	var/list/faction_target = LAZYCOPY(target.faction)
+	if(!("[REF(src)]" in faction_target)) //if they don't have our ref faction, remove it from our factions list.
+		faction_src -= "[REF(src)]" //if we don't do this, we'll never have an exact match.
+	if(!("[REF(target)]" in faction_src))
+		faction_target -= "[REF(target)]" //same thing here.
+	return faction_check(faction_src, faction_target, TRUE)

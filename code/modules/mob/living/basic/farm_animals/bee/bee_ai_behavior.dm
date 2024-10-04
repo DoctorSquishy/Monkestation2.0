@@ -1,14 +1,14 @@
 /datum/ai_behavior/hunt_target/pollinate
 	always_reset_target = TRUE
 
-/datum/ai_behavior/hunt_target/pollinate/target_caught(mob/living/hunter, obj/machinery/hydroponics/hydro_target)
+/datum/ai_behavior/hunt_target/pollinate/target_caught(mob/living/hunter, atom/movable/hydro_target)
 	var/datum/callback/callback = CALLBACK(hunter, TYPE_PROC_REF(/mob/living/basic/bee, pollinate), hydro_target)
 	callback.Invoke()
 
 /datum/ai_behavior/find_hunt_target/pollinate
 
-/datum/ai_behavior/find_hunt_target/pollinate/valid_dinner(mob/living/source, obj/machinery/hydroponics/dinner, radius)
-	if(!dinner.can_bee_pollinate())
+/datum/ai_behavior/find_hunt_target/pollinate/valid_dinner(mob/living/source, atom/movable/dinner, radius)
+	if(SEND_SIGNAL(dinner, COMSIG_GROWER_CHECK_POLLINATED))
 		return FALSE
 	return can_see(source, dinner, radius)
 
@@ -77,13 +77,25 @@
 	if(valid_hives.len)
 		return pick(valid_hives)
 
-/datum/targetting_datum/basic/bee
+/datum/targeting_strategy/basic/bee
 
-/datum/targetting_datum/basic/bee/can_attack(mob/living/owner, atom/target)
+/datum/targeting_strategy/basic/bee/can_attack(mob/living/owner, atom/target, vision_range)
 	if(!isliving(target))
 		return FALSE
 	. = ..()
 	if(!.)
 		return FALSE
 	var/mob/living/mob_target = target
+
+	if(mob_target.mob_biotypes & MOB_PLANT)
+		return FALSE
+
+	var/datum/ai_controller/basic_controller/bee_ai = owner.ai_controller
+	if(isnull(bee_ai))
+		return FALSE
+
+	var/atom/bee_hive = bee_ai.blackboard[BB_CURRENT_HOME]
+	if(bee_hive && get_dist(target, bee_hive) > 5)
+		return FALSE
+
 	return !(mob_target.bee_friendly())

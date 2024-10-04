@@ -11,7 +11,7 @@
 	worn_icon_state = "gun"
 	flags_1 = CONDUCT_1
 	slot_flags = ITEM_SLOT_BELT
-	custom_materials = list(/datum/material/iron=2000)
+	custom_materials = list(/datum/material/iron=SHEET_MATERIAL_AMOUNT)
 	w_class = WEIGHT_CLASS_NORMAL
 	throwforce = 5
 	throw_speed = 3
@@ -49,6 +49,9 @@
 	/// Just 'slightly' snowflakey way to modify projectile damage for projectiles fired from this gun.
 	var/projectile_damage_multiplier = 1
 
+	/// Even snowflakier way to modify projectile wounding bonus/potential for projectiles fired from this gun.
+	var/projectile_wound_bonus = 0
+
 	var/spread = 0 //Spread induced by the gun itself.
 	var/randomspread = 1 //Set to 0 for shotguns. This is used for weapons that don't fire all their bullets at once.
 
@@ -75,6 +78,7 @@
 		pin = new pin(src)
 
 	add_seclight_point()
+	give_manufacturer_examine()
 
 /obj/item/gun/Destroy()
 	if(isobj(pin)) //Can still be the initial path, then we skip
@@ -85,6 +89,16 @@
 		QDEL_NULL(chambered)
 	if(isatom(suppressed)) //SUPPRESSED IS USED AS BOTH A TRUE/FALSE AND AS A REF, WHAT THE FUCKKKKKKKKKKKKKKKKK
 		QDEL_NULL(suppressed)
+	return ..()
+
+/obj/item/gun/apply_fantasy_bonuses(bonus)
+	. = ..()
+	fire_delay = modify_fantasy_variable("fire_delay", fire_delay, -bonus, 0)
+	projectile_damage_multiplier = modify_fantasy_variable("projectile_damage_multiplier", projectile_damage_multiplier, bonus/10, 0.1)
+
+/obj/item/gun/remove_fantasy_bonuses(bonus)
+	fire_delay = reset_fantasy_variable("fire_delay", fire_delay)
+	projectile_damage_multiplier = reset_fantasy_variable("projectile_damage_multiplier", projectile_damage_multiplier)
 	return ..()
 
 /// Handles adding [the seclite mount component][/datum/component/seclite_attachable] to the gun.
@@ -132,11 +146,11 @@
 		. += "It has a <b>bayonet</b> lug on it."
 
 //called after the gun has successfully fired its chambered ammo.
-/obj/item/gun/proc/process_chamber(empty_chamber = TRUE, from_firing = TRUE, chamber_next_round = TRUE)
-	handle_chamber(empty_chamber, from_firing, chamber_next_round)
+/obj/item/gun/proc/process_chamber(mob/living/user, empty_chamber = TRUE, from_firing = TRUE, chamber_next_round = TRUE)
+	handle_chamber(user, empty_chamber, from_firing, chamber_next_round)
 	SEND_SIGNAL(src, COMSIG_GUN_CHAMBER_PROCESSED)
 
-/obj/item/gun/proc/handle_chamber(empty_chamber = TRUE, from_firing = TRUE, chamber_next_round = TRUE)
+/obj/item/gun/proc/handle_chamber(mob/living/user, empty_chamber = TRUE, from_firing = TRUE, chamber_next_round = TRUE)
 	return
 
 //check if there's enough ammo/energy/whatever to shoot one time
@@ -158,8 +172,11 @@
 		playsound(src, fire_sound, fire_sound_volume, vary_fire_sound)
 
 /obj/item/gun/proc/shoot_live_shot(mob/living/user, pointblank = 0, atom/pbtarget = null, message = 1)
+	var/angle = get_angle(user, pbtarget)+rand(-recoil_deviation, recoil_deviation) + 180
+	if(angle > 360)
+		angle -= 360
 	if(recoil && !tk_firing(user))
-		shake_camera(user, recoil + 1, recoil)
+		recoil_camera(user, recoil+1, (recoil*recoil_backtime_multiplier) + 1, recoil, angle)
 	fire_sounds()
 	if(!suppressed)
 		if(message)
@@ -187,12 +204,20 @@
 						vision_distance = COMBAT_MESSAGE_RANGE,
 						ignored_mobs = user
 				)
+	if(CHECK_BITFIELD(gun_flags, GUN_SMOKE_PARTICLES))
+		var/x_component = sin((get_angle(user, pbtarget))) * 40
+		var/y_component = cos((get_angle(user, pbtarget))) * 40
+		var/obj/effect/abstract/particle_holder/gun_smoke = new(get_turf(src), /particles/firing_smoke)
+		gun_smoke.particles.velocity = list(x_component, y_component)
+		addtimer(VARSET_CALLBACK(gun_smoke.particles, count, 0), 5)
+		addtimer(VARSET_CALLBACK(gun_smoke.particles, drift, 0), 3)
+		QDEL_IN(gun_smoke, 0.6 SECONDS)
 
 /obj/item/gun/emp_act(severity)
 	. = ..()
 	if(!(. & EMP_PROTECT_CONTENTS))
-		for(var/obj/O in contents)
-			O.emp_act(severity)
+		for(var/obj/inside in contents)
+			inside.emp_act(severity)
 
 /obj/item/gun/afterattack_secondary(mob/living/victim, mob/living/user, params)
 	if(!isliving(victim) || !IN_GIVEN_RANGE(user, victim, GUNPOINT_SHOOTER_STRAY_RANGE))
@@ -256,8 +281,9 @@
 
 	var/obj/item/bodypart/other_hand = user.has_hand_for_held_index(user.get_inactive_hand_index()) //returns non-disabled inactive hands
 	if(weapon_weight == WEAPON_HEAVY && (user.get_inactive_held_item() || !other_hand))
-		balloon_alert(user, "use both hands!")
-		return
+		if(!istype(user.get_inactive_held_item(), /obj/item/offhand))
+			balloon_alert(user, "use both hands!")
+			return
 	//DUAL (or more!) WIELDING
 	var/bonus_spread = 0
 	var/loop_counter = 0
@@ -342,7 +368,7 @@
 		shoot_with_empty_chamber(user)
 		firing_burst = FALSE
 		return FALSE
-	process_chamber()
+	process_chamber(user = user)
 	update_appearance()
 	return TRUE
 
@@ -397,14 +423,14 @@
 		else
 			shoot_with_empty_chamber(user)
 			return
-		process_chamber()
+		process_chamber(user = user)
 		update_appearance()
 		semicd = TRUE
 		addtimer(CALLBACK(src, PROC_REF(reset_semicd)), modified_delay)
 
 	if(user)
 		user.update_held_items()
-	SSblackbox.record_feedback("tally", "gun_fired", 1, type)
+	SSblackbox.record_feedback("tally", "gun_fired", 1, initial(name))
 
 	return TRUE
 

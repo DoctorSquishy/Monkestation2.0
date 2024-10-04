@@ -80,8 +80,13 @@ export class Dropdown extends Component<DropdownProps, DropdownState> {
     open: false,
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      selected: props.selected,
+      open: props.open,
+    };
 
     this.handleClick = () => {
       if (this.state.open) {
@@ -179,7 +184,8 @@ export class Dropdown extends Component<DropdownProps, DropdownState> {
           className="Dropdown__menuentry"
           onClick={() => {
             this.setSelected(value);
-          }}>
+          }}
+        >
           {displayText}
         </div>
       );
@@ -187,33 +193,24 @@ export class Dropdown extends Component<DropdownProps, DropdownState> {
 
     const to_render = ops.length ? ops : 'No Options Found';
 
-    render(
-      <div>{to_render}</div>,
-      renderedMenu,
-      () => {
-        let singletonPopper = Dropdown.singletonPopper;
-        if (singletonPopper === undefined) {
-          singletonPopper = createPopper(
-            Dropdown.virtualElement,
-            renderedMenu!,
-            {
-              ...DEFAULT_OPTIONS,
-              placement: 'bottom-start',
-            }
-          );
+    render(<div>{to_render}</div>, renderedMenu, () => {
+      let singletonPopper = Dropdown.singletonPopper;
+      if (singletonPopper === undefined) {
+        singletonPopper = createPopper(Dropdown.virtualElement, renderedMenu!, {
+          ...DEFAULT_OPTIONS,
+          placement: 'bottom-start',
+        });
 
-          Dropdown.singletonPopper = singletonPopper;
-        } else {
-          singletonPopper.setOptions({
-            ...DEFAULT_OPTIONS,
-            placement: 'bottom-start',
-          });
+        Dropdown.singletonPopper = singletonPopper;
+      } else {
+        singletonPopper.setOptions({
+          ...DEFAULT_OPTIONS,
+          placement: 'bottom-start',
+        });
 
-          singletonPopper.update();
-        }
-      },
-      this.context
-    );
+        singletonPopper.update();
+      }
+    });
   }
 
   setOpen(open: boolean) {
@@ -328,7 +325,8 @@ export class Dropdown extends Component<DropdownProps, DropdownState> {
                 onClick(event);
               }
             }}
-            {...rest}>
+            {...rest}
+          >
             {icon && (
               <Icon
                 name={icon}
@@ -341,13 +339,15 @@ export class Dropdown extends Component<DropdownProps, DropdownState> {
               className="Dropdown__selected-text"
               style={{
                 overflow: clipSelectedText ? 'hidden' : 'visible',
-              }}>
+              }}
+            >
               {displayText || this.state.selected}
             </span>
             {nochevron || (
               <span
                 className="Dropdown__arrow-button"
-                style={{ 'line-height': displayHeight }}>
+                style={{ 'line-height': displayHeight }}
+              >
                 <Icon name={adjustedOpen ? 'chevron-up' : 'chevron-down'} />
               </span>
             )}
@@ -362,7 +362,7 @@ export class Dropdown extends Component<DropdownProps, DropdownState> {
                   <Icon
                     ml="0.25em"
                     style={{
-                      'display': 'inline-block',
+                      display: 'inline-block',
                       'line-height': displayHeight || 'unset',
                     }}
                     name="chevron-left"
@@ -386,7 +386,7 @@ export class Dropdown extends Component<DropdownProps, DropdownState> {
                   <Icon
                     ml="0.25em"
                     style={{
-                      'display': 'inline-block',
+                      display: 'inline-block',
                       'line-height': displayHeight || 'unset',
                     }}
                     name="chevron-right"

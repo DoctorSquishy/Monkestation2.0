@@ -105,9 +105,6 @@
 /obj/structure/speaking_tile/attack_ai(mob/user)
 	return interact(user)
 
-/obj/structure/speaking_tile/attack_slime(mob/user, list/modifiers)
-	return interact(user)
-
 /obj/structure/speaking_tile/attack_animal(mob/user, list/modifiers)
 	return interact(user)
 
@@ -123,7 +120,7 @@
 	icon = 'icons/obj/economy.dmi'
 	icon_state = "rupee"
 	w_class = WEIGHT_CLASS_SMALL
-	custom_materials = list(/datum/material/glass = 500)
+	custom_materials = list(/datum/material/glass = SMALL_MATERIAL_AMOUNT*5)
 
 /obj/item/rupee/Initialize(mapload)
 	. = ..()

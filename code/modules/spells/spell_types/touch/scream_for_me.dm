@@ -21,7 +21,8 @@
 		span_userdanger("The spell bounces from [victim]'s skin back into your arm!"),
 	)
 	var/obj/item/bodypart/to_wound = caster.get_holding_bodypart_of_item(hand)
-	to_wound.force_wound_upwards(/datum/wound/slash/critical)
+	victim.cause_pain(BODY_ZONE_EVERYTHING, 50, BRUTE)
+	caster.cause_wound_of_type_and_severity(WOUND_SLASH, to_wound, WOUND_SEVERITY_MODERATE, WOUND_SEVERITY_CRITICAL)
 
 /datum/action/cooldown/spell/touch/scream_for_me/cast_on_hand_hit(obj/item/melee/touch_attack/hand, mob/living/victim, mob/living/carbon/caster)
 	if(!ishuman(victim))
@@ -29,7 +30,7 @@
 	var/mob/living/carbon/human/human_victim = victim
 	human_victim.emote("scream")
 	for(var/obj/item/bodypart/to_wound as anything in human_victim.bodyparts)
-		to_wound.force_wound_upwards(/datum/wound/slash/critical)
+		human_victim.cause_wound_of_type_and_severity(WOUND_SLASH, to_wound, WOUND_SEVERITY_MODERATE, WOUND_SEVERITY_CRITICAL)
 	return TRUE
 
 /obj/item/melee/touch_attack/scream_for_me

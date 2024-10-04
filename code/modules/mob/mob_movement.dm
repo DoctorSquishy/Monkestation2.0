@@ -74,8 +74,8 @@
 		return FALSE
 	if(!mob?.loc)
 		return FALSE
-	if(mob.notransform)
-		return FALSE //This is sota the goto stop mobs from moving var
+	if(HAS_TRAIT(mob, TRAIT_NO_TRANSFORM))
+		return FALSE //This is sorta the goto stop mobs from moving trait
 	if(mob.control_object)
 		return Move_object(direct)
 	if(!isliving(mob))
@@ -84,7 +84,7 @@
 	if(mob.stat == DEAD)
 		mob.ghostize()
 		return FALSE
-	if(SEND_SIGNAL(mob, COMSIG_MOB_CLIENT_PRE_LIVING_MOVE) & COMSIG_MOB_CLIENT_BLOCK_PRE_LIVING_MOVE)
+	if(SEND_SIGNAL(mob, COMSIG_MOB_CLIENT_PRE_LIVING_MOVE, new_loc, direct) & COMSIG_MOB_CLIENT_BLOCK_PRE_LIVING_MOVE)
 		return FALSE
 
 	var/mob/living/L = mob //Already checked for isliving earlier
@@ -96,7 +96,8 @@
 		return mob.remote_control.relaymove(mob, direct)
 
 	if(isAI(mob))
-		return AIMove(new_loc,direct,mob)
+		var/mob/living/silicon/ai/smoovin_ai = mob
+		return smoovin_ai.AIMove(direct)
 
 	if(Process_Grab()) //are we restrained by someone's grip?
 		return
@@ -255,9 +256,9 @@
 				if(salt)
 					to_chat(L, span_warning("[salt] bars your passage!"))
 					if(isrevenant(L))
-						var/mob/living/simple_animal/revenant/R = L
-						R.reveal(20)
-						R.stun(20)
+						var/mob/living/basic/revenant/ghostie = L
+						ghostie.apply_status_effect(/datum/status_effect/revenant/revealed, 2 SECONDS)
+						ghostie.apply_status_effect(/datum/status_effect/incapacitating/paralyzed/revenant, 2 SECONDS)
 					return
 				if(stepTurf.turf_flags & NOJAUNT)
 					to_chat(L, span_warning("Some strange aura is blocking the way."))
@@ -348,7 +349,7 @@
 			continue
 		return rebound
 
-/mob/has_gravity()
+/mob/has_gravity(turf/gravity_turf)
 	return mob_negates_gravity() || ..()
 
 /**

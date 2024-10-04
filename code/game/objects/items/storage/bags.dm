@@ -34,7 +34,7 @@
 /obj/item/storage/bag/trash
 	name = "trash bag"
 	desc = "It's the heavy-duty black polymer kind. Time to take out the trash!"
-	icon = 'icons/obj/janitor.dmi'
+	icon = 'icons/obj/service/janitor.dmi'
 	icon_state = "trashbag"
 	inhand_icon_state = "trashbag"
 	lefthand_file = 'icons/mob/inhands/equipment/custodial_lefthand.dmi'
@@ -237,6 +237,7 @@
 		/obj/item/reagent_containers/honeycomb,
 		/obj/item/graft,
 		/obj/item/disk/plantgene,
+		/obj/item/paper,
 		))
 ////////
 
@@ -327,8 +328,9 @@
 	atom_storage.set_holdable(list(
 		/obj/item/book,
 		/obj/item/spellbook,
-		/obj/item/storage/book,
-		))
+		/obj/item/book,
+		/obj/item/poster,
+	))
 
 /*
  * Trays - Agouri
@@ -345,7 +347,7 @@
 	throw_range = 5
 	flags_1 = CONDUCT_1
 	slot_flags = ITEM_SLOT_BELT
-	custom_materials = list(/datum/material/iron=3000)
+	custom_materials = list(/datum/material/iron=SHEET_MATERIAL_AMOUNT*1.5)
 	custom_price = PAYCHECK_CREW * 0.6
 
 /obj/item/storage/bag/tray/Initialize(mapload)
@@ -445,6 +447,7 @@
 		/obj/item/reagent_containers/cup/glass/waterbottle,
 		/obj/item/reagent_containers/cup/beaker,
 		/obj/item/reagent_containers/cup/bottle,
+		/obj/item/reagent_containers/cup/tube,
 		/obj/item/reagent_containers/medigel,
 		/obj/item/reagent_containers/pill,
 		/obj/item/reagent_containers/syringe,
@@ -475,8 +478,12 @@
 		/obj/item/reagent_containers/dropper,
 		/obj/item/reagent_containers/cup/beaker,
 		/obj/item/reagent_containers/cup/bottle,
+		/obj/item/reagent_containers/cup/tube,
 		/obj/item/reagent_containers/hypospray/medipen,
 		/obj/item/reagent_containers/syringe,
+		/obj/item/weapon/virusdish,//Monkestation Addition
+		/obj/item/food/monkeycube/mouse,//Monkestation Addition
+		/obj/item/disk/disease,
 		))
 
 /*
@@ -496,6 +503,9 @@
 	atom_storage.max_total_storage = 200
 	atom_storage.max_slots = 25
 	atom_storage.set_holdable(list(
+//MONKESTATION EDIT START
+		/obj/item/autoslime,
+//MONKESTATION EDIT END
 		/obj/item/bodypart,
 		/obj/item/food/deadmouse,
 		/obj/item/food/monkeycube,
@@ -504,9 +514,14 @@
 		/obj/item/reagent_containers/dropper,
 		/obj/item/reagent_containers/cup/beaker,
 		/obj/item/reagent_containers/cup/bottle,
+		/obj/item/reagent_containers/cup/tube,
 		/obj/item/reagent_containers/syringe,
+//MONKESTATION EDIT START
+		/obj/item/slimecross,
+//MONKESTATION EDIT END
 		/obj/item/slime_extract,
 		/obj/item/swab,
+		/obj/item/stack/biomass // monke: make science bags able to hold biomass cubes
 		))
 
 /*
@@ -540,6 +555,7 @@
 /obj/item/storage/bag/harpoon_quiver
 	name = "harpoon quiver"
 	desc = "A quiver for holding harpoons."
+	icon = 'icons/obj/weapons/guns/bows/quivers.dmi'
 	icon_state = "quiver"
 	inhand_icon_state = null
 	worn_icon_state = "harpoon_quiver"

@@ -143,7 +143,7 @@
 		qdel(projectile_parry.resolve())
 
 
-/datum/component/style/Destroy(force, silent)
+/datum/component/style/Destroy(force)
 	STOP_PROCESSING(SSdcs, src)
 	var/mob/mob_parent = parent
 	if(mob_parent.hud_used)
@@ -452,7 +452,7 @@
 
 
 // Negative effects
-/datum/component/style/proc/on_take_damage()
+/datum/component/style/proc/on_take_damage(...)
 	SIGNAL_HANDLER
 
 	point_multiplier = round(max(point_multiplier - 0.3, 1), 0.1)

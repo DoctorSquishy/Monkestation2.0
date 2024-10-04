@@ -18,8 +18,6 @@
 	var/min_health = -25
 	///Whether the machine can be operated by the person inside of it.
 	var/controls_inside = FALSE
-	///Whether this sleeper can be deconstructed and drop the board, if its on mapload.
-	var/deconstructable = FALSE
 	///Message sent when a user enters the machine.
 	var/enter_message = span_boldnotice("You feel cool air surround you. You go numb as your senses turn inward.")
 
@@ -31,7 +29,7 @@
 	var/list/possible_chems = list(
 		list(
 			/datum/reagent/medicine/epinephrine,
-			/datum/reagent/medicine/morphine,
+			/datum/reagent/medicine/painkiller/morphine,
 			/datum/reagent/medicine/c2/convermol,
 			/datum/reagent/medicine/c2/libital,
 			/datum/reagent/medicine/c2/aiuri,
@@ -54,9 +52,6 @@
 
 /obj/machinery/sleeper/Initialize(mapload)
 	. = ..()
-	if(mapload && !deconstructable)
-		LAZYREMOVE(component_parts, circuit)
-		QDEL_NULL(circuit)
 	occupant_typecache = GLOB.typecache_living
 	update_appearance()
 	reset_chem_buttons()
@@ -266,16 +261,17 @@
 				if((obj_flags & EMAGGED) && prob(5))
 					to_chat(usr, span_warning("Chemical system re-route detected, results may not be as expected!"))
 
-/obj/machinery/sleeper/emag_act(mob/user)
+/obj/machinery/sleeper/emag_act(mob/user, obj/item/card/emag/emag_card)
 	if(obj_flags & EMAGGED)
-		return
+		return FALSE
 
-	to_chat(user, span_warning("You scramble the sleeper's user interface!"))
+	balloon_alert(user, "interface scrambled")
 	obj_flags |= EMAGGED
 
 	var/list/av_chem = available_chems.Copy()
 	for(var/chem in av_chem)
 		chem_buttons[chem] = pick_n_take(av_chem) //no dupes, allow for random buttons to still be correct
+	return TRUE
 
 /obj/machinery/sleeper/proc/inject_chem(chem, mob/user)
 	if((chem in available_chems) && chem_allowed(chem))
@@ -306,7 +302,6 @@
 	icon_state = "sleeper_s"
 	base_icon_state = "sleeper_s"
 	controls_inside = TRUE
-	deconstructable = TRUE
 
 ///Fully upgraded variant, the circuit using tier 4 parts.
 /obj/machinery/sleeper/syndie/fullupgrade
@@ -326,7 +321,6 @@
 	base_icon_state = "partypod"
 	circuit = /obj/item/circuitboard/machine/sleeper/party
 	controls_inside = TRUE
-	deconstructable = TRUE
 	enter_message = span_boldnotice("You're surrounded by some funky music inside the chamber. You zone out as you feel waves of krunk vibe within you.")
 
 	//Exclusively uses non-lethal, "fun" chems. At an obvious downside.

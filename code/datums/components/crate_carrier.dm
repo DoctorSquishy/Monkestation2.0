@@ -23,19 +23,19 @@
 		var/static/default_cache = typecacheof(list(/obj/structure/closet/crate))
 		src.carriable_cache = default_cache
 
-/datum/component/crate_carrier/Destroy(force, silent)
+/datum/component/crate_carrier/Destroy(force)
 	LAZYCLEARLIST(crates_in_hand)
 	return ..()
 
 /datum/component/crate_carrier/RegisterWithParent()
-	RegisterSignal(parent, COMSIG_PARENT_EXAMINE, PROC_REF(on_examine))
+	RegisterSignal(parent, COMSIG_ATOM_EXAMINE, PROC_REF(on_examine))
 	RegisterSignal(parent, COMSIG_LIVING_UNARMED_ATTACK, PROC_REF(on_unarm_attack))
 	RegisterSignal(parent, COMSIG_LIVING_DEATH, PROC_REF(on_death))
 
 /datum/component/crate_carrier/UnregisterFromParent()
-	UnregisterSignal(parent, list(COMSIG_LIVING_UNARMED_ATTACK, COMSIG_LIVING_DEATH, COMSIG_PARENT_EXAMINE))
+	UnregisterSignal(parent, list(COMSIG_LIVING_UNARMED_ATTACK, COMSIG_LIVING_DEATH, COMSIG_ATOM_EXAMINE))
 
-/// Signal proc for [COMSIG_PARENT_EXAMINE] to show when we're carrying crates
+/// Signal proc for [COMSIG_ATOM_EXAMINE] to show when we're carrying crates
 /datum/component/crate_carrier/proc/on_examine(mob/living/source, mob/examiner, list/examine_list)
 	SIGNAL_HANDLER
 

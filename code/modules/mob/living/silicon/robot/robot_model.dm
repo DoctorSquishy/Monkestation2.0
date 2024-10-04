@@ -77,6 +77,7 @@
 	modules.Cut()
 	added_modules.Cut()
 	storages.Cut()
+	clock_modules.Cut() //MonkeStation Edit: Clears clock modules
 	return ..()
 
 /obj/item/robot_model/proc/get_usable_modules()
@@ -226,6 +227,7 @@
 	var/mob/living/silicon/robot/cyborg = loc
 	var/obj/item/robot_model/new_model = new new_config_type(cyborg)
 	new_model.robot = cyborg
+	cyborg.icon = 'icons/mob/silicon/robots.dmi' //reset our icon to default, but before a new custom icon may be applied by be_transformed_to
 	if(!new_model.be_transformed_to(src, forced))
 		qdel(new_model)
 		return
@@ -238,6 +240,7 @@
 	cyborg.diag_hud_set_status()
 	cyborg.diag_hud_set_borgcell()
 	cyborg.diag_hud_set_aishell()
+	cyborg.update_icons()
 	log_silicon("CYBORG: [key_name(cyborg)] has transformed into the [new_model] model.")
 
 	INVOKE_ASYNC(new_model, PROC_REF(do_transform_animation))
@@ -245,6 +248,9 @@
 	return new_model
 
 /obj/item/robot_model/proc/be_transformed_to(obj/item/robot_model/old_model, forced = FALSE)
+	if(HAS_TRAIT(robot, TRAIT_NO_TRANSFORM))
+		robot.balloon_alert(robot, "can't transform right now!")
+		return FALSE
 	if(islist(borg_skins) && !forced)
 		var/mob/living/silicon/robot/cyborg = loc
 		var/list/reskin_icons = list()
@@ -277,7 +283,7 @@
 	var/mob/living/silicon/robot/cyborg = loc
 	if(cyborg.hat)
 		cyborg.hat.forceMove(drop_location())
-		cyborg.hat = null
+
 	cyborg.cut_overlays()
 	cyborg.setDir(SOUTH)
 	do_transform_delay()
@@ -286,7 +292,7 @@
 	var/mob/living/silicon/robot/cyborg = loc
 	sleep(0.1 SECONDS)
 	flick("[cyborg_base_icon]_transform", cyborg)
-	cyborg.notransform = TRUE
+	ADD_TRAIT(cyborg, TRAIT_NO_TRANSFORM, REF(src))
 	if(locked_transform)
 		cyborg.SetLockdown(TRUE)
 		cyborg.set_anchored(TRUE)
@@ -298,7 +304,7 @@
 	cyborg.SetLockdown(FALSE)
 	cyborg.setDir(SOUTH)
 	cyborg.set_anchored(FALSE)
-	cyborg.notransform = FALSE
+	REMOVE_TRAIT(cyborg, TRAIT_NO_TRANSFORM, REF(src))
 	cyborg.updatehealth()
 	cyborg.update_icons()
 	cyborg.notify_ai(AI_NOTIFICATION_NEW_MODEL)
@@ -384,6 +390,7 @@
 		/obj/item/stack/rods/cyborg,
 		/obj/item/stack/tile/iron/base/cyborg,
 		/obj/item/stack/cable_coil,
+		/obj/item/holosign_creator/atmos,
 	)
 	radio_channels = list(RADIO_CHANNEL_ENGINEERING)
 	emag_modules = list(
@@ -608,7 +615,7 @@
 
 	reagents.expose(our_turf, TOUCH, min(1, 10 / reagents.total_volume))
 	// We use more water doing this then mopping
-	reagents.remove_any(2) //reaction() doesn't use up the reagents
+	reagents.remove_all(2) //reaction() doesn't use up the reagents
 
 /datum/action/toggle_buffer/update_button_name(atom/movable/screen/movable/action_button/current_button, force)
 	if(buffer_on)
@@ -658,7 +665,7 @@
 	name = "Medical"
 	basic_modules = list(
 		/obj/item/assembly/flash/cyborg,
-		/obj/item/healthanalyzer,
+		/obj/item/healthanalyzer/cyborg, //MONKESTATION EDIT
 		/obj/item/reagent_containers/borghypo/medical,
 		/obj/item/borg/apparatus/beaker,
 		/obj/item/reagent_containers/dropper,
@@ -673,7 +680,7 @@
 		/obj/item/bonesetter,
 		/obj/item/blood_filter,
 		/obj/item/extinguisher/mini,
-		/obj/item/roller/robo,
+		/obj/item/emergency_bed/silicon,
 		/obj/item/borg/cyborghug/medical,
 		/obj/item/stack/medical/gauze,
 		/obj/item/stack/medical/bone_gel,
@@ -754,7 +761,7 @@
 
 /obj/item/robot_model/peacekeeper/do_transform_animation()
 	..()
-	to_chat(loc, "<span class='userdanger'>Under ASIMOV, you are an enforcer of the PEACE and preventer of HUMAN HARM. \
+	to_chat(loc, "<span class='userdanger'>You are an Enforcer and Upholder of your active lawset. \
 	You are not a security member and you are expected to follow orders and prevent harm above all else. Space law means nothing to you.</span>")
 
 /obj/item/robot_model/security
@@ -799,6 +806,7 @@
 		/obj/item/reagent_containers/cup/beaker/large, //I know a shaker is more appropiate but this is for ease of identification
 		/obj/item/reagent_containers/condiment/enzyme,
 		/obj/item/pen,
+		/obj/item/reagent_containers/cup/rag,
 		/obj/item/toy/crayon/spraycan/borg,
 		/obj/item/extinguisher/mini,
 		/obj/item/hand_labeler/borg,
@@ -829,7 +837,7 @@
 		"Kent" = list(SKIN_ICON_STATE = "kent", SKIN_LIGHT_KEY = "medical", SKIN_HAT_OFFSET = 3),
 		"Tophat" = list(SKIN_ICON_STATE = "tophat", SKIN_LIGHT_KEY = NONE, SKIN_HAT_OFFSET = INFINITY),
 		"Waitress" = list(SKIN_ICON_STATE = "service_f"),
-		"Kerfus" = list(SKIN_ICON_STATE = "kerfus_service", SKIN_LIGHT_KEY = NONE, SKIN_ICON = CYBORG_ICON_CARGO),
+		"Kerfus" = list(SKIN_ICON_STATE = "kerfus_service", SKIN_LIGHT_KEY = NONE, SKIN_ICON = CYBORG_ICON_CARGO, SKIN_TRAITS = list(TRAIT_CAT)),
 	)
 
 /obj/item/robot_model/service/respawn_consumable(mob/living/silicon/robot/cyborg, coeff = 1)
@@ -879,7 +887,9 @@
 		/obj/item/surgicaldrill,
 		/obj/item/scalpel,
 		/obj/item/melee/energy/sword/cyborg/saw,
-		/obj/item/roller/robo,
+		/obj/item/bonesetter,
+		/obj/item/blood_filter,
+		/obj/item/emergency_bed/silicon,
 		/obj/item/crowbar/cyborg,
 		/obj/item/extinguisher/mini,
 		/obj/item/pinpointer/syndicate_cyborg,
@@ -970,7 +980,7 @@
 	if(model)
 		model.storages |= src
 		RegisterSignal(model.robot, COMSIG_MOB_GET_STATUS_TAB_ITEMS, PROC_REF(get_status_tab_item))
-		RegisterSignal(model, COMSIG_PARENT_QDELETING, PROC_REF(unregister_from_model))
+		RegisterSignal(model, COMSIG_QDELETING, PROC_REF(unregister_from_model))
 
 /datum/robot_energy_storage/proc/unregister_from_model(obj/item/robot_model/model)
 	SIGNAL_HANDLER

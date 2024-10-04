@@ -17,12 +17,6 @@
 	///The afflicted must be above this health value in order for the toxin to deal damage
 	var/health_required = -100
 
-// Are you a bad enough dude to poison your own plants?
-/datum/reagent/toxin/on_hydroponics_apply(obj/item/seeds/myseed, datum/reagents/chems, obj/machinery/hydroponics/mytray, mob/user)
-	. = ..()
-	if(chems.has_reagent(type, 1))
-		mytray.adjust_toxic(round(chems.get_reagent_amount(type) * 2))
-
 /datum/reagent/toxin/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
 	if(toxpwr && affected_mob.health > health_required)
 		affected_mob.adjustToxLoss(toxpwr * REM * normalise_creation_purity() * seconds_per_tick, FALSE, required_biotype = affected_biotype)
@@ -68,9 +62,10 @@
 	affected_mob.adjustToxLoss(0.5 * seconds_per_tick * REM, required_biotype = affected_biotype)
 	return ..()
 
-/datum/reagent/toxin/mutagen/feed_interaction(mob/living/basic/chicken/target, volume)
+/datum/reagent/toxin/mutagen/feed_interaction(mob/living/basic/chicken/target, volume, mob/user)
 	target.instability += min(25, volume)
 
+/*
 /datum/reagent/toxin/mutagen/on_hydroponics_apply(obj/item/seeds/myseed, datum/reagents/chems, obj/machinery/hydroponics/mytray, mob/user)
 	if(!myseed)
 		return
@@ -80,6 +75,7 @@
 	if(prob(10))
 		chems.remove_all_type(type, chems.get_reagent_amount(type))
 		mytray.mutatespecie_new()
+*/
 
 #define LIQUID_PLASMA_BP (50+T0C)
 #define LIQUID_PLASMA_IG (325+T0C)
@@ -114,10 +110,12 @@
 	return ..()
 
 /datum/reagent/toxin/plasma/on_mob_metabolize(mob/living/carbon/affected_mob)
+	. = ..()
 	if(HAS_TRAIT(affected_mob, TRAIT_PLASMA_LOVER_METABOLISM)) // sometimes mobs can temporarily metabolize plasma (e.g. plasma fixation disease symptom)
 		toxpwr = 0
 
 /datum/reagent/toxin/plasma/on_mob_end_metabolize(mob/living/carbon/affected_mob)
+	. = ..()
 	toxpwr = initial(toxpwr)
 
 /// Handles plasma boiling.
@@ -172,10 +170,12 @@
 	return ..()
 
 /datum/reagent/toxin/hot_ice/on_mob_metabolize(mob/living/carbon/affected_mob)
+	. = ..()
 	if(HAS_TRAIT(affected_mob, TRAIT_PLASMA_LOVER_METABOLISM))
 		toxpwr = 0
 
 /datum/reagent/toxin/hot_ice/on_mob_end_metabolize(mob/living/carbon/affected_mob)
+	. = ..()
 	toxpwr = initial(toxpwr)
 
 /datum/reagent/toxin/lexorin
@@ -203,9 +203,11 @@
 	..()
 
 /datum/reagent/toxin/lexorin/on_mob_metabolize(mob/living/affected_mob)
+	. = ..()
 	RegisterSignal(affected_mob, COMSIG_CARBON_ATTEMPT_BREATHE, PROC_REF(block_breath))
 
 /datum/reagent/toxin/lexorin/on_mob_end_metabolize(mob/living/affected_mob)
+	. = ..()
 	UnregisterSignal(affected_mob, COMSIG_CARBON_ATTEMPT_BREATHE, PROC_REF(block_breath))
 
 /datum/reagent/toxin/lexorin/proc/block_breath(mob/living/source)
@@ -259,7 +261,7 @@
 /datum/reagent/toxin/zombiepowder/on_mob_metabolize(mob/living/holder_mob)
 	. = ..()
 	holder_mob.adjustOxyLoss(0.5*REM, FALSE, required_biotype = affected_biotype, required_respiration_type = affected_respiration_type)
-	if(data?["method"] & INGEST)
+	if((data?["method"] & INGEST) && holder_mob.stat != DEAD)
 		holder_mob.fakedeath(type)
 
 /datum/reagent/toxin/zombiepowder/on_mob_end_metabolize(mob/living/holder_mob)
@@ -286,7 +288,8 @@
 		if(5 to 8)
 			affected_mob.stamina.adjust(-40 * REM * seconds_per_tick, 0)
 		if(9 to INFINITY)
-			affected_mob.fakedeath(type)
+			if(affected_mob.stat != DEAD)
+				affected_mob.fakedeath(type)
 	..()
 	return TRUE
 
@@ -301,14 +304,7 @@
 	taste_description = "death"
 	ph = 14.5
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
-
-/datum/reagent/toxin/ghoulpowder/on_mob_metabolize(mob/living/affected_mob)
-	..()
-	ADD_TRAIT(affected_mob, TRAIT_FAKEDEATH, type)
-
-/datum/reagent/toxin/ghoulpowder/on_mob_end_metabolize(mob/living/affected_mob)
-	REMOVE_TRAIT(affected_mob, TRAIT_FAKEDEATH, type)
-	..()
+	metabolized_traits = list(TRAIT_FAKEDEATH)
 
 /datum/reagent/toxin/ghoulpowder/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
 	affected_mob.adjustOxyLoss(1 * REM * seconds_per_tick, FALSE, required_biotype = affected_biotype, required_respiration_type = affected_respiration_type)
@@ -327,15 +323,7 @@
 	inverse_chem = /datum/reagent/impurity/rosenol
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
 	addiction_types = list(/datum/addiction/hallucinogens = 18)  //7.2 per 2 seconds
-
-
-/datum/reagent/toxin/mindbreaker/on_mob_metabolize(mob/living/metabolizer)
-	. = ..()
-	ADD_TRAIT(metabolizer, TRAIT_RDS_SUPPRESSED, type)
-
-/datum/reagent/toxin/mindbreaker/on_mob_end_metabolize(mob/living/metabolizer)
-	. = ..()
-	REMOVE_TRAIT(metabolizer, TRAIT_RDS_SUPPRESSED, type)
+	metabolized_traits = list(TRAIT_RDS_SUPPRESSED)
 
 /datum/reagent/toxin/mindbreaker/on_mob_life(mob/living/carbon/metabolizer, seconds_per_tick, times_fired)
 	// mindbreaker toxin assuages hallucinations in those plagued with it, mentally
@@ -357,16 +345,6 @@
 	penetrates_skin = NONE
 	ph = 2.7
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
-
-	// Plant-B-Gone is just as bad
-/datum/reagent/toxin/plantbgone/on_hydroponics_apply(obj/item/seeds/myseed, datum/reagents/chems, obj/machinery/hydroponics/mytray, mob/user)
-	if(!check_tray(chems, mytray))
-		return
-
-	if(chems.has_reagent(type, 1))
-		mytray.adjust_plant_health(-round(chems.get_reagent_amount(type) * 10))
-		mytray.adjust_toxic(round(chems.get_reagent_amount(type) * 6))
-		mytray.adjust_weedlevel(-rand(4,8))
 
 /datum/reagent/toxin/plantbgone/expose_obj(obj/exposed_obj, reac_volume)
 	. = ..()
@@ -403,14 +381,6 @@
 	ph = 3
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
 
-	//Weed Spray
-/datum/reagent/toxin/plantbgone/weedkiller/on_hydroponics_apply(obj/item/seeds/myseed, datum/reagents/chems, obj/machinery/hydroponics/mytray, mob/user)
-	if(!check_tray(chems, mytray))
-		return
-	if(chems.has_reagent(type, 1))
-		mytray.adjust_toxic(round(chems.get_reagent_amount(type) * 0.5))
-		mytray.adjust_weedlevel(-rand(1,2))
-
 /datum/reagent/toxin/pestkiller
 	name = "Pest Killer"
 	description = "A harmful toxic mixture to kill pests. Do not ingest!"
@@ -419,19 +389,13 @@
 	ph = 3.2
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
 
-//Pest Spray
-/datum/reagent/toxin/pestkiller/on_hydroponics_apply(obj/item/seeds/myseed, datum/reagents/chems, obj/machinery/hydroponics/mytray, mob/user)
-	if(!check_tray(chems, mytray))
-		return
-	if(chems.has_reagent(type, 1))
-		mytray.adjust_toxic(round(chems.get_reagent_amount(type) * 1))
-		mytray.adjust_pestlevel(-rand(1,2))
-
-/datum/reagent/toxin/pestkiller/expose_mob(mob/living/exposed_mob, methods=TOUCH, reac_volume)
+/datum/reagent/toxin/pestkiller/on_new(data)
 	. = ..()
-	if(exposed_mob.mob_biotypes & MOB_BUG)
-		var/damage = min(round(0.4*reac_volume, 0.1),10)
-		exposed_mob.adjustToxLoss(damage, required_biotype = affected_biotype)
+	AddElement(/datum/element/bugkiller_reagent)
+
+/datum/reagent/toxin/pestkiller/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
+	. = affected_mob.adjustToxLoss(2 * toxpwr * REM * seconds_per_tick, updating_health = FALSE, required_biotype = MOB_BUG)
+	return ..() || .
 
 /datum/reagent/toxin/pestkiller/organic
 	name = "Natural Pest Killer"
@@ -439,14 +403,6 @@
 	color = "#4b2400" // rgb: 75, 0, 75
 	toxpwr = 1
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
-
-//Pest Spray
-/datum/reagent/toxin/pestkiller/organic/on_hydroponics_apply(obj/item/seeds/myseed, datum/reagents/chems, obj/machinery/hydroponics/mytray, mob/user)
-	if(!check_tray(chems, mytray))
-		return
-	if(chems.has_reagent(type, 1))
-		mytray.adjust_toxic(round(chems.get_reagent_amount(type) * 0.1))
-		mytray.adjust_pestlevel(-rand(1,2))
 
 /datum/reagent/toxin/spore
 	name = "Spore Toxin"
@@ -681,9 +637,8 @@
 
 /datum/reagent/toxin/venom/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
 	var/newsize = 1.1 * RESIZE_DEFAULT_SIZE
-	affected_mob.resize = newsize/current_size
+	affected_mob.update_transform(newsize/current_size)
 	current_size = newsize
-	affected_mob.update_transform()
 
 	toxpwr = 0.1 * volume
 	affected_mob.adjustBruteLoss((0.3 * volume) * REM * seconds_per_tick, FALSE, required_bodytype = affected_bodytype)
@@ -695,9 +650,8 @@
 		..()
 
 /datum/reagent/toxin/venom/on_mob_end_metabolize(mob/living/affected_mob)
-	affected_mob.resize = RESIZE_DEFAULT_SIZE/current_size
+	affected_mob.update_transform(RESIZE_DEFAULT_SIZE/current_size)
 	current_size = RESIZE_DEFAULT_SIZE
-	affected_mob.update_transform()
 	..()
 
 /datum/reagent/toxin/fentanyl
@@ -848,14 +802,7 @@
 	metabolization_rate = 0.75 * REAGENTS_METABOLISM
 	toxpwr = 0
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED|REAGENT_NO_RANDOM_RECIPE
-
-/datum/reagent/toxin/sodium_thiopental/on_mob_add(mob/living/affected_mob, amount)
-	. = ..()
-	ADD_TRAIT(affected_mob, TRAIT_ANTICONVULSANT, name)
-
-/datum/reagent/toxin/sodium_thiopental/on_mob_delete(mob/living/affected_mob)
-	. = ..()
-	REMOVE_TRAIT(affected_mob, TRAIT_ANTICONVULSANT, name)
+	added_traits = list(TRAIT_ANTICONVULSANT)
 
 /datum/reagent/toxin/sodium_thiopental/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
 	if(current_cycle >= 10)
@@ -992,18 +939,11 @@
 	toxpwr = 0
 	ph = 11.6
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
+	metabolized_traits = list(TRAIT_BLOODY_MESS)
 
 /datum/reagent/toxin/heparin/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
 	if(holder.has_reagent(/datum/reagent/medicine/coagulant)) //Directly purges coagulants from the system. Get rid of the heparin BEFORE attempting to use coagulants.
 		holder.remove_reagent(/datum/reagent/medicine/coagulant, 2 * REM * seconds_per_tick)
-	return ..()
-
-/datum/reagent/toxin/heparin/on_mob_metabolize(mob/living/affected_mob)
-	ADD_TRAIT(affected_mob, TRAIT_BLOODY_MESS, /datum/reagent/toxin/heparin)
-	return ..()
-
-/datum/reagent/toxin/heparin/on_mob_end_metabolize(mob/living/affected_mob)
-	REMOVE_TRAIT(affected_mob, TRAIT_BLOODY_MESS, /datum/reagent/toxin/heparin)
 	return ..()
 
 /datum/reagent/toxin/rotatium //Rotatium. Fucks up your rotation and is hilarious
@@ -1072,14 +1012,6 @@
 	ph = 2.75
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
 
-// ...Why? I mean, clearly someone had to have done this and thought, well, acid doesn't hurt plants, but what brought us here, to this point?
-/datum/reagent/toxin/acid/on_hydroponics_apply(obj/item/seeds/myseed, datum/reagents/chems, obj/machinery/hydroponics/mytray, mob/user)
-	. = ..()
-	if(chems.has_reagent(type, 1))
-		mytray.adjust_plant_health(-round(chems.get_reagent_amount(type) * 1))
-		mytray.adjust_toxic(round(chems.get_reagent_amount(type) * 1.5))
-		mytray.adjust_weedlevel(-rand(1,2))
-
 /datum/reagent/toxin/acid/expose_mob(mob/living/carbon/exposed_carbon, methods=TOUCH, reac_volume)
 	. = ..()
 	if(!istype(exposed_carbon))
@@ -1117,14 +1049,6 @@
 	acidpwr = 42.0
 	ph = 0.0
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
-
-// SERIOUSLY
-/datum/reagent/toxin/acid/fluacid/on_hydroponics_apply(obj/item/seeds/myseed, datum/reagents/chems, obj/machinery/hydroponics/mytray, mob/user)
-	. = ..()
-	if(chems.has_reagent(type, 1))
-		mytray.adjust_plant_health(-round(chems.get_reagent_amount(type) * 2))
-		mytray.adjust_toxic(round(chems.get_reagent_amount(type) * 3))
-		mytray.adjust_weedlevel(-rand(1,4))
 
 /datum/reagent/toxin/acid/fluacid/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
 	affected_mob.adjustFireLoss((current_cycle/15) * REM * normalise_creation_purity() * seconds_per_tick, FALSE, required_bodytype = affected_bodytype)
@@ -1178,12 +1102,7 @@
 	ph = 1.7
 	taste_description = "stillness"
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
-
-/datum/reagent/toxin/mimesbane/on_mob_metabolize(mob/living/affected_mob)
-	ADD_TRAIT(affected_mob, TRAIT_EMOTEMUTE, type)
-
-/datum/reagent/toxin/mimesbane/on_mob_end_metabolize(mob/living/affected_mob)
-	REMOVE_TRAIT(affected_mob, TRAIT_EMOTEMUTE, type)
+	metabolized_traits = list(TRAIT_EMOTEMUTE)
 
 /datum/reagent/toxin/bonehurtingjuice //oof ouch
 	name = "Bone Hurting Juice"
@@ -1370,9 +1289,11 @@
 	traits_not_applied -= added_trait
 
 /datum/reagent/toxin/tetrodotoxin/on_mob_metabolize(mob/living/affected_mob)
+	. = ..()
 	RegisterSignal(affected_mob, COMSIG_CARBON_ATTEMPT_BREATHE, PROC_REF(block_breath))
 
 /datum/reagent/toxin/tetrodotoxin/on_mob_end_metabolize(mob/living/affected_mob)
+	. = ..()
 	UnregisterSignal(affected_mob, COMSIG_CARBON_ATTEMPT_BREATHE, PROC_REF(block_breath))
 	// the initial() proc doesn't work for lists.
 	var/list/initial_list = list(
@@ -1388,3 +1309,35 @@
 	SIGNAL_HANDLER
 	if(current_cycle >= 28)
 		return COMSIG_CARBON_BLOCK_BREATH
+
+/datum/reagent/toxin/radiomagnetic_disruptor // MONKESTATION ADDITION: NANITE REMOVAL CHEM
+	name = "Radiomagnetic Disruptor"
+	color = "#1d5a1aae" // grayish dark green
+	description = "A toxic chemical that rapidly destroys nanites and causes highly localized EMPs."
+	taste_description = "radio waves"
+	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED | REAGENT_DEAD_PROCESS
+	metabolization_rate = 0.5 * REAGENTS_METABOLISM
+	overdose_threshold = 20
+	self_consuming = TRUE
+	toxpwr = 1
+	var/purge_rate = 10
+
+/datum/reagent/toxin/radiomagnetic_disruptor/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
+	. = ..()
+	handle_effects(affected_mob, seconds_per_tick)
+
+/datum/reagent/toxin/radiomagnetic_disruptor/on_mob_dead(mob/living/carbon/affected_mob, seconds_per_tick)
+	. = ..()
+	handle_effects(affected_mob, seconds_per_tick)
+
+/datum/reagent/toxin/radiomagnetic_disruptor/proc/handle_effects(mob/living/carbon/affected_mob, seconds_per_tick)
+	if (SPT_PROB(2, seconds_per_tick))
+		empulse(affected_mob, heavy_range = 0, light_range = 1)
+	var/datum/component/nanites/nanites = affected_mob.GetComponent(/datum/component/nanites)
+	if (nanites)
+		nanites.adjust_nanites(null, -(overdosed ? purge_rate * 2 : purge_rate) * seconds_per_tick)
+
+/datum/reagent/toxin/radiomagnetic_disruptor/overdose_process(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
+	. = ..()
+	if (SPT_PROB(4, seconds_per_tick))
+		empulse(affected_mob, heavy_range = 1, light_range = 1)

@@ -55,7 +55,6 @@
 	loot = list(/obj/structure/closet/crate/necropolis/colossus)
 	death_message = "disintegrates, leaving a glowing core in its wake."
 	death_sound = 'sound/magic/demon_dies.ogg'
-	small_sprite_type = /datum/action/small_sprite/megafauna/colossus
 	/// Spiral shots ability
 	var/datum/action/cooldown/mob_cooldown/projectile_attack/spiral_shots/colossus/spiral_shots
 	/// Random shots ablity
@@ -171,7 +170,7 @@
 	icon_state = "at_shield2"
 	layer = FLY_LAYER
 	plane = ABOVE_GAME_PLANE
-	light_system = MOVABLE_LIGHT
+	light_system = OVERLAY_LIGHT
 	light_outer_range = 2
 	duration = 8
 	var/target
@@ -187,7 +186,6 @@
 	damage = 25
 	armour_penetration = 50
 	speed = 2
-	eyeblur = 0
 	damage_type = BRUTE
 	pass_flags = PASSTABLE
 	plane = GAME_PLANE
@@ -198,7 +196,7 @@
 		direct_target = TRUE
 	return ..(target, direct_target, ignore_loc, cross_failed)
 
-/obj/projectile/colossus/on_hit(atom/target, blocked = FALSE)
+/obj/projectile/colossus/on_hit(atom/target, blocked = 0, pierce_hit)
 	. = ..()
 	if(isliving(target))
 		var/mob/living/dust_mob = target
@@ -382,16 +380,13 @@
 /datum/crystal_warp_theme/proc/transform_area(area/target_area)
 	if (target_area.outdoors)
 		return FALSE
-	for(var/atom/thing in target_area)
-		if(isturf(thing))
-			replace_turf(thing)
-			continue
-		if(chair && istype(thing, /obj/structure/chair))
-			replace_object(thing, chair)
-			continue
-		if(table && istype(thing, /obj/structure/table))
-			replace_object(thing, table)
-			continue
+	for(var/turf/area_turf as anything in target_area.get_turfs_from_all_zlevels())
+		replace_turf(area_turf)
+		for(var/turf_obj in area_turf)
+			if(chair && istype(turf_obj, /obj/structure/chair))
+				replace_object(turf_obj, chair)
+			else if(table && istype(turf_obj, /obj/structure/table))
+				replace_object(turf_obj, table)
 	return TRUE
 
 /// Replaces a turf with a different themed turf
@@ -519,7 +514,13 @@
 	if(..() && !ready_to_deploy)
 		SSpoints_of_interest.make_point_of_interest(src)
 		ready_to_deploy = TRUE
-		notify_ghosts("An anomalous crystal has been activated in [get_area(src)]! This crystal can always be used by ghosts hereafter.", enter_link = "<a href=?src=[REF(src)];ghostjoin=1>(Click to enter)</a>", ghost_sound = 'sound/effects/ghost2.ogg', source = src, action = NOTIFY_ATTACK, header = "Anomalous crystal activated")
+		notify_ghosts(
+			"An anomalous crystal has been activated in [get_area(src)]! This crystal can always be used by ghosts hereafter.",
+			ghost_sound = 'sound/effects/ghost2.ogg',
+			source = src,
+			action = NOTIFY_PLAY,
+			header = "Anomalous crystal activated",
+		)
 
 /obj/machinery/anomalous_crystal/helpers/attack_ghost(mob/dead/observer/user)
 	. = ..()
@@ -530,13 +531,6 @@
 		if((be_helper == "Yes") && !QDELETED(src) && isobserver(user))
 			var/mob/living/basic/lightgeist/deployable = new(get_turf(loc))
 			deployable.key = user.key
-
-
-/obj/machinery/anomalous_crystal/helpers/Topic(href, href_list)
-	if(href_list["ghostjoin"])
-		var/mob/dead/observer/ghost = usr
-		if(istype(ghost))
-			attack_ghost(ghost)
 
 /obj/machinery/anomalous_crystal/possessor //Allows you to bodyjack small animals, then exit them at your leisure, but you can only do this once per activation. Because they blow up. Also, if the bodyjacked animal dies, SO DO YOU.
 	observer_desc = "When activated, this crystal allows you to take over small animals, and then exit them at the possessors leisure. Exiting the animal kills it, and if you die while possessing the animal, you die as well."
@@ -597,12 +591,12 @@
 	START_PROCESSING(SSobj, src)
 
 /obj/structure/closet/stasis/Entered(atom/movable/arrived, atom/old_loc, list/atom/old_locs)
+	. = ..()
 	if(isliving(arrived) && holder_animal)
-		var/mob/living/L = arrived
-		L.notransform = 1
-		ADD_TRAIT(L, TRAIT_MUTE, STASIS_MUTE)
-		L.status_flags |= GODMODE
-		L.mind.transfer_to(holder_animal)
+		var/mob/living/possessor = arrived
+		possessor.add_traits(list(TRAIT_UNDENSE, TRAIT_NO_TRANSFORM), STASIS_MUTE)
+		possessor.status_flags |= GODMODE
+		possessor.mind.transfer_to(holder_animal)
 		var/datum/action/exit_possession/escape = new(holder_animal)
 		escape.Grant(holder_animal)
 		remove_verb(holder_animal, /mob/living/verb/pulled)
@@ -610,9 +604,8 @@
 /obj/structure/closet/stasis/dump_contents(kill = TRUE)
 	STOP_PROCESSING(SSobj, src)
 	for(var/mob/living/possessor in src)
-		REMOVE_TRAIT(possessor, TRAIT_MUTE, STASIS_MUTE)
+		possessor.remove_traits(list(TRAIT_UNDENSE, TRAIT_NO_TRANSFORM), STASIS_MUTE)
 		possessor.status_flags &= ~GODMODE
-		possessor.notransform = FALSE
 		if(kill || !isanimal_or_basicmob(loc))
 			possessor.investigate_log("has died from [src].", INVESTIGATE_DEATHS)
 			possessor.death(FALSE)

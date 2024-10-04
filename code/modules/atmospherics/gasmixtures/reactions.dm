@@ -929,23 +929,24 @@
  * Zauker Decomposition:
  *
  * Occurs in the presence of nitrogen to prevent zauker floods.
+ * ///Monke edit begin Changes every instance of 'Nitrogen' to 'water_vapor'
  * Exothermic.
  */
 /datum/gas_reaction/zauker_decomp
 	priority_group = PRIORITY_POST_FORMATION
 	name = "Zauker Decomposition"
 	id = "zauker_decomp"
-	desc = "Decomposition of zauker when exposed to nitrogen."
+	desc = "Decomposition of zauker when exposed to H2O."
 
 /datum/gas_reaction/zauker_decomp/init_reqs()
 	requirements = list(
-		/datum/gas/nitrogen = MINIMUM_MOLE_COUNT,
+		/datum/gas/water_vapor = MINIMUM_MOLE_COUNT,
 		/datum/gas/zauker = MINIMUM_MOLE_COUNT,
 	)
 
 /datum/gas_reaction/zauker_decomp/react(datum/gas_mixture/air, datum/holder)
 	var/list/cached_gases = air.gases //this speeds things up because accessing datum vars is slow
-	var/burned_fuel = min(ZAUKER_DECOMPOSITION_MAX_RATE, cached_gases[/datum/gas/nitrogen][MOLES], cached_gases[/datum/gas/zauker][MOLES])
+	var/burned_fuel = min(ZAUKER_DECOMPOSITION_MAX_RATE, cached_gases[/datum/gas/water_vapor][MOLES], cached_gases[/datum/gas/zauker][MOLES])
 	if (burned_fuel <= 0 || cached_gases[/datum/gas/zauker][MOLES] - burned_fuel < 0)
 		return NO_REACTION
 
@@ -953,8 +954,8 @@
 	cached_gases[/datum/gas/zauker][MOLES] -= burned_fuel
 	ASSERT_GAS(/datum/gas/oxygen, air)
 	cached_gases[/datum/gas/oxygen][MOLES] += burned_fuel * 0.3
-	ASSERT_GAS(/datum/gas/nitrogen, air)
-	cached_gases[/datum/gas/nitrogen][MOLES] += burned_fuel * 0.7
+	ASSERT_GAS(/datum/gas/water_vapor, air)
+	cached_gases[/datum/gas/water_vapor][MOLES] += burned_fuel * 0.7
 
 	SET_REACTION_RESULTS(burned_fuel)
 	var/energy_released = ZAUKER_DECOMPOSITION_ENERGY * burned_fuel
@@ -962,7 +963,7 @@
 	if(new_heat_capacity > MINIMUM_HEAT_CAPACITY)
 		air.temperature = max((air.temperature * old_heat_capacity + energy_released) / new_heat_capacity, TCMB)
 	return REACTING
-
+///Monke edit end
 
 // Proto-Nitrate
 
@@ -1227,8 +1228,8 @@
 			var/particle_chance = ((PARTICLE_CHANCE_CONSTANT)/(reaction_energy-PARTICLE_CHANCE_CONSTANT)) + 1//Asymptopically approaches 100% as the energy of the reaction goes up.
 			if(prob(PERCENT(particle_chance)))
 				location.fire_nuclear_particle()
-			var/rad_power = max((FUSION_RAD_COEFFICIENT/instability) + 5000, 0)
-			radiation_pulse(location,rad_power)
+			var/rad_power = max((FUSION_RAD_COEFFICIENT/instability) + 250, 15000) //Wow!
+			radiation_pulse(location, rand(6,30), 7, 60, 0 SECONDS, rad_power, 1) // Nonmodular. Fixes fusion going wacko mode - makes it significantly harder to irradiate people through walls, and fixes the range issue.
 		var/new_heat_capacity = air.heat_capacity()
 		if(new_heat_capacity > MINIMUM_HEAT_CAPACITY && (air.temperature <= FUSION_MAXIMUM_TEMPERATURE || reaction_energy <= 0))	//If above FUSION_MAXIMUM_TEMPERATURE, will only adjust temperature for endothermic reactions.
 			air.temperature = clamp(((air.temperature*old_heat_capacity + reaction_energy)/new_heat_capacity),TCMB,INFINITY)

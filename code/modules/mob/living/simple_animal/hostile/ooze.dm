@@ -203,7 +203,7 @@
 /datum/action/consume/New(Target)
 	. = ..()
 	RegisterSignal(owner, COMSIG_LIVING_DEATH, PROC_REF(on_owner_death))
-	RegisterSignal(owner, COMSIG_PARENT_QDELETING, PROC_REF(handle_mob_deletion))
+	RegisterSignal(owner, COMSIG_QDELETING, PROC_REF(handle_mob_deletion))
 
 /datum/action/consume/proc/handle_mob_deletion()
 	SIGNAL_HANDLER
@@ -235,7 +235,7 @@
 /datum/action/consume/proc/start_consuming(mob/living/target)
 	vored_mob = target
 	vored_mob.forceMove(owner) ///AAAAAAAAAAAAAAAAAAAAAAHHH!!!
-	RegisterSignal(vored_mob, COMSIG_PARENT_QDELETING, PROC_REF(handle_mob_deletion))
+	RegisterSignal(vored_mob, COMSIG_QDELETING, PROC_REF(handle_mob_deletion))
 	playsound(owner,'sound/items/eatfood.ogg', rand(30,50), TRUE)
 	owner.visible_message(span_warning("[src] devours [target]!"), span_notice("You devour [target]."))
 	START_PROCESSING(SSprocessing, src)
@@ -246,7 +246,7 @@
 	vored_mob.forceMove(get_turf(owner))
 	playsound(get_turf(owner), 'sound/effects/splat.ogg', 50, TRUE)
 	owner.visible_message(span_warning("[owner] pukes out [vored_mob]!"), span_notice("You puke out [vored_mob]."))
-	UnregisterSignal(vored_mob, COMSIG_PARENT_QDELETING)
+	UnregisterSignal(vored_mob, COMSIG_QDELETING)
 	vored_mob = null
 
 ///Gain health for the consumption and dump some clone loss on the target.
@@ -295,7 +295,7 @@
 /mob/living/simple_animal/hostile/ooze/grapes/add_cell_sample()
 	AddElement(/datum/element/swabable, CELL_LINE_TABLE_GRAPE, CELL_VIRUS_TABLE_GENERIC_MOB, 1, 5)
 
-///Ability that allows the owner to fire healing globules at mobs, targetting specific limbs.
+///Ability that allows the owner to fire healing globules at mobs, targeting specific limbs.
 /datum/action/cooldown/globules
 	name = "Fire Mending globule"
 	desc = "Fires a mending globule at someone, healing a specific limb of theirs."
@@ -335,7 +335,7 @@
 
 	return TRUE
 
-/datum/action/cooldown/globules/InterceptClickOn(mob/living/caller, params, atom/target)
+/datum/action/cooldown/globules/InterceptClickOn(mob/living/user, params, atom/target)
 	. = ..()
 	if(!.)
 		return FALSE
@@ -344,19 +344,19 @@
 	// Well, we need to use the params of the click intercept
 	// for passing into preparePixelProjectile, so we'll handle it here instead.
 	// We just need to make sure Pre-activate and Activate return TRUE so we make it this far
-	caller.visible_message(
-		span_nicegreen("[caller] launches a mending globule!"),
+	user.visible_message(
+		span_nicegreen("[user] launches a mending globule!"),
 		span_notice("You launch a mending globule."),
 	)
 
-	var/mob/living/simple_animal/hostile/ooze/oozy = caller
+	var/mob/living/simple_animal/hostile/ooze/oozy = user
 	if(istype(oozy))
 		oozy.adjust_ooze_nutrition(-5)
 
 	var/modifiers = params2list(params)
-	var/obj/projectile/globule/globule = new(caller.loc)
-	globule.preparePixelProjectile(target, caller, modifiers)
-	globule.def_zone = caller.zone_selected
+	var/obj/projectile/globule/globule = new(user.loc)
+	globule.preparePixelProjectile(target, user, modifiers)
+	globule.def_zone = user.zone_selected
 	globule.fire()
 
 	StartCooldown()

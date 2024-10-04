@@ -10,7 +10,7 @@
 	worn_icon_state = "camera"
 	lefthand_file = 'icons/mob/inhands/items/devices_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/items/devices_righthand.dmi'
-	light_system = MOVABLE_LIGHT //Used as a flash here.
+	light_system = OVERLAY_LIGHT //Used as a flash here.
 	light_outer_range = 8
 	light_color = COLOR_WHITE
 	light_power = FLASH_LIGHT_POWER
@@ -18,7 +18,7 @@
 	w_class = WEIGHT_CLASS_SMALL
 	flags_1 = CONDUCT_1
 	slot_flags = ITEM_SLOT_NECK
-	custom_materials = list(/datum/material/iron = 50, /datum/material/glass = 150)
+	custom_materials = list(/datum/material/iron =SMALL_MATERIAL_AMOUNT*0.5, /datum/material/glass = SMALL_MATERIAL_AMOUNT*1.5)
 	custom_price = PAYCHECK_CREW * 2
 	var/flash_enabled = TRUE
 	var/state_on = "camera"
@@ -189,8 +189,8 @@
 	var/blueprints = FALSE
 	var/clone_area = SSmapping.request_turf_block_reservation(size_x * 2 + 1, size_y * 2 + 1, 1)
 
-	var/width = size_x * 2
-	var/height = size_y * 2
+	var/width = size_x * 2 + 1
+	var/height = size_y * 2 + 1
 	for(var/turf/placeholder as anything in CORNER_BLOCK_OFFSET(target_turf, width, height, -size_x, -size_y))
 		while(istype(placeholder, /turf/open/openspace)) //Multi-z photography
 			placeholder = GET_TURF_BELOW(placeholder)

@@ -39,6 +39,8 @@ GLOBAL_DATUM(main_supermatter_engine, /obj/machinery/power/supermatter_crystal)
 	var/absorption_ratio = 0.15
 	/// The gasmix we just recently absorbed. Tile's air multiplied by absorption_ratio
 	var/datum/gas_mixture/absorbed_gasmix
+	/// The current gas behaviors for this particular crystal
+	var/list/current_gas_behavior
 
 	///Refered to as EER on the monitor. This value effects gas output, damage, and power generation.
 	var/internal_energy = 0
@@ -109,7 +111,7 @@ GLOBAL_DATUM(main_supermatter_engine, /obj/machinery/power/supermatter_crystal)
 	///The cutoff for a bolt jumping, grows with heat, lowers with higher mol count,
 	var/zap_cutoff = 1500
 	///How much the bullets damage should be multiplied by when it is added to the internal variables
-	var/bullet_energy = 2
+	var/bullet_energy = SUPERMATTER_DEFAULT_BULLET_ENERGY
 	///How much hallucination should we produce per unit of power?
 	var/hallucination_power = 0.1
 
@@ -169,8 +171,12 @@ GLOBAL_DATUM(main_supermatter_engine, /obj/machinery/power/supermatter_crystal)
 	/// Only values greater or equal to the current one can change the strat.
 	var/delam_priority = SM_DELAM_PRIO_NONE
 
+	/// Lazy list of the crazy engineers who managed to turn a cascading engine around.
+	var/list/datum/weakref/saviors = null
+
 /obj/machinery/power/supermatter_crystal/Initialize(mapload)
 	. = ..()
+	current_gas_behavior = init_sm_gas()
 	gas_percentage = list()
 	absorbed_gasmix = new()
 	uid = gl_uid++
@@ -191,7 +197,7 @@ GLOBAL_DATUM(main_supermatter_engine, /obj/machinery/power/supermatter_crystal)
 	RegisterSignal(src, COMSIG_ATOM_BSA_BEAM, PROC_REF(force_delam))
 	RegisterSignal(src, COMSIG_ATOM_TIMESTOP_FREEZE, PROC_REF(time_frozen))
 	RegisterSignal(src, COMSIG_ATOM_TIMESTOP_UNFREEZE, PROC_REF(time_unfrozen))
-
+	RegisterSignal(src, COMSIG_ATOM_PRE_BULLET_ACT, PROC_REF(eat_bullets))
 	var/static/list/loc_connections = list(
 		COMSIG_TURF_INDUSTRIAL_LIFT_ENTER = PROC_REF(tram_contents_consume),
 	)
@@ -259,22 +265,25 @@ GLOBAL_DATUM(main_supermatter_engine, /obj/machinery/power/supermatter_crystal)
 	// Some extra effects like [/datum/sm_gas/carbon_dioxide/extra_effects]
 	// needs more than one gas and rely on a fully parsed gas_percentage.
 	for (var/gas_path in absorbed_gasmix.gases)
-		var/datum/sm_gas/sm_gas = GLOB.sm_gas_behavior[gas_path]
+		var/datum/sm_gas/sm_gas = current_gas_behavior[gas_path]
 		sm_gas?.extra_effects(src)
 
 	// PART 3: POWER PROCESSING
 	internal_energy_factors = calculate_internal_energy()
 	zap_factors = calculate_zap_multiplier()
-	if(internal_energy && (last_power_zap + 4 SECONDS - (internal_energy * 0.001)) < world.time)
+	if(internal_energy && (last_power_zap + (4 - internal_energy * 0.001) SECONDS) < world.time)
 		playsound(src, 'sound/weapons/emitter2.ogg', 70, TRUE)
 		hue_angle_shift = clamp(903 * log(10, (internal_energy + 8000)) - 3590, -50, 240)
 		var/zap_color = color_matrix_rotate_hue(hue_angle_shift)
+		//Scale the strength of the zap with the world's time elapsed between zaps in seconds.
+		//Capped at 16 seconds to prevent a crazy burst of energy if atmos was halted for a long time.
+		var/delta_time = min((world.time - last_power_zap) * 0.1, 16)
 		supermatter_zap(
 			zapstart = src,
 			range = 3,
-			zap_str = 5 * internal_energy * zap_multiplier,
+			zap_str = 1.25 * internal_energy * zap_multiplier * delta_time,
 			zap_flags = ZAP_SUPERMATTER_FLAGS,
-			zap_cutoff = 300,
+			zap_cutoff = 300 * delta_time,
 			power_level = internal_energy,
 			color = zap_color,
 		)
@@ -312,6 +321,16 @@ GLOBAL_DATUM(main_supermatter_engine, /obj/machinery/power/supermatter_crystal)
 	processing_sound()
 	handle_high_power()
 	psychological_examination()
+
+	// handle the engineers that saved the engine from cascading, if there were any
+	if(get_status() < SUPERMATTER_EMERGENCY && !isnull(saviors))
+		for(var/datum/weakref/savior_ref as anything in saviors)
+			var/mob/living/savior = savior_ref.resolve()
+			if(!istype(savior)) // didn't live to tell the tale, sadly.
+				continue
+			savior.client?.give_award(/datum/award/achievement/jobs/theoretical_limits, savior)
+		LAZYNULL(saviors)
+
 	if(prob(15))
 		supermatter_pull(loc, min(internal_energy/850, 3))//850, 1700, 2550
 	update_appearance()
@@ -479,6 +498,14 @@ GLOBAL_DATUM(main_supermatter_engine, /obj/machinery/power/supermatter_crystal)
 		return
 
 	final_countdown = TRUE
+	SEND_GLOBAL_SIGNAL(COMSIG_MAIN_SM_DELAMINATING, final_countdown)
+
+	notify_ghosts(
+		"[src] has begun the delamination process!",
+		source = src,
+		header = "Meltdown Incoming",
+		notify_flags = NOTIFY_CATEGORY_DEFAULT,
+	)
 
 	var/datum/sm_delam/last_delamination_strategy = delamination_strategy
 	var/list/count_down_messages = delamination_strategy.count_down_messages()
@@ -512,6 +539,17 @@ GLOBAL_DATUM(main_supermatter_engine, /obj/machinery/power/supermatter_crystal)
 
 		if(healed)
 			final_countdown = FALSE
+
+			if(!istype(delamination_strategy, /datum/sm_delam/cascade))
+				return
+
+			for(var/mob/living/lucky_engi as anything in mobs_in_area_type(list(/area/station/engineering/supermatter)))
+				if(isnull(lucky_engi.client))
+					continue
+				if(isanimal_or_basicmob(lucky_engi))
+					continue
+				LAZYADD(saviors, WEAKREF(lucky_engi))
+
 			return // delam averted
 		sleep(1 SECONDS)
 
@@ -549,7 +587,7 @@ GLOBAL_DATUM(main_supermatter_engine, /obj/machinery/power/supermatter_crystal)
 
 	for (var/gas_path in absorbed_gasmix.gases)
 		gas_percentage[gas_path] = absorbed_gasmix.gases[gas_path][MOLES] / total_moles
-		var/datum/sm_gas/sm_gas = GLOB.sm_gas_behavior[gas_path]
+		var/datum/sm_gas/sm_gas = current_gas_behavior[gas_path]
 		if(!sm_gas)
 			continue
 		gas_power_transmission += sm_gas.power_transmission * gas_percentage[gas_path]

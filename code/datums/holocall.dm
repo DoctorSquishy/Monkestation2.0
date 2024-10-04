@@ -34,10 +34,10 @@
 	///calls from a head of staff autoconnect, if the receiving pad is not secure.
 	var/head_call = FALSE
 
-//creates a holocall made by `caller` from `calling_pad` to `callees`
-/datum/holocall/New(mob/living/caller, obj/machinery/holopad/calling_pad, list/callees, elevated_access = FALSE)
+//creates a holocall made by `caller_user` from `calling_pad` to `callees`
+/datum/holocall/New(mob/living/caller_user, obj/machinery/holopad/calling_pad, list/callees, elevated_access = FALSE)
 	call_start_time = world.time
-	user = caller
+	user = caller_user
 	calling_pad.outgoing_call = src
 	calling_holopad = calling_pad
 	head_call = elevated_access
@@ -223,7 +223,7 @@
 	desc = "Stores recorder holocalls."
 	icon_state = "holodisk"
 	obj_flags = UNIQUE_RENAME
-	custom_materials = list(/datum/material/iron = 100, /datum/material/glass = 100)
+	custom_materials = list(/datum/material/iron = SMALL_MATERIAL_AMOUNT, /datum/material/glass = SMALL_MATERIAL_AMOUNT)
 	var/datum/holorecord/record
 	//Preset variables
 	var/preset_image_type

@@ -9,7 +9,7 @@
 	movedelay = 0.6
 	car_traits = CAN_KIDNAP
 	key_type = /obj/item/bikehorn
-	light_system = MOVABLE_LIGHT_DIRECTIONAL
+	light_system = OVERLAY_LIGHT_DIRECTIONAL
 	light_outer_range = 8
 	light_power = 2
 	light_on = FALSE
@@ -119,11 +119,11 @@
 				if(prob(35)) //Note: The randomstep on dump_mobs throws occupants into each other and often causes wounds regardless.
 					continue
 				for(var/obj/item/bodypart/head/head_to_wound as anything in carbon_occupant.bodyparts)
-					var/type_wound = pick(list(
-					/datum/wound/blunt/moderate,
-					/datum/wound/blunt/severe,
-					))
-					head_to_wound.force_wound_upwards(type_wound)
+					var/pick_mode = text2num(pick(list(
+						"[WOUND_PICK_LOWEST_SEVERITY]",
+						"[WOUND_PICK_HIGHEST_SEVERITY]"
+					)))
+					carbon_occupant.cause_wound_of_type_and_severity(WOUND_BLUNT, head_to_wound, WOUND_SEVERITY_MODERATE, WOUND_SEVERITY_SEVERE, pick_mode)
 					carbon_occupant.playsound_local(src, 'sound/weapons/flash_ring.ogg', 50)
 					carbon_occupant.set_eye_blur_if_lower(rand(10 SECONDS, 20 SECONDS))
 
@@ -168,14 +168,16 @@
 	playsound(target_pancake, 'sound/effects/cartoon_splat.ogg', 75)
 	log_combat(src, crossed, "ran over")
 
-/obj/vehicle/sealed/car/clowncar/emag_act(mob/user)
+/obj/vehicle/sealed/car/clowncar/emag_act(mob/user, obj/item/card/emag/emag_card)
 	if(obj_flags & EMAGGED)
-		return
+		return FALSE
 	obj_flags |= EMAGGED
+	balloon_alert(user, "fun mode engaged")
 	to_chat(user, span_danger("You scramble [src]'s child safety lock, and a panel with six colorful buttons appears!"))
 	initialize_controller_action_type(/datum/action/vehicle/sealed/roll_the_dice, VEHICLE_CONTROL_DRIVE)
 	initialize_controller_action_type(/datum/action/vehicle/sealed/cannon, VEHICLE_CONTROL_DRIVE)
 	AddElement(/datum/element/waddling)
+	return TRUE
 
 /obj/vehicle/sealed/car/clowncar/atom_destruction(damage_flag)
 	playsound(src, 'sound/vehicles/clowncar_fart.ogg', 100)

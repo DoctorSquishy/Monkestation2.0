@@ -24,12 +24,12 @@
 /obj/machinery/mineral/proc/register_input_turf()
 	input_turf = get_step(src, input_dir)
 	if(input_turf) // make sure there is actually a turf
-		RegisterSignals(input_turf, list(COMSIG_ATOM_INITIALIZED_ON, COMSIG_ATOM_ENTERED), PROC_REF(pickup_item))
+		RegisterSignals(input_turf, list(COMSIG_ATOM_AFTER_SUCCESSFUL_INITIALIZED_ON, COMSIG_ATOM_ENTERED), PROC_REF(pickup_item))
 
 /// Unregisters signals that are registered the machine's input turf, if it has one.
 /obj/machinery/mineral/proc/unregister_input_turf()
 	if(input_turf)
-		UnregisterSignal(input_turf, list(COMSIG_ATOM_ENTERED, COMSIG_ATOM_INITIALIZED_ON))
+		UnregisterSignal(input_turf, list(COMSIG_ATOM_ENTERED, COMSIG_ATOM_AFTER_SUCCESSFUL_INITIALIZED_ON))
 
 /obj/machinery/mineral/Moved(atom/old_loc, movement_dir, forced, list/old_locs, momentum_change = TRUE)
 	. = ..()
@@ -236,7 +236,7 @@
 	var/datum/material/mat = selected_material
 	if(!mat)
 		return
-	var/sheets_to_remove = (materials.materials[mat] >= (MINERAL_MATERIAL_AMOUNT * SMELT_AMOUNT * seconds_per_tick) ) ? SMELT_AMOUNT * seconds_per_tick : round(materials.materials[mat] /  MINERAL_MATERIAL_AMOUNT)
+	var/sheets_to_remove = (materials.materials[mat] >= (SHEET_MATERIAL_AMOUNT * SMELT_AMOUNT * seconds_per_tick) ) ? SMELT_AMOUNT * seconds_per_tick : round(materials.materials[mat] /  SHEET_MATERIAL_AMOUNT)
 	if(!sheets_to_remove)
 		on = FALSE
 	else

@@ -3,45 +3,74 @@
 	icon = 'icons/effects/blood.dmi'
 	duration = 5
 	randomdir = FALSE
-	layer = BELOW_MOB_LAYER
+	layer = ABOVE_MOB_LAYER
+	alpha = 175
 	plane = GAME_PLANE
 	var/splatter_type = "splatter"
 
-/obj/effect/temp_visual/dir_setting/bloodsplatter/Initialize(mapload, set_dir)
-	if(ISDIAGONALDIR(set_dir))
-		icon_state = "[splatter_type][pick(1, 2, 6)]"
-	else
-		icon_state = "[splatter_type][pick(3, 4, 5)]"
+/obj/effect/temp_visual/dir_setting/bloodsplatter/Initialize(mapload, angle, blood_color)
+	if(!blood_color)
+		blood_color = COLOR_DARK_RED
+	var/x_component = sin(angle) * -15
+	var/y_component = cos(angle) * -15
+	if(!GLOB.blood_particles[blood_color])
+		GLOB.blood_particles[blood_color] = new /particles/splatter(blood_color)
+	particles = GLOB.blood_particles[blood_color]
+	particles.velocity = list(x_component, y_component)
+	color = blood_color
+	icon_state = "[splatter_type][pick(1, 2, 3, 4, 5, 6)]"
 	. = ..()
 	var/target_pixel_x = 0
 	var/target_pixel_y = 0
-	switch(set_dir)
-		if(NORTH)
-			target_pixel_y = 16
-		if(SOUTH)
-			target_pixel_y = -16
-			layer = ABOVE_MOB_LAYER
-			SET_PLANE_IMPLICIT(src, GAME_PLANE_UPPER)
-		if(EAST)
-			target_pixel_x = 16
-		if(WEST)
-			target_pixel_x = -16
-		if(NORTHEAST)
-			target_pixel_x = 16
-			target_pixel_y = 16
-		if(NORTHWEST)
-			target_pixel_x = -16
-			target_pixel_y = 16
-		if(SOUTHEAST)
-			target_pixel_x = 16
-			target_pixel_y = -16
-			layer = ABOVE_MOB_LAYER
-			SET_PLANE_IMPLICIT(src, GAME_PLANE_UPPER)
-		if(SOUTHWEST)
-			target_pixel_x = -16
-			target_pixel_y = -16
-			layer = ABOVE_MOB_LAYER
-			SET_PLANE_IMPLICIT(src, GAME_PLANE_UPPER)
+	switch(angle)
+		if(0, 360)
+			target_pixel_x = 0
+			target_pixel_y = 8
+		if(1 to 44)
+			target_pixel_x = round(4 * ((angle) / 45))
+			target_pixel_y = 8
+		if(45)
+			target_pixel_x = 8
+			target_pixel_y = 8
+		if(46 to 89)
+			target_pixel_x = 8
+			target_pixel_y = round(4 * ((90 - angle) / 45))
+		if(90)
+			target_pixel_x = 8
+			target_pixel_y = 0
+		if(91 to 134)
+			target_pixel_x = 8
+			target_pixel_y = round(-3 * ((angle - 90) / 45))
+		if(135)
+			target_pixel_x = 8
+			target_pixel_y = -6
+		if(136 to 179)
+			target_pixel_x = round(4 * ((180 - angle) / 45))
+			target_pixel_y = -6
+		if(180)
+			target_pixel_x = 0
+			target_pixel_y = -6
+		if(181 to 224)
+			target_pixel_x = round(-6 * ((angle - 180) / 45))
+			target_pixel_y = -6
+		if(225)
+			target_pixel_x = -6
+			target_pixel_y = -6
+		if(226 to 269)
+			target_pixel_x = -6
+			target_pixel_y = round(-6 * ((270 - angle) / 45))
+		if(270)
+			target_pixel_x = -6
+			target_pixel_y = 0
+		if(271 to 314)
+			target_pixel_x = -6
+			target_pixel_y = round(8 * ((angle - 270) / 45))
+		if(315)
+			target_pixel_x = -6
+			target_pixel_y = 8
+		if(316 to 359)
+			target_pixel_x = round(-6 * ((360 - angle) / 45))
+			target_pixel_y = 8
 	animate(src, pixel_x = target_pixel_x, pixel_y = target_pixel_y, alpha = 0, time = duration)
 
 /obj/effect/temp_visual/dir_setting/bloodsplatter/xenosplatter
@@ -325,18 +354,6 @@
 	plane = ABOVE_GAME_PLANE
 	duration = 4
 
-/obj/effect/temp_visual/explosion
-	name = "explosion"
-	icon = 'icons/effects/96x96.dmi'
-	icon_state = "explosion"
-	pixel_x = -32
-	pixel_y = -32
-	duration = 8
-
-/obj/effect/temp_visual/explosion/fast
-	icon_state = "explosionfast"
-	duration = 4
-
 /obj/effect/temp_visual/blob
 	name = "blob"
 	icon_state = "blob_attack"
@@ -490,11 +507,12 @@
 	layer = ABOVE_ALL_MOB_LAYER
 	plane = ABOVE_GAME_PLANE
 	anchored = TRUE
-	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+	obj_flags = CAN_BE_HIT
+	mouse_opacity = MOUSE_OPACITY_OPAQUE
 	var/status = 0
 	var/delay = 0
 
-/obj/effect/constructing_effect/Initialize(mapload, rcd_delay, rcd_status)
+/obj/effect/constructing_effect/Initialize(mapload, rcd_delay, rcd_status, rcd_upgrades)
 	. = ..()
 	status = rcd_status
 	delay = rcd_delay
@@ -504,6 +522,26 @@
 		icon_state = "rcd_end_reverse"
 	else
 		update_appearance()
+
+	if (rcd_upgrades & RCD_UPGRADE_ANTI_INTERRUPT)
+		color = list(
+			1.0, 0.5, 0.5, 0.0,
+			0.1, 0.0, 0.0, 0.0,
+			0.1, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0,
+			0.0, 0.0, 0.0, 0.0,
+		)
+
+		mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+		obj_flags &= ~CAN_BE_HIT
+
+/obj/effect/constructing_effect/update_name(updates)
+	. = ..()
+
+	if (status == RCD_DECONSTRUCT)
+		name = "deconstruction effect"
+	else
+		name = "construction effect"
 
 /obj/effect/constructing_effect/update_icon_state()
 	icon_state = "rcd"
@@ -524,11 +562,25 @@
 	if (status == RCD_DECONSTRUCT)
 		qdel(src)
 	else
+		mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+		obj_flags &= ~CAN_BE_HIT
 		icon_state = "rcd_end"
 		addtimer(CALLBACK(src, PROC_REF(end)), 15)
 
 /obj/effect/constructing_effect/proc/end()
 	qdel(src)
+
+/obj/effect/constructing_effect/proc/attacked(mob/user)
+	user.do_attack_animation(src, ATTACK_EFFECT_PUNCH)
+	user.changeNext_move(CLICK_CD_MELEE)
+	playsound(loc, 'sound/weapons/egloves.ogg', vol = 80, vary = TRUE)
+	end()
+
+/obj/effect/constructing_effect/attackby(obj/item/weapon, mob/user, params)
+	attacked(user)
+
+/obj/effect/constructing_effect/attack_hand(mob/living/user, list/modifiers)
+	attacked(user)
 
 /obj/effect/temp_visual/electricity
 	icon_state = "electricity3"
@@ -581,3 +633,15 @@
 /// Remove the image from the modsuit wearer's screen
 /obj/effect/temp_visual/sonar_ping/proc/remove_mind(mob/living/looker)
 	looker?.client?.images -= modsuit_image
+
+/obj/effect/temp_visual/block //color is white by default, set to whatever is needed
+	name = "blocking glow"
+	icon_state = "block"
+	duration = 6.7
+
+/obj/effect/temp_visual/block/Initialize(mapload, set_color)
+	if(set_color)
+		add_atom_colour(set_color, FIXED_COLOUR_PRIORITY)
+	. = ..()
+	pixel_x = rand(-12, 12)
+	pixel_y = rand(-9, 0)

@@ -7,6 +7,9 @@
 
 #define IS_FINITE__UNSAFE(a) (a-a == a-a)
 #define IS_FINITE(a) (isnum(a) && IS_FINITE__UNSAFE(a))
+
+#define IS_SAFE_NUM(a) (isnum(a) && !IS_INF__UNSAFE(a) && IS_FINITE__UNSAFE(a))
+
 // ------------------------------------
 // Aight dont remove the rest
 
@@ -154,7 +157,7 @@
 
 //A logarithm that converts an integer to a number scaled between 0 and 1.
 //Currently, this is used for hydroponics-produce sprite transforming, but could be useful for other transform functions.
-#define TRANSFORM_USING_VARIABLE(input, max) ( sin((90*(input))/(max))**2 )
+#define TRANSFORM_USING_VARIABLE(input, max) ( sin((90*min(input,max))/(max))**2 )
 
 //converts a uniform distributed random number into a normal distributed one
 //since this method produces two random numbers, one is saved for subsequent calls
@@ -241,6 +244,9 @@
 #define SPT_PROB(prob_per_second_percent, seconds_per_tick) (prob(100*SPT_PROB_RATE((prob_per_second_percent)/100, (seconds_per_tick))))
 // )
 
+// This value per these many units. Very unnecessary but helpful for readability (For example wanting 30 units of synthflesh to heal 50 damage - VALUE_PER(50, 30))
+#define VALUE_PER(value, per) (value / per)
+
 #define GET_TRUE_DIST(a, b) (a == null || b == null) ? -1 : max(abs(a.x -b.x), abs(a.y-b.y), abs(a.z-b.z))
 
 //We used to use linear regression to approximate the answer, but Mloc realized this was actually faster.
@@ -249,3 +255,6 @@
 
 /// The number of cells in a taxicab circle (rasterized diamond) of radius X.
 #define DIAMOND_AREA(X) (1 + 2*(X)*((X)+1))
+
+/// Returns a random decimal between x and y.
+#define RANDOM_DECIMAL(x, y) LERP((x), (y), rand())

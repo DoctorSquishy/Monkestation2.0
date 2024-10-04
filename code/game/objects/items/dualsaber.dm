@@ -17,13 +17,14 @@
 	w_class = WEIGHT_CLASS_SMALL
 	hitsound = SFX_SWING_HIT
 	armour_penetration = 35
-	light_system = MOVABLE_LIGHT
+	light_system = OVERLAY_LIGHT
 	light_outer_range = 6 //TWICE AS BRIGHT AS A REGULAR ESWORD
 	light_color = LIGHT_COLOR_ELECTRIC_GREEN
 	light_on = FALSE
 	attack_verb_continuous = list("attacks", "slashes", "stabs", "slices", "tears", "lacerates", "rips", "dices", "cuts")
 	attack_verb_simple = list("attack", "slash", "stab", "slice", "tear", "lacerate", "rip", "dice", "cut")
 	block_chance = 75
+	block_sound = 'sound/weapons/block_blade.ogg'
 	max_integrity = 200
 	armor_type = /datum/armor/item_dualsaber
 	resistance_flags = FIRE_PROOF

@@ -108,7 +108,6 @@
 /datum/asset/spritesheet/antagonists
 	name = "antagonists"
 	early = TRUE
-	cross_round_cachable = TRUE
 
 	/// Mapping of spritesheet keys -> icons
 	var/list/antag_icons = list()
@@ -120,6 +119,11 @@
 		ROLE_FUGITIVE = /datum/antagonist/fugitive,
 		ROLE_LONE_OPERATIVE = /datum/antagonist/nukeop/lone,
 		ROLE_SENTIENCE = /datum/antagonist/sentient_creature,
+		//monkestation antags
+		ROLE_CORTICAL_BORER = /datum/antagonist/cortical_borer,
+		ROLE_DRIFTING_CONTRACTOR = /datum/antagonist/traitor/contractor,
+		ROLE_SLASHER = /datum/antagonist/slasher,
+		ROLE_FLORIDA_MAN = /datum/antagonist/florida_man
 	)
 
 	var/list/antagonists = non_ruleset_antagonists.Copy()

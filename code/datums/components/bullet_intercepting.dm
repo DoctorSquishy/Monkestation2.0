@@ -25,8 +25,9 @@
 	RegisterSignal(parent, COMSIG_ITEM_EQUIPPED, PROC_REF(on_parent_equipped))
 	RegisterSignal(parent, COMSIG_ITEM_PRE_UNEQUIP, PROC_REF(on_unequipped))
 
-/datum/component/bullet_intercepting/Destroy(force, silent)
-	QDEL_NULL(on_intercepted)
+/datum/component/bullet_intercepting/Destroy(force)
+	wearer = null
+	on_intercepted = null
 	return ..()
 
 /// Called when item changes slots, check if we're in a valid location to take bullets
@@ -40,7 +41,7 @@
 	if (!(active_slots & slot))
 		return
 	RegisterSignal(equipper, COMSIG_PROJECTILE_PREHIT, PROC_REF(on_wearer_shot))
-	RegisterSignal(equipper, COMSIG_PARENT_QDELETING, PROC_REF(on_wearer_deleted))
+	RegisterSignal(equipper, COMSIG_QDELETING, PROC_REF(on_wearer_deleted))
 	wearer = equipper
 
 /// Called when item is unequipped, stop tracking bullets
@@ -48,7 +49,7 @@
 	SIGNAL_HANDLER
 	if (!wearer)
 		return
-	UnregisterSignal(wearer, list(COMSIG_PROJECTILE_PREHIT, COMSIG_PARENT_QDELETING))
+	UnregisterSignal(wearer, list(COMSIG_PROJECTILE_PREHIT, COMSIG_QDELETING))
 	wearer = null
 
 /// Called when wearer is shot, check if we're going to block the hit

@@ -193,22 +193,24 @@
 		SSchallenges.apply_challenges(character.client)
 	for(var/processing_reward_bitflags in SSticker.bitflags_to_reward)//you really should use department bitflags if possible
 		if(character.mind.assigned_role.departments_bitflags & processing_reward_bitflags)
-			character.client.reward_this_person += 150
+			character.client.reward_this_person += 425
 	for(var/processing_reward_jobs in SSticker.jobs_to_reward)//just in case you really only want to reward a specific job
 		if(character.job == processing_reward_jobs)
-			character.client.reward_this_person += 150
+			character.client.reward_this_person += 425
 	#define IS_NOT_CAPTAIN 0
 	#define IS_ACTING_CAPTAIN 1
 	#define IS_FULL_CAPTAIN 2
 	var/is_captain = IS_NOT_CAPTAIN
+	var/captain_sound = 'sound/misc/notice2.ogg'
 	// If we already have a captain, are they a "Captain" rank and are we allowing multiple of them to be assigned?
 	if(is_captain_job(job))
 		is_captain = IS_FULL_CAPTAIN
+		captain_sound = 'sound/misc/announce.ogg'
 	// If we don't have an assigned cap yet, check if this person qualifies for some from of captaincy.
 	else if(!SSjob.assigned_captain && ishuman(character) && SSjob.chain_of_command[rank] && !is_banned_from(ckey, list(JOB_CAPTAIN)))
 		is_captain = IS_ACTING_CAPTAIN
 	if(is_captain != IS_NOT_CAPTAIN)
-		minor_announce(job.get_captaincy_announcement(character))
+		minor_announce(job.get_captaincy_announcement(character), sound_override = captain_sound)
 		SSjob.promote_to_captain(character, is_captain == IS_ACTING_CAPTAIN)
 	#undef IS_NOT_CAPTAIN
 	#undef IS_ACTING_CAPTAIN
@@ -231,6 +233,7 @@
 
 		humanc.increment_scar_slot()
 		humanc.load_persistent_scars()
+		SSpersistence.load_modular_persistence(humanc.get_organ_slot(ORGAN_SLOT_BRAIN))
 
 		//monkestation edit start
 		if(GLOB.dj_booth)
@@ -255,6 +258,9 @@
 	if((job.job_flags & JOB_ASSIGN_QUIRKS) && humanc && CONFIG_GET(flag/roundstart_traits))
 		SSquirks.AssignQuirks(humanc, humanc.client)
 
+	var/area/station/arrivals = GLOB.areas_by_type[/area/station/hallway/secondary/entry]
+	if(humanc && arrivals && !arrivals.power_environ) //arrivals depowered
+		humanc.put_in_hands(new /obj/item/crowbar/large/emergency(get_turf(humanc))) //if hands full then just drops on the floor
 	log_manifest(character.mind.key,character.mind,character,latejoin = TRUE)
 
 	if(humanc)
@@ -293,6 +299,10 @@
 		return
 	new_character.key = key //Manually transfer the key to log them in,
 	new_character.stop_sound_channel(CHANNEL_LOBBYMUSIC)
+	if(new_character?.client?.media)
+		new_character.client.media.lobby_music = FALSE
+		new_character.client.media.stop_music()
+
 	var/area/joined_area = get_area(new_character.loc)
 	if(joined_area)
 		joined_area.on_joining_game(new_character)
@@ -365,3 +375,23 @@
 	// Add verb for re-opening the interview panel, fixing chat and re-init the verbs for the stat panel
 	add_verb(src, /mob/dead/new_player/proc/open_interview)
 	add_verb(client, /client/verb/fix_tgui_panel)
+
+/client/proc/register_for_interview()
+	// First we detain them by removing all the verbs they have on client
+	for (var/v in verbs)
+		var/procpath/verb_path = v
+		remove_verb(src, verb_path)
+
+	// Then remove those on their mob as well
+	for (var/v in mob.verbs)
+		var/procpath/verb_path = v
+		remove_verb(mob, verb_path)
+
+	// Then we create the interview form and show it to the client
+	var/datum/interview/I = GLOB.interviews.interview_for_client(mob)
+	if (I)
+		I.ui_interact(mob)
+
+	// Add verb for re-opening the interview panel, fixing chat and re-init the verbs for the stat panel
+	add_verb(mob, /mob/dead/new_player/proc/open_interview)
+	add_verb(src, /client/verb/fix_tgui_panel)

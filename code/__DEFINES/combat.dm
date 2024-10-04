@@ -263,12 +263,17 @@ GLOBAL_LIST_INIT(shove_disarming_types, typecacheof(list(
 #define GRENADE_NONCLUMSY_FUMBLE 2
 #define GRENADE_NO_FUMBLE 3
 
+#define BODY_ZONE_EVERYTHING "everything"
+#define BODY_ZONE_ARMS "arms"
+#define BODY_ZONE_LEGS "legs"
 #define BODY_ZONE_HEAD "head"
 #define BODY_ZONE_CHEST "chest"
 #define BODY_ZONE_L_ARM "l_arm"
 #define BODY_ZONE_R_ARM "r_arm"
 #define BODY_ZONE_L_LEG "l_leg"
 #define BODY_ZONE_R_LEG "r_leg"
+
+GLOBAL_LIST_INIT(arm_zones, list(BODY_ZONE_L_ARM, BODY_ZONE_R_ARM))
 
 #define BODY_ZONE_PRECISE_EYES "eyes"
 #define BODY_ZONE_PRECISE_MOUTH "mouth"
@@ -335,6 +340,8 @@ GLOBAL_LIST_INIT(shove_disarming_types, typecacheof(list(
 #define ARMOR_WEAKENED_MULTIPLIER 2
 /// Armor can't block more than this as a percentage
 #define ARMOR_MAX_BLOCK 90
+/// Calculates the new armour value after armour penetration. Can return negative values, and those must be caught.
+#define PENETRATE_ARMOUR(armour, penetration) (penetration == 100 ? 0 : 100 * (armour - penetration) / (100 - penetration))
 
 /// Return values used in item/melee/baton/baton_attack.
 /// Does a normal item attack.

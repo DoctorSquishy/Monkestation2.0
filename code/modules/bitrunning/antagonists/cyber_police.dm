@@ -10,6 +10,7 @@
 	show_to_ghosts = TRUE
 	suicide_cry = "ALT F4!"
 	ui_name = "AntagInfoCyberAuth"
+	antag_flags = FLAG_ANTAG_CAP_IGNORE // monkestation addition
 
 /datum/antagonist/cyber_police/greet()
 	. = ..()
@@ -33,7 +34,6 @@
 	player.add_traits(list(
 		//TRAIT_NO_AUGMENTS,
 		TRAIT_NO_DNA_COPY,
-		TRAIT_NO_TRANSFORMATION_STING,
 		TRAIT_NOBLOOD,
 		TRAIT_NOBREATH,
 		TRAIT_NOHUNGER,

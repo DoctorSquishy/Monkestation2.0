@@ -32,6 +32,7 @@
 	attack_vis_effect = ATTACK_EFFECT_BITE
 	attack_verb_continuous = "bites"
 	attack_verb_simple = "bite"
+	melee_attack_cooldown = 1.5 SECONDS
 	response_help_continuous = "pets"
 	response_help_simple = "pet"
 	response_disarm_continuous = "gently pushes aside"
@@ -57,7 +58,7 @@
 		/datum/pet_command/idle,
 		/datum/pet_command/free,
 		/datum/pet_command/follow,
-		/datum/pet_command/point_targetting/attack/carp
+		/datum/pet_command/point_targeting/attack
 	)
 	/// Carp want to eat raw meat
 	var/static/list/desired_food = list(/obj/item/food/meat/slab, /obj/item/food/meat/rawcutlet)
@@ -99,9 +100,10 @@
 	)
 
 /mob/living/basic/carp/Initialize(mapload, mob/tamer)
+	ADD_TRAIT(src, TRAIT_FREE_HYPERSPACE_MOVEMENT, INNATE_TRAIT) //Need to set before init cause if we init in hyperspace we get dragged before the trait can be added
 	. = ..()
 	apply_colour()
-	add_traits(list(TRAIT_HEALS_FROM_CARP_RIFTS, TRAIT_SPACEWALK, TRAIT_FREE_HYPERSPACE_MOVEMENT), INNATE_TRAIT)
+	add_traits(list(TRAIT_HEALS_FROM_CARP_RIFTS, TRAIT_SPACEWALK), INNATE_TRAIT)
 
 	if (cell_line)
 		AddElement(/datum/element/swabable, cell_line, CELL_VIRUS_TABLE_GENERIC_MOB, 1, 5)
@@ -120,7 +122,7 @@
 	teleport = new(src)
 	teleport.Grant(src)
 	ai_controller.set_blackboard_key(BB_CARP_RIFT, teleport)
-	ai_controller.set_blackboard_key(BB_OBSTACLE_TARGETTING_WHITELIST, allowed_obstacle_targets)
+	ai_controller.set_blackboard_key(BB_OBSTACLE_TARGETING_WHITELIST, allowed_obstacle_targets)
 
 
 /mob/living/basic/carp/Destroy()
@@ -129,8 +131,8 @@
 
 /// Tell the elements and the blackboard what food we want to eat
 /mob/living/basic/carp/proc/setup_eating()
-	AddElement(/datum/element/basic_eating, 10, 0, null, desired_food)
-	AddElement(/datum/element/basic_eating, 0, 10, BRUTE, desired_trash) // We are killing our planet
+	AddElement(/datum/element/basic_eating, food_types = desired_food)
+	AddElement(/datum/element/basic_eating, heal_amt = 0, damage_amount = 10, damage_type = BRUTE, food_types = desired_trash) // We are killing our planet
 	ai_controller.set_blackboard_key(BB_BASIC_FOODS, desired_food + desired_trash)
 
 /// Set a random colour on the carp, override to do something else
@@ -163,6 +165,16 @@
 		actual_points += point_resolved
 
 	ai_controller.set_blackboard_key(BB_CARP_MIGRATION_PATH, actual_points)
+
+/mob/living/basic/carp/death(gibbed)
+	. = ..()
+
+	REMOVE_TRAIT(src, TRAIT_FREE_HYPERSPACE_MOVEMENT, INNATE_TRAIT)
+
+/mob/living/basic/carp/revive(full_heal_flags, excess_healing, force_grab_ghost)
+	. = ..()
+
+	ADD_TRAIT(src, TRAIT_FREE_HYPERSPACE_MOVEMENT, INNATE_TRAIT)
 
 /**
  * Holographic carp from the holodeck
@@ -257,4 +269,30 @@
 		disk_overlay = mutable_appearance('icons/mob/simple/carp.dmi', "disk_overlay")
 	new_overlays += disk_overlay
 
+/mob/living/basic/carp/advanced
+	health = 40
+	obj_damage = 15
+
 #undef RARE_CAYENNE_CHANCE
+
+///Wild carp that just vibe ya know
+/mob/living/basic/carp/passive
+	name = "passive carp"
+	desc = "A timid, sucker-bearing creature that resembles a fish. "
+
+	icon_state = "base_friend"
+	icon_living = "base_friend"
+	icon_dead = "base_friend_dead"
+	greyscale_config = /datum/greyscale_config/carp_friend
+
+	attack_verb_continuous = "suckers"
+	attack_verb_simple = "suck"
+
+	melee_damage_lower = 4
+	melee_damage_upper = 4
+	ai_controller = /datum/ai_controller/basic_controller/carp/passive
+
+/mob/living/basic/carp/passive/Initialize(mapload)
+	. = ..()
+	AddElement(/datum/element/ai_retaliate)
+	AddElement(/datum/element/pet_bonus, "bloops happily!")

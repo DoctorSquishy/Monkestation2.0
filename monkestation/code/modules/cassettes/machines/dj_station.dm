@@ -35,6 +35,7 @@ GLOBAL_VAR(dj_booth)
 
 /obj/machinery/cassette/dj_station/Initialize(mapload)
 	. = ..()
+	REGISTER_REQUIRED_MAP_ITEM(1, INFINITY)
 	GLOB.dj_booth = src
 	register_context()
 
@@ -60,11 +61,11 @@ GLOBAL_VAR(dj_booth)
 	if(waiting_for_yield)
 		return
 	time_left -= round(seconds_per_tick)
-	if(time_left < 0)
+	if(time_left <= 0)
 		time_left = 0
 		if(COOLDOWN_FINISHED(src, next_song_timer) && broadcasting)
 			COOLDOWN_START(src, next_song_timer, 10 MINUTES)
-		broadcasting = 0
+		broadcasting = FALSE
 
 /obj/machinery/cassette/dj_station/attack_hand(mob/user)
 	. = ..()
@@ -74,6 +75,8 @@ GLOBAL_VAR(dj_booth)
 		to_chat(user, span_notice("The [src] feels hot to the touch and needs time to cooldown."))
 		to_chat(user, span_info("You estimate it will take about [time_left ? DisplayTimeText(((time_left * 10) + 6000)) : DisplayTimeText(COOLDOWN_TIMELEFT(src, next_song_timer))] to cool down."))
 		return
+	message_admins("[src] started broadcasting [inserted_tape] interacted with by [user]")
+	logger.Log(LOG_CATEGORY_MUSIC, "[src] started broadcasting [inserted_tape]")
 	start_broadcast()
 
 /obj/machinery/cassette/dj_station/AltClick(mob/user)
@@ -150,6 +153,8 @@ GLOBAL_VAR(dj_booth)
 	STOP_PROCESSING(SSprocessing, src)
 	GLOB.dj_broadcast = FALSE
 	broadcasting = FALSE
+	message_admins("[src] has stopped broadcasting [inserted_tape].")
+	logger.Log(LOG_CATEGORY_MUSIC, "[src] has stopped broadcasting [inserted_tape]")
 	for(var/client/anything as anything in active_listeners)
 		if(!istype(anything))
 			continue
@@ -176,39 +181,44 @@ GLOBAL_VAR(dj_booth)
 	GLOB.dj_broadcast = TRUE
 	pl_index = list_index
 
-	var/list/viable_z = SSmapping.levels_by_any_trait(list(ZTRAIT_STATION, ZTRAIT_MINING, ZTRAIT_CENTCOM))
-	for(var/mob/living/carbon/anything as anything in GLOB.player_list)
-		if(!(anything in people_with_signals))
-			if(!istype(anything))
-				continue
-
-			RegisterSignal(anything, COMSIG_CARBON_UNEQUIP_EARS, PROC_REF(stop_solo_broadcast))
-			RegisterSignal(anything, COMSIG_CARBON_EQUIP_EARS, PROC_REF(check_solo_broadcast))
-			RegisterSignal(anything, COMSIG_MOVABLE_Z_CHANGED, PROC_REF(check_solo_broadcast))
-			people_with_signals |= anything
-
-		if(!(anything.client in active_listeners))
-			if(!(anything.z in viable_z))
-				continue
-
-			if(!anything.client)
-				continue
-
-			if(anything.client in GLOB.youtube_exempt["walkman"])
-				continue
-
-			var/obj/item/ear_slot = anything.get_item_by_slot(ITEM_SLOT_EARS)
-			if(istype(ear_slot, /obj/item/clothing/ears))
-				var/obj/item/clothing/ears/worn
-				if(!worn || !worn?.radio_compat)
+	var/list/viable_z = SSmapping.levels_by_any_trait(list(ZTRAIT_STATION, ZTRAIT_MINING, ZTRAIT_CENTCOM, ZTRAIT_RESERVED))
+	for(var/mob/person as anything in GLOB.player_list)
+		if(issilicon(person) || isobserver(person) || isaicamera(person) || isbot(person))
+			active_listeners |=	person.client
+			continue
+		if(iscarbon(person))
+			var/mob/living/carbon/anything = person
+			if(!(anything in people_with_signals))
+				if(!istype(anything))
 					continue
-			else if(!istype(ear_slot, /obj/item/radio/headset))
-				continue
 
-			if(!anything.client.prefs?.read_preference(/datum/preference/toggle/hear_music))
-				continue
+				RegisterSignal(anything, COMSIG_CARBON_UNEQUIP_EARS, PROC_REF(stop_solo_broadcast))
+				RegisterSignal(anything, COMSIG_CARBON_EQUIP_EARS, PROC_REF(check_solo_broadcast))
+				RegisterSignal(anything, COMSIG_MOVABLE_Z_CHANGED, PROC_REF(check_solo_broadcast))
+				people_with_signals |= anything
 
-			active_listeners |=	anything.client
+			if(!(anything.client in active_listeners))
+				if(!(anything.z in viable_z))
+					continue
+
+				if(!anything.client)
+					continue
+
+				if(anything.client in GLOB.youtube_exempt["walkman"])
+					continue
+
+				var/obj/item/ear_slot = anything.get_item_by_slot(ITEM_SLOT_EARS)
+				if(istype(ear_slot, /obj/item/clothing/ears))
+					var/obj/item/clothing/ears/worn
+					if(!worn || !worn?.radio_compat)
+						continue
+				else if(!istype(ear_slot, /obj/item/radio/headset))
+					continue
+
+				if(!anything.client.prefs?.read_preference(/datum/preference/toggle/hear_music))
+					continue
+
+				active_listeners |=	anything.client
 
 	if(!length(active_listeners))
 		return

@@ -26,7 +26,7 @@
 /turf/open/floor/engine,
 /area/ruin/space/has_grav/powered/clownplanet)
 "ah" = (
-/mob/living/simple_animal/hostile/retaliate/clown/clownhulk/destroyer,
+/mob/living/basic/clown/clownhulk/destroyer,
 /turf/open/floor/engine,
 /area/ruin/space/has_grav/powered/clownplanet)
 "ai" = (
@@ -63,7 +63,7 @@
 	},
 /area/ruin/space/has_grav/powered/clownplanet)
 "ao" = (
-/obj/machinery/hydroponics/soil,
+/obj/machinery/growing/soil,
 /obj/item/seeds/banana,
 /turf/open/floor/grass{
 	color = "#1eff00"

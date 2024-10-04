@@ -38,11 +38,15 @@ GLOBAL_LIST_EMPTY(wings_open_list)
 GLOBAL_LIST_EMPTY(moth_wings_list)
 GLOBAL_LIST_EMPTY(moth_antennae_list)
 GLOBAL_LIST_EMPTY(moth_markings_list)
+GLOBAL_LIST_EMPTY(apid_antenna_list) //Monkestation Addition
 GLOBAL_LIST_EMPTY(ipc_screens_list) //Monkestation Addition
 GLOBAL_LIST_EMPTY(ipc_antennas_list) //Monkestation Addition
 GLOBAL_LIST_EMPTY(ipc_chassis_list) //Monkestation Addition
+GLOBAL_LIST_EMPTY(apid_wings_list) //Monkestation Addition
 GLOBAL_LIST_EMPTY(caps_list)
 GLOBAL_LIST_EMPTY(pod_hair_list)
+GLOBAL_LIST_EMPTY(ethereal_horns_list) //Monkestation Addition
+GLOBAL_LIST_EMPTY(ethereal_tail_list) //Monkestation Addition
 GLOBAL_LIST_EMPTY(tails_list_monkey) //Monkestation Addition
 GLOBAL_LIST_EMPTY(anime_top_list) //Monkestation Addition
 GLOBAL_LIST_EMPTY(anime_middle_list) //Monkestation Addition
@@ -50,6 +54,10 @@ GLOBAL_LIST_EMPTY(anime_bottom_list) //Monkestation Addition
 GLOBAL_LIST_EMPTY(arachnid_appendages_list) //Monkestation Addition
 GLOBAL_LIST_EMPTY(arachnid_chelicerae_list) //Monkestation Addition
 GLOBAL_LIST_EMPTY(goblin_ears_list) //Monkestation Addition
+GLOBAL_LIST_EMPTY(floran_leaves_list) //Monkestation Addition
+GLOBAL_LIST_EMPTY(satyr_fluff_list) //Monkestation Addition
+GLOBAL_LIST_EMPTY(satyr_tail_list) //Monkestation Addition
+GLOBAL_LIST_EMPTY(satyr_horns_list) //Monkestation Addition
 
 GLOBAL_LIST_INIT(color_list_ethereal, list(
 	"Blue" = "#3399ff",
@@ -57,7 +65,8 @@ GLOBAL_LIST_INIT(color_list_ethereal, list(
 	"Burnt Orange" = "#cc4400",
 	"Cyan Blue" = "#00ffff",
 	"Dark Blue" = "#6666ff",
-	"Dark Fuschia" = "#cc0066",
+	"Dark Fuschia" = "#C70064", //Monkestation Edit: #CC0066 TO #C70064
+
 	"Dark Green" = "#37835b",
 	"Dark Red" = "#9c3030",
 	"Dull Yellow" = "#fbdf56",
@@ -71,6 +80,17 @@ GLOBAL_LIST_INIT(color_list_ethereal, list(
 	"Red" = "#ff4d4d",
 	"Seafoam Green" = "#00fa9a",
 	"White" = "#f2f2f2",
+	"Fuschia" = "#FF0066", //Monkestation Addition
+	"Dark Purple" = "#502A77", //Monkestation Addition
+	"Gray" = "#505050", //Monkestation Addition
+))
+
+GLOBAL_LIST_INIT(color_list_lustrous, list(
+	"Cyan Blue" = "#00ffff",
+	"Sky Blue" = "#37c0ff",
+	"Blue" = "#3374ff",
+	"Dark Blue" = "#5b5beb",
+	"Bright Red" = "#fa2d2d",
 ))
 
 GLOBAL_LIST_INIT(ghost_forms_with_directions_list, list(
@@ -179,6 +199,7 @@ GLOBAL_LIST_INIT(ai_core_display_screens, sort_list(list(
 	"Triumvirate",
 	"Weird",
 	"Yes-Man",
+	"Randomgod", //MONKEYSTATION ADDITION
 )))
 
 /// A form of resolve_ai_icon that is guaranteed to never sleep.
@@ -239,6 +260,8 @@ GLOBAL_LIST_INIT(backpacklist, list(
 
 	//Female Uniforms
 GLOBAL_LIST_EMPTY(female_clothing_icons)
+	//Auto-generated 'fallback' clothing icons
+GLOBAL_LIST_EMPTY(fallback_clothing_icons)
 
 GLOBAL_LIST_INIT(scarySounds, list(
 	'sound/effects/footstep/clownstep1.ogg',
@@ -311,7 +334,7 @@ GLOBAL_LIST_INIT(TAGGERLOCATIONS, list("Disposals",
 	"CMO Office", "Chemistry", "Research", "RD Office",
 	"Robotics", "HoP Office", "Library", "Chapel", "Theatre",
 	"Bar", "Kitchen", "Hydroponics", "Janitor Closet","Genetics",
-	"Experimentor Lab", "Ordnance", "Dormitories", "Virology",
+	"Experimentor Lab", "Ordnance", "Dormitories", "Pathology",
 	"Xenobiology", "Law Office","Detective's Office"))
 
 GLOBAL_LIST_INIT(station_prefixes, world.file2list("strings/station_prefixes.txt"))
@@ -360,7 +383,12 @@ GLOBAL_LIST_INIT(status_display_approved_pictures, list(
 	"default",
 	"biohazard",
 	"lockdown",
+	"greenalert",
+	"bluealert",
 	"redalert",
+	"deltaalert",
+	"radiation",
+	"currentalert", //For automatic set of status display on current level
 ))
 
 // Members of status_display_approved_pictures that are actually states and not alert values

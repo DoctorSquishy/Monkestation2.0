@@ -537,13 +537,12 @@
 
 /// Induces fake death on a living mob.
 /mob/living/proc/fakedeath(source, silent = FALSE)
-	if(stat == DEAD)
-		return
-	if(!silent)
-		emote("deathgasp")
-	add_traits(list(TRAIT_FAKEDEATH, TRAIT_DEATHCOMA), source)
-	tod = station_time_timestamp()
+	if(stat != DEAD)
+		if(!silent)
+			emote("deathgasp")
+		tod = station_time_timestamp()
 
+	add_traits(list(TRAIT_FAKEDEATH, TRAIT_DEATHCOMA), source)
 
 ///Unignores all slowdowns that lack the IGNORE_NOSLOW flag.
 /mob/living/proc/unignore_slowdown(source)
@@ -709,6 +708,9 @@
  * up_to - the upper end of the clamp, when adding the value
  */
 /mob/living/proc/adjust_drunk_effect(amount, down_to = 0, up_to = INFINITY)
+	if(HAS_TRAIT(src, TRAIT_LIVING_DRUNK))
+		return
+
 	if(!isnum(amount))
 		CRASH("adjust_drunk_effect: called with an invalid amount. (Got: [amount])")
 
@@ -726,6 +728,9 @@
  * set_to - the amount of "drunkness" to set on the mob.
  */
 /mob/living/proc/set_drunk_effect(set_to)
+	if(HAS_TRAIT(src, TRAIT_LIVING_DRUNK))
+		return
+
 	if(!isnum(set_to) || set_to < 0)
 		CRASH("set_drunk_effect: called with an invalid value. (Got: [set_to])")
 

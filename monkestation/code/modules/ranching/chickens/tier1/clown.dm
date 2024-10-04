@@ -7,6 +7,7 @@
 	egg_type = /obj/item/food/egg/clown
 	mutation_list = list(/datum/mutation/ranching/chicken/mime, /datum/mutation/ranching/chicken/clown_sad)
 	minimum_living_happiness = -2000
+	liked_foods = list(/obj/item/food/grown/banana  = 3)
 
 	targeted_ability_planning_tree = /datum/ai_planning_subtree/targeted_mob_ability/min_range/chicken/clown
 
@@ -37,7 +38,7 @@
 
 
 // generic water balloon impact handler, need to move to new file if i make other water balloons
-/obj/item/reagent_containers/water_balloon/throw_at(atom/target, range, speed, mob/thrower, spin, diagonals_first, datum/callback/callback, force, quickstart)
+/obj/item/reagent_containers/water_balloon/throw_at(atom/target, range, speed, mob/thrower, spin=1, diagonals_first = 0, datum/callback/callback, force, gentle = FALSE, quickstart = TRUE)
 	. = ..()
 	visible_message("<span class='notice'>The [src.name] bursts upon impact with \the [target.name]!</span>")
 	qdel(src)

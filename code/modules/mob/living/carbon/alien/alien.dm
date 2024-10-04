@@ -95,11 +95,13 @@ Proc: RemoveInfectionImages()
 Des: Removes all infected images from the alien.
 ----------------------------------------*/
 /mob/living/carbon/alien/proc/RemoveInfectionImages()
-	if (client)
-		for(var/image/I in client.images)
+	if(client)
+		var/list/image/to_remove
+		for(var/image/client_image as anything in client.images)
 			var/searchfor = "infected"
-			if(findtext(I.icon_state, searchfor, 1, length(searchfor) + 1))
-				qdel(I)
+			if(findtext(client_image.icon_state, searchfor, 1, length(searchfor) + 1))
+				to_remove += client_image
+		client.images -= to_remove
 	return
 
 /mob/living/carbon/alien/canBeHandcuffed()
@@ -125,6 +127,7 @@ Des: Removes all infected images from the alien.
 	if(!alien_name_regex.Find(name))
 		new_xeno.name = name
 		new_xeno.real_name = real_name
+		new_xeno.update_name_tag() // monkestation edit: name tags
 	if(mind)
 		mind.name = new_xeno.real_name
 		mind.transfer_to(new_xeno)

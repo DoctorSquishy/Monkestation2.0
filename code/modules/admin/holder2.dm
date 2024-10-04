@@ -35,6 +35,7 @@ GLOBAL_PROTECT(href_token)
 	var/datum/particle_editor/particle_test
 	var/datum/colorblind_tester/color_test = new
 	var/datum/plane_master_debug/plane_debug
+	var/obj/machinery/computer/libraryconsole/admin_only_do_not_map_in_you_fucker/library_manager
 
 	/// Whether or not the user tried to connect, but was blocked by 2FA
 	var/blocked_by_2fa = FALSE
@@ -93,6 +94,8 @@ GLOBAL_PROTECT(href_token)
 	GLOB.deadmins -= target
 	GLOB.admin_datums[target] = src
 	deadmined = FALSE
+	if(owner)
+		rementor(owner)
 	QDEL_NULL(plane_debug)
 	if (GLOB.directory[target])
 		associate(GLOB.directory[target]) //find the client for a ckey if they are connected and associate them with us
@@ -106,6 +109,9 @@ GLOBAL_PROTECT(href_token)
 		return
 	GLOB.deadmins[target] = src
 	GLOB.admin_datums -= target
+
+	if(owner)
+		dementor(owner)
 	deadmined = TRUE
 
 	var/client/client = owner || GLOB.directory[target]
@@ -157,6 +163,8 @@ GLOBAL_PROTECT(href_token)
 	owner.init_verbs() //re-initialize the verb list
 	owner.update_special_keybinds()
 	GLOB.admins |= client
+	if(!owner.mentor_datum)
+		owner.mentor_datum_set()
 
 	try_give_profiling()
 
@@ -170,6 +178,9 @@ GLOBAL_PROTECT(href_token)
 		GLOB.admins -= owner
 		owner.remove_admin_verbs()
 		owner.holder = null
+		GLOB.mentors -= owner
+		owner.mentor_datum?.owner = null
+		owner.mentor_datum = null
 		owner = null
 
 /// Returns the feedback forum thread for the admin holder's owner, as according to DB.
@@ -183,7 +194,7 @@ GLOBAL_PROTECT(href_token)
 		return cached_feedback_link
 
 	if (!SSdbcore.IsConnected())
-		return FALSE
+		return null
 
 	var/datum/db_query/feedback_query = SSdbcore.NewQuery("SELECT feedback FROM [format_table_name("admin")] WHERE ckey = '[owner.ckey]'")
 
@@ -194,7 +205,8 @@ GLOBAL_PROTECT(href_token)
 
 	if(!feedback_query.NextRow())
 		qdel(feedback_query)
-		return FALSE // no feedback link exists
+		cached_feedback_link = NO_FEEDBACK_LINK // monkestation edit: fallback to prevent issues
+		return null // no feedback link exists
 
 	cached_feedback_link = feedback_query.item[1] || NO_FEEDBACK_LINK
 	qdel(feedback_query)

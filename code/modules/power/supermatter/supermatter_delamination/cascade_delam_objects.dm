@@ -22,6 +22,9 @@
 
 /obj/crystal_mass/Initialize(mapload, dir_to_remove)
 	. = ..()
+	// sanity check, I'm just throwing shit at the wall to hope one of these checks prevents the server crash bug
+	if(!isturf(loc) || QDELING(loc))
+		return INITIALIZE_HINT_QDEL
 	icon_state = "crystal_cascade_[rand(1,6)]"
 	START_PROCESSING(SSsupermatter_cascade, src)
 
@@ -36,12 +39,15 @@
 	if(our_turf)
 		our_turf.opacity = FALSE
 
+	// Ideally this'd be part of the SM component, but the SM itself snowflakes bullets (emitters are bullets).
+	RegisterSignal(src, COMSIG_ATOM_PRE_BULLET_ACT, PROC_REF(eat_bullets))
+
 /obj/crystal_mass/process()
 
 	if(!COOLDOWN_FINISHED(src, sm_wall_cooldown))
 		return
 
-	if(!available_dirs || available_dirs.len <= 0)
+	if(!length(available_dirs))
 		return PROCESS_KILL
 
 	COOLDOWN_START(src, sm_wall_cooldown, rand(0, 3 SECONDS))
@@ -51,7 +57,12 @@
 
 	icon_state = "crystal_cascade_[rand(1,6)]"
 
-	if(!next_turf || locate(/obj/crystal_mass) in next_turf)
+	// we gotta stop the cascade from eating reality itself, so we're going to go a bit overboard on the checks here.
+	// ensure the next turf actually fucking exists
+	if(!istype(next_turf) || QDELING(next_turf))
+		return
+	// ensure there's no crystal mass in the next turf
+	if(locate(/obj/crystal_mass) in next_turf)
 		return
 
 	for(var/atom/movable/checked_atom as anything in next_turf)
@@ -70,9 +81,18 @@
 
 	new /obj/crystal_mass(next_turf, get_dir(next_turf, src))
 
-/obj/crystal_mass/bullet_act(obj/projectile/projectile)
-	visible_message(span_notice("[src] is unscathed!"))
-	return BULLET_ACT_HIT
+/obj/crystal_mass/proc/eat_bullets(datum/source, obj/projectile/hitting_projectile)
+	SIGNAL_HANDLER
+
+	visible_message(
+		span_warning("[hitting_projectile] flies into [src] with a loud crack, before rapidly flashing into ash."),
+		null,
+		span_hear("You hear a loud crack as you are washed with a wave of heat."),
+	)
+
+	playsound(src, 'sound/effects/supermatter.ogg', 50, TRUE)
+	qdel(hitting_projectile)
+	return COMPONENT_BULLET_BLOCKED
 
 /obj/crystal_mass/singularity_act()
 	return
@@ -166,4 +186,3 @@
 			span_hear("You hear a loud crack as a small distortion passes through you."))
 
 		qdel(consumed_object)
-

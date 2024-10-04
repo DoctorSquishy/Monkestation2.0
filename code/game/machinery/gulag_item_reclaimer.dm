@@ -30,15 +30,18 @@
 		I.forceMove(get_turf(src))
 	if(linked_teleporter)
 		linked_teleporter.linked_reclaimer = null
+	linked_teleporter = null
 	return ..()
 
-/obj/machinery/gulag_item_reclaimer/emag_act(mob/user)
+/obj/machinery/gulag_item_reclaimer/emag_act(mob/user, obj/item/card/emag/emag_card)
 	if(obj_flags & EMAGGED) // emagging lets anyone reclaim all the items
-		return
+		return FALSE
 	req_access = list()
 	obj_flags |= EMAGGED
 	screen_icon = "emagged_general"
 	update_appearance()
+	balloon_alert(user, "id checker scrambled")
+	return TRUE
 
 /obj/machinery/gulag_item_reclaimer/ui_interact(mob/user, datum/tgui/ui)
 	ui = SStgui.try_update_ui(user, src, ui)

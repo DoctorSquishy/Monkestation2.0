@@ -42,6 +42,7 @@
 	if(isitem(parent))
 		RegisterSignal(parent, COMSIG_ITEM_EQUIPPED, PROC_REF(on_equip))
 		RegisterSignal(parent, COMSIG_ITEM_DROPPED, PROC_REF(on_drop))
+		RegisterSignals(parent, list(COMSIG_ITEM_ATTACK, COMSIG_ITEM_ATTACK_OBJ), PROC_REF(on_attack))
 	else if(ismob(parent))
 		RegisterSignal(parent, COMSIG_MOB_RECEIVE_MAGIC, PROC_REF(block_receiving_magic), override = TRUE)
 		RegisterSignal(parent, COMSIG_MOB_RESTRICT_MAGIC, PROC_REF(restrict_casting_magic), override = TRUE)
@@ -56,9 +57,9 @@
 	src.drain_antimagic = drain_antimagic
 	src.expiration = expiration
 
-/datum/component/anti_magic/Destroy(force, silent)
-	QDEL_NULL(drain_antimagic)
-	QDEL_NULL(expiration)
+/datum/component/anti_magic/Destroy(force)
+	drain_antimagic = null
+	expiration = null
 	return ..()
 
 /datum/component/anti_magic/proc/on_equip(datum/source, mob/equipper, slot)
@@ -129,7 +130,7 @@
 			antimagic_color = LIGHT_COLOR_DARK_BLUE
 			playsound(user, 'sound/magic/magic_block_mind.ogg', 50, TRUE)
 
-		user.mob_light(_range = 2, _color = antimagic_color, _duration = 5 SECONDS)
+		user.mob_light(range = 2, color = antimagic_color, duration = 5 SECONDS)
 		user.add_overlay(antimagic_effect)
 		addtimer(CALLBACK(user, TYPE_PROC_REF(/atom, cut_overlay), antimagic_effect), 50)
 
@@ -158,3 +159,7 @@
 		return COMPONENT_MAGIC_BLOCKED
 
 	return NONE
+
+/datum/component/anti_magic/proc/on_attack(atom/movable/source, atom/target, mob/user)
+	SIGNAL_HANDLER
+	SEND_SIGNAL(target, COMSIG_ATOM_HOLYATTACK, source, user, antimagic_flags)

@@ -72,6 +72,9 @@ Runes can either be invoked by one's self or with many different cultists. Each 
 	/// The actual keyword for the rune
 	var/keyword
 
+	/// can non-cultists use this rune? used for the tramstation beer rune. Monkestation - addition
+	var/cult_override = FALSE
+
 /obj/effect/rune/Initialize(mapload, set_keyword)
 	. = ..()
 	if(set_keyword)
@@ -96,7 +99,8 @@ Runes can either be invoked by one's self or with many different cultists. Each 
 	. = ..()
 	if(.)
 		return
-	if(!IS_CULTIST(user))
+//	if(!IS_CULTIST(user)) // monkestation change, original code
+	if(!IS_CULTIST(user) && !cult_override) // monkestation change, cult override added
 		to_chat(user, span_warning("You aren't able to understand the words of [src]."))
 		return
 	var/list/invokers = can_invoke(user)
@@ -108,7 +112,7 @@ Runes can either be invoked by one's self or with many different cultists. Each 
 
 /obj/effect/rune/attack_animal(mob/living/simple_animal/user, list/modifiers)
 	if(isshade(user) || isconstruct(user))
-		if(istype(user, /mob/living/simple_animal/hostile/construct/wraith/angelic) || istype(user, /mob/living/simple_animal/hostile/construct/juggernaut/angelic) || istype(user, /mob/living/simple_animal/hostile/construct/artificer/angelic))
+		if(HAS_TRAIT(user, TRAIT_ANGELIC))
 			to_chat(user, span_warning("You purge the rune!"))
 			qdel(src)
 		else if(construct_invoke || !IS_CULTIST(user)) //if you're not a cult construct we want the normal fail message
@@ -218,53 +222,68 @@ structure_check() searches for nearby cultist structures required for the invoca
 /obj/effect/rune/convert/invoke(list/invokers)
 	if(rune_in_use)
 		return
+
 	var/list/myriad_targets = list()
-	var/turf/T = get_turf(src)
-	for(var/mob/living/M in T)
-		if(!IS_CULTIST(M))
-			myriad_targets |= M
-	if(!length(myriad_targets))
+	for(var/mob/living/non_cultist in loc)
+		if(!IS_CULTIST(non_cultist))
+			myriad_targets += non_cultist
+
+	if(!length(myriad_targets) && !try_spawn_sword())
 		fail_invoke()
-		log_game("Offer rune failed - no eligible targets.")
 		return
+
 	rune_in_use = TRUE
 	visible_message(span_warning("[src] pulses blood red!"))
 	var/oldcolor = color
 	color = RUNE_COLOR_DARKRED
-	var/mob/living/L = pick(myriad_targets)
 
-	var/mob/living/F = invokers[1]
-	var/datum/antagonist/cult/C = F.mind.has_antag_datum(/datum/antagonist/cult,TRUE)
-	var/datum/team/cult/Cult_team = C.cult_team
-	var/is_convertable = is_convertable_to_cult(L,C.cult_team)
-	if(L.stat != DEAD && is_convertable)
-		invocation = "Mah'weyh pleggh at e'ntrath!"
-		..()
-		if(is_convertable)
-			do_convert(L, invokers, Cult_team)
+	if(length(myriad_targets))
+		var/mob/living/new_convertee = pick(myriad_targets)
+		var/mob/living/first_invoker = invokers[1]
+		var/datum/antagonist/cult/first_invoker_datum = first_invoker.mind.has_antag_datum(/datum/antagonist/cult)
+		var/datum/team/cult/cult_team = first_invoker_datum.get_team()
+
+		var/is_convertable = is_convertable_to_cult(new_convertee, cult_team)
+		if(new_convertee.stat != DEAD && is_convertable)
+			invocation = "Mah'weyh pleggh at e'ntrath!"
+			..()
+			do_convert(new_convertee, invokers, cult_team)
+
+		else
+			invocation = "Barhah hra zar'garis!"
+			..()
+			do_sacrifice(new_convertee, invokers, cult_team)
+
+		cult_team.check_size() // Triggers the eye glow or aura effects if the cult has grown large enough relative to the crew
+
 	else
-		invocation = "Barhah hra zar'garis!"
-		..()
-		do_sacrifice(L, invokers)
-	animate(src, color = oldcolor, time = 5)
-	addtimer(CALLBACK(src, TYPE_PROC_REF(/atom, update_atom_colour)), 5)
-	Cult_team.check_size() // Triggers the eye glow or aura effects if the cult has grown large enough relative to the crew
+		do_invoke_glow()
+
+	animate(src, color = oldcolor, time = 0.5 SECONDS)
+	addtimer(CALLBACK(src, TYPE_PROC_REF(/atom, update_atom_colour)), 0.5 SECONDS)
 	rune_in_use = FALSE
 
 /obj/effect/rune/convert/proc/do_convert(mob/living/convertee, list/invokers, datum/team/cult/cult_team)
 	ASSERT(convertee.mind)
 
 	if(length(invokers) < 2)
-		for(var/M in invokers)
-			to_chat(M, span_warning("You need at least two invokers to convert [convertee]!"))
-		log_game("Offer rune with [convertee] on it failed - tried conversion with one invoker.")
+		for(var/invoker in invokers)
+			to_chat(invoker, span_warning("You need at least two invokers to convert [convertee]!"))
 		return FALSE
 
 	if(convertee.can_block_magic(MAGIC_RESISTANCE|MAGIC_RESISTANCE_HOLY, charge_cost = 0)) //No charge_cost because it can be spammed
-		for(var/M in invokers)
-			to_chat(M, span_warning("Something is shielding [convertee]'s mind!"))
-		log_game("Offer rune with [convertee] on it failed - convertee had anti-magic.")
+		for(var/invoker in invokers)
+			to_chat(invoker, span_warning("Something is shielding [convertee]'s mind!"))
 		return FALSE
+
+
+	// monke start: old man henderson
+	if(convertee.get_drunk_amount() >= OLD_MAN_HENDERSON_DRUNKENNESS)
+		convertee.visible_message(span_cultitalic("[convertee] is unfazed by the rune, grumbling with incoherent drunken annoyance instead!"))
+		for(var/invoker in invokers)
+			to_chat(invoker, span_warning("The rune's blood magic is ineffective on [convertee], unable to pierce the intense alcoholic haze clouding [convertee.p_their()] mind!"))
+		return FALSE
+	// monke end
 
 	var/brutedamage = convertee.getBruteLoss()
 	var/burndamage = convertee.getFireLoss()
@@ -310,19 +329,11 @@ structure_check() searches for nearby cultist structures required for the invoca
 		convertee.name = convertee.real_name
 	return TRUE
 
-/obj/effect/rune/convert/proc/do_sacrifice(mob/living/sacrificial, list/invokers)
-	var/mob/living/first_invoker = invokers[1]
-	if(!first_invoker)
-		return FALSE
-	var/datum/antagonist/cult/C = first_invoker.mind.has_antag_datum(/datum/antagonist/cult,TRUE)
-	if(!C)
-		return FALSE
-
+/obj/effect/rune/convert/proc/do_sacrifice(mob/living/sacrificial, list/invokers, datum/team/cult/cult_team)
 	var/big_sac = FALSE
-	if((((ishuman(sacrificial) || iscyborg(sacrificial)) && sacrificial.stat != DEAD) || C.cult_team.is_sacrifice_target(sacrificial.mind)) && length(invokers) < 3)
-		for(var/M in invokers)
-			to_chat(M, span_cultitalic("[sacrificial] is too greatly linked to the world! You need three acolytes!"))
-		log_game("Offer rune with [sacrificial] on it failed - not enough acolytes and target is living or sac target")
+	if((((ishuman(sacrificial) || iscyborg(sacrificial)) && sacrificial.stat != DEAD) || cult_team.is_sacrifice_target(sacrificial.mind)) && length(invokers) < 3)
+		for(var/invoker in invokers)
+			to_chat(invoker, span_cultitalic("[sacrificial] is too greatly linked to the world! You need three acolytes!"))
 		return FALSE
 
 	var/signal_result = SEND_SIGNAL(sacrificial, COMSIG_LIVING_CULT_SACRIFICED, invokers)
@@ -331,7 +342,7 @@ structure_check() searches for nearby cultist structures required for the invoca
 
 	if(sacrificial.mind)
 		LAZYADD(GLOB.sacrificed, WEAKREF(sacrificial.mind))
-		for(var/datum/objective/sacrifice/sac_objective in C.cult_team.objectives)
+		for(var/datum/objective/sacrifice/sac_objective in cult_team.objectives)
 			if(sac_objective.target == sacrificial.mind)
 				sac_objective.sacced = TRUE
 				sac_objective.clear_sacrifice()
@@ -340,7 +351,7 @@ structure_check() searches for nearby cultist structures required for the invoca
 	else
 		LAZYADD(GLOB.sacrificed, WEAKREF(sacrificial))
 
-	new /obj/effect/temp_visual/cult/sac(get_turf(src))
+	new /obj/effect/temp_visual/cult/sac(loc)
 
 	if(!(signal_result & SILENCE_SACRIFICE_MESSAGE))
 		for(var/invoker in invokers)
@@ -353,25 +364,69 @@ structure_check() searches for nearby cultist structures required for the invoca
 				to_chat(invoker, span_cultlarge("\"I accept this meager sacrifice.\""))
 
 	if(iscyborg(sacrificial))
-		var/construct_class = show_radial_menu(first_invoker, sacrificial, GLOB.construct_radial_images, require_near = TRUE, tooltips = TRUE)
+		var/construct_class = show_radial_menu(invokers[1], sacrificial, GLOB.construct_radial_images, require_near = TRUE, tooltips = TRUE)
 		if(QDELETED(sacrificial) || !construct_class)
 			return FALSE
 		sacrificial.grab_ghost()
-		make_new_construct_from_class(construct_class, THEME_CULT, sacrificial, first_invoker, TRUE, get_turf(src))
+		make_new_construct_from_class(construct_class, THEME_CULT, sacrificial, invokers[1], TRUE, get_turf(src))
 		var/mob/living/silicon/robot/sacriborg = sacrificial
 		sacrificial.log_message("was sacrificed as a cyborg.", LOG_GAME)
 		sacriborg.mmi = null
 		qdel(sacrificial)
 		return TRUE
-	var/obj/item/soulstone/stone = new /obj/item/soulstone(get_turf(src))
+
+	var/obj/item/soulstone/stone = new(loc)
 	if(sacrificial.mind && !HAS_TRAIT(sacrificial, TRAIT_SUICIDED))
-		stone.capture_soul(sacrificial, first_invoker, TRUE)
+		stone.capture_soul(sacrificial,  invokers[1], forced = TRUE)
 
 	if(sacrificial)
 		playsound(sacrificial, 'sound/magic/disintegrate.ogg', 100, TRUE)
 		sacrificial.investigate_log("has been sacrificially gibbed by the cult.", INVESTIGATE_DEATHS)
 		sacrificial.gib()
+
+	try_spawn_sword() // after sharding and gibbing, which potentially dropped a null rod
 	return TRUE
+
+/// Tries to convert a null rod over the rune to a cult sword
+/obj/effect/rune/convert/proc/try_spawn_sword()
+	for(var/obj/item/nullrod/rod in loc)
+		if(rod.anchored || (rod.resistance_flags & INDESTRUCTIBLE))
+			continue
+
+		var/num_slain = LAZYLEN(rod.cultists_slain)
+		var/displayed_message = "[rod] glows an unholy red and begins to transform..."
+		if(GET_ATOM_BLOOD_DNA_LENGTH(rod))
+			displayed_message += " The blood of [num_slain] fallen cultist[num_slain == 1 ? "":"s"] is absorbed into [rod]!"
+
+		rod.visible_message(span_cultitalic(displayed_message))
+		switch(num_slain)
+			if(0, 1)
+				animate_spawn_sword(rod, /obj/item/melee/cultblade/dagger)
+			if(2)
+				animate_spawn_sword(rod, /obj/item/melee/cultblade)
+			else
+				animate_spawn_sword(rod, /obj/item/cult_bastard)
+		return TRUE
+
+	return FALSE
+
+/// Does an animation of a null rod transforming into a cult sword
+/obj/effect/rune/convert/proc/animate_spawn_sword(obj/item/nullrod/former_rod, new_blade_typepath)
+	playsound(src, 'sound/effects/magic.ogg', 33, vary = TRUE, extrarange = SILENCED_SOUND_EXTRARANGE, frequency = 0.66)
+	former_rod.anchored = TRUE
+	former_rod.Shake()
+	animate(former_rod, alpha = 0, transform = matrix(former_rod.transform).Scale(0.01), time = 2 SECONDS, easing = BOUNCE_EASING, flags = ANIMATION_PARALLEL)
+	QDEL_IN(former_rod, 2 SECONDS)
+
+	var/obj/item/new_blade = new new_blade_typepath(loc)
+	var/matrix/blade_matrix_on_spawn = matrix(new_blade.transform)
+	new_blade.name = "converted [new_blade.name]"
+	new_blade.anchored = TRUE
+	new_blade.alpha = 0
+	new_blade.transform = matrix(new_blade.transform).Scale(0.01)
+	new_blade.Shake()
+	animate(new_blade, alpha = 255, transform = blade_matrix_on_spawn, time = 2 SECONDS, easing = BOUNCE_EASING, flags = ANIMATION_PARALLEL)
+	addtimer(VARSET_CALLBACK(new_blade, anchored, FALSE), 2 SECONDS)
 
 /obj/effect/rune/empower
 	cultist_name = "Empower"
@@ -617,35 +672,36 @@ structure_check() searches for nearby cultist structures required for the invoca
 		. += "<b>Sacrifices unrewarded:</b> [LAZYLEN(GLOB.sacrificed) - sacrifices_used]"
 
 /obj/effect/rune/raise_dead/invoke(list/invokers)
-	var/turf/T = get_turf(src)
-	var/mob/living/mob_to_revive
-	var/list/potential_revive_mobs = list()
-	var/mob/living/user = invokers[1]
 	if(rune_in_use)
 		return
 	rune_in_use = TRUE
-	for(var/mob/living/M in T.contents)
-		if(IS_CULTIST(M) && (M.stat == DEAD || !M.client || M.client.is_afk()))
-			potential_revive_mobs |= M
+	var/mob/living/mob_to_revive
+	var/list/potential_revive_mobs = list()
+	var/mob/living/user = invokers[1]
+
+	for(var/mob/living/target in loc)
+		if(IS_CULTIST(target) && (target.stat == DEAD || isnull(target.client) || target.client.is_afk()))
+			potential_revive_mobs += target
+
 	if(!length(potential_revive_mobs))
-		to_chat(user, "<span class='cult italic'>There are no dead cultists on the rune!</span>")
+		to_chat(user, span_cultitalic("There are no dead cultists on the rune!"))
 		log_game("Raise Dead rune activated by [user] at [COORD(src)] failed - no cultists to revive.")
 		fail_invoke()
 		return
-	if(length(potential_revive_mobs) > 1)
+
+	if(length(potential_revive_mobs) > 1 && user.mind)
 		mob_to_revive = tgui_input_list(user, "Cultist to revive", "Revive Cultist", potential_revive_mobs)
 		if(isnull(mob_to_revive))
 			return
 	else
 		mob_to_revive = potential_revive_mobs[1]
+
 	if(QDELETED(src) || !validness_checks(mob_to_revive, user))
 		fail_invoke()
 		return
-	if(user.name == "Herbert West")
-		invocation = "To life, to life, I bring them!"
-	else
-		invocation = initial(invocation)
-	..()
+
+	invocation = (user.name == "Herbert West") ? "To life, to life, I bring them!" : initial(invocation)
+
 	if(mob_to_revive.stat == DEAD)
 		var/diff = LAZYLEN(GLOB.sacrificed) - SOULS_TO_REVIVE - sacrifices_used
 		if(diff < 0)
@@ -657,21 +713,21 @@ structure_check() searches for nearby cultist structures required for the invoca
 
 	if(!mob_to_revive.client || mob_to_revive.client.is_afk())
 		set waitfor = FALSE
-		var/list/mob/dead/observer/candidates = poll_candidates_for_mob("Do you want to play as a [mob_to_revive.real_name], an inactive blood cultist?", ROLE_CULTIST, ROLE_CULTIST, 5 SECONDS, mob_to_revive)
-		if(LAZYLEN(candidates))
-			var/mob/dead/observer/C = pick(candidates)
+		var/mob/chosen_one = SSpolling.poll_ghosts_for_target("Do you want to play as [span_danger(mob_to_revive.real_name)], an [span_notice("inactive blood cultist")]?", check_jobban = ROLE_CULTIST, role = ROLE_CULTIST, poll_time = 5 SECONDS, checked_target = mob_to_revive, alert_pic = mob_to_revive, role_name_text = "inactive cultist")
+		if(chosen_one)
 			to_chat(mob_to_revive.mind, "Your physical form has been taken over by another soul due to your inactivity! Ahelp if you wish to regain your form.")
-			message_admins("[key_name_admin(C)] has taken control of ([key_name_admin(mob_to_revive)]) to replace an AFK player.")
+			message_admins("[key_name_admin(chosen_one)] has taken control of ([key_name_admin(mob_to_revive)]) to replace an AFK player.")
 			mob_to_revive.ghostize(FALSE)
-			mob_to_revive.key = C.key
+			mob_to_revive.key = chosen_one.key
 		else
 			fail_invoke()
 			return
-	SEND_SOUND(mob_to_revive, 'sound/ambience/antag/bloodcult.ogg')
+	SEND_SOUND(mob_to_revive, 'sound/ambience/antag/bloodcult/bloodcult_gain.ogg')
 	to_chat(mob_to_revive, span_cultlarge("\"PASNAR SAVRAE YAM'TOTH. Arise.\""))
 	mob_to_revive.visible_message(span_warning("[mob_to_revive] draws in a huge breath, red light shining from [mob_to_revive.p_their()] eyes."), \
-								  span_cultlarge("You awaken suddenly from the void. You're alive!"))
+		span_cultlarge("You awaken suddenly from the void. You're alive!"))
 	rune_in_use = FALSE
+	return ..()
 
 /obj/effect/rune/raise_dead/proc/validness_checks(mob/living/target_mob, mob/living/user)
 	var/turf/T = get_turf(src)
@@ -718,7 +774,7 @@ structure_check() searches for nearby cultist structures required for the invoca
 	barrier.Toggle()
 	if(iscarbon(user))
 		var/mob/living/carbon/C = user
-		C.apply_damage(2, BRUTE, pick(BODY_ZONE_L_ARM, BODY_ZONE_R_ARM))
+		C.apply_damage(2, BRUTE, pick(GLOB.arm_zones))
 
 //Rite of Joined Souls: Summons a single cultist.
 /obj/effect/rune/summon
@@ -887,7 +943,12 @@ structure_check() searches for nearby cultist structures required for the invoca
 			fail_invoke()
 			log_game("Manifest rune failed - too many summoned ghosts")
 			return list()
-		notify_ghosts("Manifest rune invoked in [get_area(src)].", 'sound/effects/ghost2.ogg', source = src, header = "Manifest rune")
+		notify_ghosts(
+			"Manifest rune invoked in [get_area(src)].",
+			'sound/effects/ghost2.ogg',
+			source = src,
+			header = "Manifest rune",
+		)
 		var/list/ghosts_on_rune = list()
 		for(var/mob/dead/observer/O in T)
 			if(O.client && !is_banned_from(O.ckey, ROLE_CULTIST) && !QDELETED(src) && !(isAdminObserver(O) && (O.client.prefs.toggles & ADMIN_IGNORE_CULT_GHOST)) && !QDELETED(O))
@@ -907,7 +968,7 @@ structure_check() searches for nearby cultist structures required for the invoca
 		new_human.equipOutfit(/datum/outfit/ghost_cultist) //give them armor
 		new_human.apply_status_effect(/datum/status_effect/cultghost) //ghosts can't summon more ghosts
 		new_human.set_invis_see(SEE_INVISIBLE_OBSERVER)
-		ADD_TRAIT(new_human, TRAIT_NOBREATH, INNATE_TRAIT)
+		new_human.add_traits(list(TRAIT_NOBREATH, TRAIT_PERMANENTLY_MORTAL), INNATE_TRAIT) // permanently mortal can be removed once this is a bespoke kind of mob
 		ghosts++
 		playsound(src, 'sound/magic/exit_blood.ogg', 50, TRUE)
 		visible_message(span_warning("A cloud of red mist forms above [src], and from within steps... a [new_human.gender == FEMALE ? "wo":""]man."))
@@ -1039,7 +1100,7 @@ structure_check() searches for nearby cultist structures required for the invoca
 			add_alt_appearance(/datum/atom_hud/alternate_appearance/basic/noncult, "human_apoc", A, NONE)
 			addtimer(CALLBACK(M, TYPE_PROC_REF(/atom/, remove_alt_appearance),"human_apoc",TRUE), duration)
 			images += A
-			SEND_SOUND(M, pick(sound('sound/ambience/antag/bloodcult.ogg'),sound('sound/voice/ghost_whisper.ogg'),sound('sound/misc/ghosty_wind.ogg')))
+			SEND_SOUND(M, pick(sound('sound/ambience/antag/bloodcult/bloodcult_gain.ogg'),sound('sound/voice/ghost_whisper.ogg'),sound('sound/misc/ghosty_wind.ogg')))
 		else
 			var/construct = pick("floater","artificer","behemoth")
 			var/image/B = image('icons/mob/simple/mob.dmi',M,construct, ABOVE_MOB_LAYER)
@@ -1061,52 +1122,37 @@ structure_check() searches for nearby cultist structures required for the invoca
 		var/outcome = rand(1,100)
 		switch(outcome)
 			if(1 to 10)
-				var/datum/round_event_control/disease_outbreak/covid_2562_event = locate() in SSevents.control
-				INVOKE_ASYNC(covid_2562_event, TYPE_PROC_REF(/datum/round_event_control, runEvent))
-				var/datum/round_event_control/mice_migration/stuart_big_event = locate() in SSevents.control
-				INVOKE_ASYNC(stuart_big_event, TYPE_PROC_REF(/datum/round_event_control, runEvent))
-
+				force_event_async(/datum/round_event_control/disease_outbreak, "an apocalypse rune")
+				force_event_async(/datum/round_event_control/mice_migration, "an apocalypse rune")
 			if(11 to 20)
-				var/datum/round_event_control/radiation_storm/my_skin_feels_funny_event = locate() in SSevents.control
-				INVOKE_ASYNC(my_skin_feels_funny_event, TYPE_PROC_REF(/datum/round_event_control, runEvent))
+				force_event_async(/datum/round_event_control/radiation_storm, "an apocalypse rune")
 
 			if(21 to 30)
-				var/datum/round_event_control/brand_intelligence/product_placement_gone_rogue_event = locate() in SSevents.control
-				INVOKE_ASYNC(product_placement_gone_rogue_event, TYPE_PROC_REF(/datum/round_event_control, runEvent))
+				force_event_async(/datum/round_event_control/brand_intelligence, "an apocalypse rune")
 
 			if(31 to 40)
-				var/datum/round_event_control/immovable_rod/huge_rod_event = locate() in SSevents.control //you've
-				INVOKE_ASYNC(huge_rod_event, TYPE_PROC_REF(/datum/round_event_control, runEvent)) //got
-				INVOKE_ASYNC(huge_rod_event, TYPE_PROC_REF(/datum/round_event_control, runEvent)) //a
-				INVOKE_ASYNC(huge_rod_event, TYPE_PROC_REF(/datum/round_event_control, runEvent)) //huge...
+				force_event_async(/datum/round_event_control/immovable_rod, "an apocalypse rune")
+				force_event_async(/datum/round_event_control/immovable_rod, "an apocalypse rune")
+				force_event_async(/datum/round_event_control/immovable_rod, "an apocalypse rune")
 
 			if(41 to 50)
-				var/datum/round_event_control/meteor_wave/dinosaur_purge_event = locate() in SSevents.control
-				INVOKE_ASYNC(dinosaur_purge_event, TYPE_PROC_REF(/datum/round_event_control, runEvent))
+				force_event_async(/datum/round_event_control/meteor_wave, "an apocalypse rune")
 
 			if(51 to 60)
-				var/datum/round_event_control/spider_infestation/creepy_crawly_event = locate() in SSevents.control
-				INVOKE_ASYNC(creepy_crawly_event, TYPE_PROC_REF(/datum/round_event_control, runEvent))
+				force_event_async(/datum/round_event_control/spider_infestation, "an apocalypse rune")
 
 			if(61 to 70)
-				var/datum/round_event_control/anomaly/anomaly_flux/flux_event = locate() in SSevents.control
-				INVOKE_ASYNC(flux_event, TYPE_PROC_REF(/datum/round_event_control, runEvent))
-				var/datum/round_event_control/anomaly/anomaly_grav/grav_event = locate() in SSevents.control
-				INVOKE_ASYNC(grav_event, TYPE_PROC_REF(/datum/round_event_control, runEvent))
-				var/datum/round_event_control/anomaly/anomaly_pyro/pyro_event = locate() in SSevents.control
-				INVOKE_ASYNC(pyro_event, TYPE_PROC_REF(/datum/round_event_control, runEvent))
-				var/datum/round_event_control/anomaly/anomaly_vortex/vortex_event = locate() in SSevents.control
-				INVOKE_ASYNC(vortex_event, TYPE_PROC_REF(/datum/round_event_control, runEvent))
+				force_event_async(/datum/round_event_control/anomaly/anomaly_flux, "an apocalypse rune")
+				force_event_async(/datum/round_event_control/anomaly/anomaly_grav, "an apocalypse rune")
+				force_event_async(/datum/round_event_control/anomaly/anomaly_pyro, "an apocalypse rune")
+				force_event_async(/datum/round_event_control/anomaly/anomaly_vortex, "an apocalypse rune")
 
 			if(71 to 80)
-				var/datum/round_event_control/spacevine/ivy_event = locate() in SSevents.control
-				INVOKE_ASYNC(ivy_event, TYPE_PROC_REF(/datum/round_event_control, runEvent))
-				var/datum/round_event_control/grey_tide/grey_tide_nation_wide = locate() in SSevents.control
-				INVOKE_ASYNC(grey_tide_nation_wide, TYPE_PROC_REF(/datum/round_event_control, runEvent))
+				force_event_async(/datum/round_event_control/spacevine, "an apocalypse rune")
+				force_event_async(/datum/round_event_control/grey_tide, "an apocalypse rune")
 
 			if(81 to 100)
-				var/datum/round_event_control/portal_storm_narsie/total_not_a_xen_storm_event = locate() in SSevents.control
-				INVOKE_ASYNC(total_not_a_xen_storm_event, TYPE_PROC_REF(/datum/round_event_control, runEvent))
+				force_event_async(/datum/round_event_control/portal_storm_narsie, "an apocalypse rune")
 
 	qdel(src)
 

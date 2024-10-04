@@ -101,6 +101,7 @@
 #define SPECIES_ANDROID "android"
 #define SPECIES_DULLAHAN "dullahan"
 #define SPECIES_ETHEREAL "ethereal"
+#define SPECIES_ETHEREAL_LUSTROUS "lustrous"
 #define SPECIES_FLYPERSON "fly"
 #define SPECIES_HUMAN "human"
 #define SPECIES_JELLYPERSON "jelly"
@@ -128,8 +129,11 @@
 #define SPECIES_ZOMBIE_KROKODIL "krokodil_zombie"
 #define SPECIES_OOZELING "oozeling"
 #define SPECIES_IPC "ipc"
-#define SPECIES_SIMIAN "simian"
-#define SPECIES_GOBLIN "goblin"//monkestation addition
+#define SPECIES_SIMIAN "simian" //Monkestation Addition
+#define SPECIES_GOBLIN "goblin" //Monkestation Addition
+#define SPECIES_FLORAN "floran" //Monkestation Addition
+#define SPECIES_SATYR "satyr" //Monkestation Addition
+#define SPECIES_TERATOMA "teratoma" //Monkestation Addition
 // Like species IDs, but not specifically attached a species.
 #define BODYPART_ID_ALIEN "alien"
 #define BODYPART_ID_ROBOTIC "robotic"
@@ -303,6 +307,19 @@
 #define ETHEREAL_CHARGE_DANGEROUS 3000
 
 
+//Monkestation Addition: Ethereal Blood Charge
+#define ETHEREAL_BLOOD_CHARGE_NONE 0
+#define ETHEREAL_BLOOD_CHARGE_LOWEST_PASSIVE 56
+#define ETHEREAL_BLOOD_CHARGE_LOW 140
+#define ETHEREAL_BLOOD_CHARGE_NORMAL 280
+#define ETHEREAL_BLOOD_CHARGE_ALMOSTFULL 420
+#define ETHEREAL_BLOOD_CHARGE_FULL 560
+#define ETHEREAL_BLOOD_CHARGE_OVERLOAD 700
+#define ETHEREAL_BLOOD_CHARGE_DANGEROUS 840
+
+#define ETHEREAL_BLOOD_CHARGE_FACTOR 0.224
+//End of Monkestation addition
+
 #define CRYSTALIZE_COOLDOWN_LENGTH (120 SECONDS)
 #define CRYSTALIZE_PRE_WAIT_TIME (40 SECONDS)
 #define CRYSTALIZE_DISARM_WAIT_TIME (120 SECONDS)
@@ -347,7 +364,6 @@
 #define AI_ON 1
 #define AI_IDLE 2
 #define AI_OFF 3
-#define AI_Z_OFF 4
 
 //The range at which a mob should wake up if you spawn into the z level near it
 #define MAX_SIMPLEMOB_WAKEUP_RANGE 5
@@ -370,6 +386,8 @@
 #define GALOSHES_DONT_HELP (1<<3)
 /// Slip works even if you're already on the ground
 #define SLIP_WHEN_CRAWLING (1<<4)
+/// the mob won't slip if the turf has the TRAIT_TURF_IGNORE_SLIPPERY trait.
+#define SLIPPERY_TURF (1<<5)
 
 #define MAX_CHICKENS 50
 
@@ -477,9 +495,6 @@
 #define ROBOTIC_BRUTE_EXAMINE_TEXT "denting"
 #define ROBOTIC_BURN_EXAMINE_TEXT "charring"
 
-// If a mob has a higher threshold than this, the icon shown will be increased to the big fire icon.
-#define MOB_BIG_FIRE_STACK_THRESHOLD 3
-
 #define GRAB_PIXEL_SHIFT_PASSIVE 6
 #define GRAB_PIXEL_SHIFT_AGGRESSIVE 12
 #define GRAB_PIXEL_SHIFT_NECK 16
@@ -576,10 +591,14 @@
 
 ///Squash flags. For squashable element
 
-///Whether or not the squashing requires the squashed mob to be lying down
+/// Squashing will not occur if the mob is not lying down (bodyposition is LYING_DOWN)
 #define SQUASHED_SHOULD_BE_DOWN (1<<0)
-///Whether or not to gib when the squashed mob is moved over
-#define SQUASHED_SHOULD_BE_GIBBED (1<<0)
+/// If present, outright gibs the squashed mob instead of just dealing damage
+#define SQUASHED_SHOULD_BE_GIBBED (1<<1)
+/// If squashing always passes if the mob is dead
+#define SQUASHED_ALWAYS_IF_DEAD (1<<2)
+/// Don't squash our mob if its not located in a turf
+#define SQUASHED_DONT_SQUASH_IN_CONTENTS (1<<3)
 
 /*
  * Defines for "AI emotions", allowing the AI to expression emotions
@@ -720,8 +739,8 @@ GLOBAL_LIST_INIT(human_heights_to_offsets, list(
 #define WOUND_LAYER 3
 /// Blood cult ascended halo layer, because there's currently no better solution for adding/removing
 #define HALO_LAYER 2
-/// Fire layer when you're on fire
-#define FIRE_LAYER 1
+/// The highest most layer for mob overlays. Unused
+#define HIGHEST_LAYER 1
 
 #define UPPER_BODY "upper body"
 #define LOWER_BODY "lower body"
@@ -741,6 +760,7 @@ GLOBAL_LIST_INIT(layers_to_offset, list(
 	"[BELT_LAYER]" = LOWER_BODY,
 	// Everything below looks fine with or without a filter, so we can skip it and just offset
 	// (In practice they'd be fine if they got a filter but we can optimize a bit by not.)
+	/* monkestation edit: fix some weirdness with heights, most notably gloves
 	"[GLASSES_LAYER]" = UPPER_BODY,
 	"[ABOVE_BODY_FRONT_GLASSES_LAYER]" = UPPER_BODY, // currently unused
 	"[ABOVE_BODY_FRONT_HEAD_LAYER]" = UPPER_BODY, // only used for head stuff
@@ -750,6 +770,7 @@ GLOBAL_LIST_INIT(layers_to_offset, list(
 	"[ID_CARD_LAYER]" = UPPER_BODY, // unused
 	"[ID_LAYER]" = UPPER_BODY,
 	"[FACEMASK_LAYER]" = UPPER_BODY,
+	monkestation end */
 	"[FACE_LAYER]" = UPPER_BODY,
 	// These two are cached, and have their appearance shared(?), so it's safer to just not touch it
 	"[MUTATIONS_LAYER]" = NO_MODIFY,
@@ -758,11 +779,12 @@ GLOBAL_LIST_INIT(layers_to_offset, list(
 	// to show how many filters are added at a glance
 	// BACK_LAYER (backpacks are big)
 	// BODYPARTS_HIGH_LAYER (arms)
+	// BODY_LAYER (body markings (full body), underwear (full body), eyes)
 	// BODY_ADJ_LAYER (external organs like wings)
 	// BODY_BEHIND_LAYER (external organs like wings)
 	// BODY_FRONT_LAYER (external organs like wings)
 	// DAMAGE_LAYER (full body)
-	// FIRE_LAYER (full body)
+	// HIGHEST_LAYER (full body)
 	// UNIFORM_LAYER (full body)
 	// WOUND_LAYER (full body)
 ))

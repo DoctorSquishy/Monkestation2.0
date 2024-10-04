@@ -6,7 +6,7 @@
 	icon_state = "hardsuit0-engineering"
 	max_integrity = 300
 	armor_type = /datum/armor/hardsuit
-	light_system = MOVABLE_LIGHT_DIRECTIONAL
+	light_system = OVERLAY_LIGHT_DIRECTIONAL
 	light_outer_range = 4
 	light_power = 1
 	light_on = FALSE
@@ -14,6 +14,7 @@
 	actions_types = list(/datum/action/item_action/toggle_helmet_light)
 	flags_cover = HEADCOVERSEYES | HEADCOVERSMOUTH | PEPPERPROOF
 	visor_flags_cover = HEADCOVERSEYES | HEADCOVERSMOUTH | PEPPERPROOF
+	clothing_traits = list(TRAIT_SNOWSTORM_IMMUNE)
 
 	var/basestate = "hardsuit"
 	var/on = FALSE

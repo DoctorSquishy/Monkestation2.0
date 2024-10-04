@@ -99,14 +99,6 @@
 	y_offset = 0
 	see_hidden = FALSE
 
-/obj/machinery/computer/camera_advanced/shuttle_docker/syndicate/pirate/psyker
-	name = "psyker navigation warper"
-	desc = "Used to designate a precise transit location for the psyker shuttle, using sent out brainwaves as detailed sight."
-	icon_screen = "recharge_comp_on"
-	interaction_flags_machine = INTERACT_MACHINE_ALLOW_SILICON | INTERACT_MACHINE_SET_MACHINE //blind friendly
-	x_offset = 0
-	y_offset = 11
-
 /obj/docking_port/mobile/pirate
 	name = "pirate shuttle"
 	shuttle_id = "pirate"
@@ -126,6 +118,19 @@
 	density = TRUE
 	var/cooldown = 300
 	var/next_use = 0
+
+/// Surgery disk for the space IRS (I don't know where to dump them anywhere else)
+/obj/item/disk/surgery/irs
+	name = "Advanced Surgery Disk"
+	desc = "A disk that contains advanced surgery procedures, must be loaded into an Operating Console."
+	surgeries = list(
+		/datum/surgery/advanced/lobotomy,
+		/datum/surgery/advanced/bioware/vein_threading,
+		/datum/surgery/advanced/bioware/nerve_splicing,
+		/datum/surgery_step/heal/combo/upgraded,
+		/datum/surgery_step/pacify,
+		/datum/surgery_step/revive,
+	)
 
 /obj/machinery/loot_locator/interact(mob/user)
 	if(world.time <= next_use)
@@ -381,13 +386,13 @@
 /datum/export/pirate/parrot
 	cost = 2000
 	unit_name = "alive parrot"
-	export_types = list(/mob/living/simple_animal/parrot)
+	export_types = list(/mob/living/basic/parrot)
 
 /datum/export/pirate/parrot/find_loot()
-	for(var/mob/living/simple_animal/parrot/P in GLOB.alive_mob_list)
-		var/turf/T = get_turf(P)
-		if(T && is_station_level(T.z))
-			return P
+	for(var/mob/living/basic/parrot/current_parrot in GLOB.alive_mob_list)
+		var/turf/parrot_turf = get_turf(current_parrot)
+		if(parrot_turf && is_station_level(parrot_turf.z))
+			return current_parrot
 
 /datum/export/pirate/cash
 	cost = 1

@@ -48,6 +48,18 @@
 	id = null
 	id_trim = null
 
+//monkestation edit begin
+/obj/effect/mob_spawn/corpse/human/syndicatecommando/lessenedgear/listeningpost
+	outfit = /datum/outfit/syndicatecommandocorpse/lessenedgear/listeningpost
+
+/datum/outfit/syndicatecommandocorpse/lessenedgear/listeningpost
+	name = "Forgotten Comms Agent Corpse"
+	back = /obj/item/storage/backpack
+	uniform = /obj/item/clothing/under/syndicate/sniper //corpse drip
+	neck = /obj/item/clothing/neck/large_scarf/syndie
+	head = /obj/item/clothing/head/soft/black
+//monke business ends
+
 /obj/effect/mob_spawn/corpse/human/syndicatestormtrooper
 	name = "Syndicate Stormtrooper"
 	hairstyle = "Bald"
@@ -209,12 +221,48 @@
 	facial_haircolor = COLOR_WHITE
 	skin_tone = "caucasian1"
 
+/obj/effect/mob_spawn/corpse/human/wizard/red
+	outfit = /datum/outfit/wizardcorpse/red
+
+/obj/effect/mob_spawn/corpse/human/wizard/yellow
+	outfit = /datum/outfit/wizardcorpse/yellow
+
+/obj/effect/mob_spawn/corpse/human/wizard/black
+	outfit = /datum/outfit/wizardcorpse/black
+
+/obj/effect/mob_spawn/corpse/human/wizard/marisa
+	outfit = /datum/outfit/wizardcorpse/marisa
+
+/obj/effect/mob_spawn/corpse/human/wizard/tape
+	outfit = /datum/outfit/wizardcorpse/tape
+
 /datum/outfit/wizardcorpse
 	name = "Space Wizard Corpse"
 	uniform = /obj/item/clothing/under/color/lightpurple
 	suit = /obj/item/clothing/suit/wizrobe
 	shoes = /obj/item/clothing/shoes/sandal/magic
 	head = /obj/item/clothing/head/wizard
+
+/datum/outfit/wizardcorpse/red
+	suit = /obj/item/clothing/suit/wizrobe/red
+	head = /obj/item/clothing/head/wizard/red
+
+/datum/outfit/wizardcorpse/yellow
+	suit = /obj/item/clothing/suit/wizrobe/yellow
+	head = /obj/item/clothing/head/wizard/yellow
+
+/datum/outfit/wizardcorpse/black
+	suit = /obj/item/clothing/suit/wizrobe/black
+	head = /obj/item/clothing/head/wizard/black
+
+/datum/outfit/wizardcorpse/marisa
+	suit = /obj/item/clothing/suit/wizrobe/marisa
+	head = /obj/item/clothing/head/wizard/marisa
+	shoes = /obj/item/clothing/shoes/sneakers/marisa
+
+/datum/outfit/wizardcorpse/tape
+	suit = /obj/item/clothing/suit/wizrobe/tape
+	head = /obj/item/clothing/head/wizard/tape
 
 /obj/effect/mob_spawn/corpse/human/wizard/dark
 	name = "Dark Wizard Corpse"

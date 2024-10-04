@@ -15,8 +15,7 @@ endmap
 
 map metastation
 	#default
-	minplayers 25
-	#voteweight 0.5
+	minplayers 5
 	votable
 endmap
 
@@ -26,10 +25,17 @@ map deltastation
 endmap
 
 map kilostation
+	minplayers 5
+	votable
 endmap
 
 map icebox
 	minplayers 25
+	votable
+endmap
+
+map theseus
+	minplayers 5
 	votable
 endmap
 
@@ -38,11 +44,10 @@ map tramstation
 	votable
 endmap
 
-map northstar
-	minplayers 50
-	votable
-endmap
-
+#map northstar
+#	minplayers 50
+#	votable
+#endmap
 
 map runtimestation
 endmap
@@ -50,6 +55,21 @@ endmap
 map multiz_debug
 endmap
 
-map oshan
+map boxstation
+	minplayers 25
+	votable
+endmap
+
+map blueshift
+	minplayers 75
+	votable
+endmap
+
+map voidraptor
+	minplayers 40
+	votable
+endmap
+
+map ouroboros
 	votable
 endmap

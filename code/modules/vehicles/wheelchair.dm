@@ -4,11 +4,11 @@
 	icon = 'icons/obj/vehicles.dmi'
 	icon_state = "wheelchair"
 	layer = OBJ_LAYER
-	max_integrity = 100
+	max_integrity = 50 //MONKESTATION EDIT
 	armor_type = /datum/armor/ridden_wheelchair
 	density = FALSE //Thought I couldn't fix this one easily, phew
 	/// Run speed delay is multiplied with this for vehicle move delay.
-	var/delay_multiplier = 6.7
+	var/delay_multiplier = 3
 	/// This variable is used to specify which overlay icon is used for the wheelchair, ensures wheelchair can cover your legs
 	var/overlay_icon = "wheelchair_overlay"
 	var/image/wheels_overlay
@@ -87,9 +87,9 @@
 	desc = "Damn, must've been through a lot."
 	icon_state = "gold_wheelchair"
 	overlay_icon = "gold_wheelchair_overlay"
-	max_integrity = 200
+	max_integrity = 90 //MONKESTATION EDIT
 	armor_type = /datum/armor/wheelchair_gold
-	custom_materials = list(/datum/material/gold = 10000)
+	custom_materials = list(/datum/material/gold = SHEET_MATERIAL_AMOUNT*5)
 	foldabletype = /obj/item/wheelchair/gold
 
 /obj/item/wheelchair
@@ -102,7 +102,7 @@
 	righthand_file = 'icons/mob/inhands/items_righthand.dmi'
 	w_class = WEIGHT_CLASS_NORMAL
 	force = 8 //Force is same as a chair
-	custom_materials = list(/datum/material/iron = 10000)
+	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT*5)
 	///The wheelchair vehicle type we create when we unfold this chair
 	var/unfolded_type = /obj/vehicle/ridden/wheelchair
 
@@ -116,7 +116,7 @@
 	lefthand_file = 'icons/mob/inhands/items_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/items_righthand.dmi'
 	force = 10
-	custom_materials = list(/datum/material/gold = 10000)
+	custom_materials = list(/datum/material/gold = SHEET_MATERIAL_AMOUNT*5)
 	unfolded_type = /obj/vehicle/ridden/wheelchair/gold
 
 /datum/armor/wheelchair_gold

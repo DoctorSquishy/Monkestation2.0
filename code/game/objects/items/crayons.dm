@@ -351,7 +351,7 @@
 				. = TRUE
 		if("select_stencil")
 			var/stencil = params["item"]
-			if(stencil in all_drawables + randoms)
+			if(stencil in (all_drawables + randoms))
 				drawtype = stencil
 				. = TRUE
 				text_buffer = ""
@@ -441,7 +441,7 @@
 		temp = "symbol"
 	else if(drawing in drawings)
 		temp = "drawing"
-	else if(drawing in graffiti|oriented)
+	else if(drawing in (graffiti|oriented))
 		temp = "graffiti"
 
 	var/graf_rot
@@ -675,7 +675,7 @@
 	icon = 'icons/obj/art/crayons.dmi'
 	icon_state = "crayonbox"
 	w_class = WEIGHT_CLASS_SMALL
-	custom_materials = list(/datum/material/cardboard = 2000)
+	custom_materials = list(/datum/material/cardboard = SHEET_MATERIAL_AMOUNT)
 
 /obj/item/storage/crayons/Initialize(mapload)
 	. = ..()
@@ -793,6 +793,8 @@
 		. += "It has [charges_left] use\s left."
 	else
 		. += "It is empty."
+	if(!has_cap) // MONKESTATION ADDITION: SPRAYCAN GUN (monkestation/code/game/objects/items/spraycan_gun.dm)
+		return
 	. += span_notice("Alt-click [src] to [ is_capped ? "take the cap off" : "put the cap on"]. Right-click a colored object to match its existing color.")
 
 /obj/item/toy/crayon/spraycan/use_on(atom/target, mob/user, params)
@@ -815,7 +817,8 @@
 			carbon_target.set_eye_blur_if_lower(6 SECONDS)
 			carbon_target.adjust_temp_blindness(2 SECONDS)
 		if(carbon_target.get_eye_protection() <= 0) // no eye protection? ARGH IT BURNS. Warning: don't add a stun here. It's a roundstart item with some quirks.
-			carbon_target.apply_effects(eyeblur = 5, jitter = 10)
+			carbon_target.adjust_jitter(1 SECONDS)
+			carbon_target.adjust_eye_blur(0.5 SECONDS)
 			flash_color(carbon_target, flash_color=paint_color, flash_time=40)
 		if(ishuman(carbon_target) && actually_paints)
 			var/mob/living/carbon/human/human_target = carbon_target

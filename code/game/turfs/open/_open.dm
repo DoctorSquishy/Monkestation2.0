@@ -11,22 +11,22 @@
 	var/datum/pollution/pollution
 
 //direction is direction of travel of A
-/turf/open/zPassIn(atom/movable/A, direction, turf/source)
-	if(direction == DOWN)
-		for(var/obj/O in contents)
-			if(O.obj_flags & BLOCK_Z_IN_DOWN)
-				return FALSE
-		return TRUE
-	return FALSE
+/turf/open/zPassIn(direction)
+	if(direction != DOWN)
+		return FALSE
+	for(var/obj/on_us in contents)
+		if(on_us.obj_flags & BLOCK_Z_IN_DOWN)
+			return FALSE
+	return TRUE
 
-//direction is direction of travel of A
-/turf/open/zPassOut(atom/movable/A, direction, turf/destination, allow_anchored_movement)
-	if(direction == UP)
-		for(var/obj/O in contents)
-			if(O.obj_flags & BLOCK_Z_OUT_UP)
-				return FALSE
-		return TRUE
-	return FALSE
+//direction is direction of travel of an atom
+/turf/open/zPassOut(direction)
+	if(direction != UP)
+		return FALSE
+	for(var/obj/on_us in contents)
+		if(on_us.obj_flags & BLOCK_Z_OUT_UP)
+			return FALSE
+	return TRUE
 
 //direction is direction of travel of air
 /turf/open/zAirIn(direction, turf/source)
@@ -82,6 +82,9 @@
 
 /turf/open/indestructible/light
 	icon_state = "light_on-1"
+
+/turf/open/indestructible/plating
+	icon_state = "plating"
 
 /turf/open/indestructible/permalube
 	icon_state = "darkfull"
@@ -210,7 +213,7 @@
 /turf/open/proc/water_vapor_gas_act()
 	MakeSlippery(TURF_WET_WATER, min_wet_time = 100, wet_time_to_add = 50)
 
-	for(var/mob/living/simple_animal/slime/M in src)
+	for(var/mob/living/basic/slime/M in src)
 		M.apply_water()
 
 	wash(CLEAN_WASH)
@@ -267,7 +270,7 @@
 		slipper.Immobilize(1 SECONDS)
 		slipper.incapacitate(1 SECONDS)
 	else
-		slipper.Knockdown(knockdown_amount)
+		slipper.bananeer(total_time = knockdown_amount * 0.1, stun_duration = knockdown_amount, height = (knockdown_amount * 0.5), flip_count = round(knockdown_amount * 0.1))
 		slipper.Paralyze(paralyze_amount)
 		slipper.stop_pulling()
 

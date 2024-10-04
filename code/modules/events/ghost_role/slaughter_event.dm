@@ -5,22 +5,19 @@
 	max_occurrences = 1
 	earliest_start = 1 HOURS
 	min_players = 20
-	dynamic_should_hijack = TRUE
+	//dynamic_should_hijack = TRUE
 	category = EVENT_CATEGORY_ENTITIES
 	description = "Spawns a slaughter demon, to hunt by travelling through pools of blood."
 	min_wizard_trigger_potency = 6
 	max_wizard_trigger_potency = 7
-	track = EVENT_TRACK_MAJOR
-	tags = list(TAG_COMBAT, TAG_SPOOKY)
-	checks_antag_cap = TRUE
 
 /datum/round_event/ghost_role/slaughter
 	minimum_required = 1
 	role_name = "slaughter demon"
 
 /datum/round_event/ghost_role/slaughter/spawn_role()
-	var/list/candidates = get_candidates(ROLE_ALIEN, ROLE_ALIEN)
-	if(!candidates.len)
+	var/list/candidates = SSpolling.poll_ghost_candidates(check_jobban = ROLE_SLAUGHTER_DEMON, alert_pic = /mob/living/basic/demon/slaughter, role_name_text = role_name)
+	if(!length(candidates))
 		return NOT_ENOUGH_PLAYERS
 
 	var/mob/dead/selected = pick_n_take(candidates)

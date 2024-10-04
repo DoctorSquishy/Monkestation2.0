@@ -1,5 +1,4 @@
 #define RANDOM_EVENT_ADMIN_INTERVENTION_TIME (10 SECONDS)
-#define NEVER_TRIGGERED_BY_WIZARDS -1
 
 //this singleton datum is used by the events controller to dictate how it selects events
 /datum/round_event_control
@@ -42,7 +41,9 @@
 	/// Flags dictating whether this event should be run on certain kinds of map
 	var/map_flags = NONE
 
-	//monkestation vars starts
+	// monkestation start
+	/// The typepath to the event group this event is a part of.
+	var/datum/event_group/event_group = null
 	var/roundstart = FALSE
 	var/cost = 1
 	var/reoccurence_penalty_multiplier = 0.75
@@ -52,10 +53,12 @@
 	var/calculated_weight = 0
 	var/tags = list() 	/// Tags of the event
 	/// List of the shared occurence types.
-	var/static/list/shared_occurences = list()
+	var/list/shared_occurences = list()
 	/// Whether a roundstart event can happen post roundstart. Very important for events which override job assignments.
 	var/can_run_post_roundstart = TRUE
-	//monkestation vars end
+	/// If set then the type or list of types of storytellers we are restricted to being trigged by
+	var/list/allowed_storytellers
+	// monkestation end
 
 /datum/round_event_control/New()
 	if(config && !wizardevent) // Magic is unaffected by configs
@@ -67,6 +70,12 @@
 	admin_setup.Cut()
 	for(var/admin_setup_type in admin_setup_types)
 		admin_setup += new admin_setup_type(src)
+
+// monkestation start: fix some hard deletes
+/datum/round_event_control/Destroy(force)
+	QDEL_LIST(admin_setup)
+	return ..()
+// monkestation end
 
 /datum/round_event_control/wizard
 	category = EVENT_CATEGORY_WIZARD
@@ -88,11 +97,15 @@
 // Admin-created events override this.
 /datum/round_event_control/proc/can_spawn_event(players_amt, allow_magic = FALSE, fake_check = FALSE)
 	SHOULD_CALL_PARENT(TRUE)
-	if(roundstart && (world.time-SSticker.round_start_time >= 2 MINUTES || (SSgamemode.ran_roundstart && !fake_check)))
+// monkestation start: event groups and storyteller stuff
+	if(event_group && !GLOB.event_groups[event_group].can_run())
 		return FALSE
+	if(roundstart && ((SSticker.round_start_time && (world.time - SSticker.round_start_time) >= 2 MINUTES) || (SSgamemode.ran_roundstart && !fake_check)))
+		return FALSE
+// monkestation end
 	if(occurrences >= max_occurrences)
 		return FALSE
-	if(earliest_start >= world.time-SSticker.round_start_time)
+	if(earliest_start >= (world.time - SSticker.round_start_time))
 		return FALSE
 	if(!allow_magic && wizardevent != SSevents.wizardmode)
 		return FALSE
@@ -105,13 +118,16 @@
 	if(ispath(typepath, /datum/round_event/ghost_role) && !(GLOB.ghost_role_flags & GHOSTROLE_MIDROUND_EVENT))
 		return FALSE
 
-	//monkestation edit start - STORYTELLERS
-	if(checks_antag_cap)
-		if(!roundstart && !SSgamemode.can_inject_antags())
-			return FALSE
+// monkestation start: storyteller stuff
+	if(checks_antag_cap && !roundstart && !SSgamemode.can_inject_antags())
+		return FALSE
 	if(!check_enemies())
 		return FALSE
-	//monkestation edit end - STORYTELLERS
+	if(allowed_storytellers && ((islist(allowed_storytellers) && !is_type_in_list(SSgamemode.storyteller, allowed_storytellers)) || SSgamemode.storyteller.type != allowed_storytellers))
+		return FALSE
+	if(SSgamemode.storyteller.disable_distribution || SSgamemode.halted_storyteller)
+		return FALSE
+// monkestation end
 
 	var/datum/game_mode/dynamic/dynamic = SSticker.mode
 	if (istype(dynamic) && dynamic_should_hijack && dynamic.random_event_hijacked != HIJACKED_NOTHING)
@@ -128,7 +144,7 @@
 
 	triggering = TRUE
 
-	// We sleep HERE, in pre-event setup (because there's no sense doing it in runEvent() since the event is already running!) for the given amount of time to make an admin has enough time to cancel an event un-fitting of the present round.
+	// We sleep HERE, in pre-event setup (because there's no sense doing it in run_event() since the event is already running!) for the given amount of time to make an admin has enough time to cancel an event un-fitting of the present round.
 	if(alert_observers)
 		message_admins("Random Event triggering in [DisplayTimeText(RANDOM_EVENT_ADMIN_INTERVENTION_TIME)]: [name]. (<a href='?src=[REF(src)];cancel=1'>CANCEL</a>)")
 		if(!roundstart)
@@ -162,7 +178,7 @@ Runs the event
 * - random: shows if the event was triggered randomly, or by on purpose by an admin or an item
 * - announce_chance_override: if the value is not null, overrides the announcement chance when an admin calls an event
 */
-/datum/round_event_control/proc/runEvent(random = FALSE, announce_chance_override = null, admin_forced = FALSE)
+/datum/round_event_control/proc/run_event(random = FALSE, announce_chance_override = null, admin_forced = FALSE, event_cause)
 	/*
 	* We clear our signals first so we dont cancel a wanted event by accident,
 	* the majority of time the admin will probably want to cancel a single midround spawned random events
@@ -196,10 +212,15 @@ Runs the event
 	triggering = FALSE
 	log_game("[random ? "Random" : "Forced"] Event triggering: [name] ([typepath]).")
 
-	if(alert_observers)
-		round_event.announce_deadchat(random)
+	// monkestation start: event groups
+	if(event_group)
+		GLOB.event_groups[event_group].on_run(src)
+	// monkestation end
 
-	SSblackbox.record_feedback("tally", "event_ran", 1, "[round_event]")
+	if(alert_observers)
+		round_event.announce_deadchat(random, event_cause)
+
+	SSblackbox.record_feedback("tally", "event_ran", 1, "[name]")
 	return round_event
 
 //Returns the component for the listener
@@ -253,8 +274,8 @@ Runs the event
 	return
 
 ///Annouces the event name to deadchat, override this if what an event should show to deadchat is different to its event name.
-/datum/round_event/proc/announce_deadchat(random)
-	deadchat_broadcast(" has just been[random ? " randomly" : ""] triggered!", "<b>[control.name]</b>", message_type=DEADCHAT_ANNOUNCEMENT) //STOP ASSUMING IT'S BADMINS!
+/datum/round_event/proc/announce_deadchat(random, cause)
+	deadchat_broadcast(" has just been[random ? " randomly" : ""] triggered[cause ? " by [cause]" : ""]!", "<b>[control.name]</b>", message_type=DEADCHAT_ANNOUNCEMENT) //STOP ASSUMING IT'S BADMINS!
 
 //Called when the tick is equal to the start_when variable.
 //Allows you to start before announcing or vice versa.
@@ -331,9 +352,17 @@ Runs the event
 				for(var/datum/event_admin_setup/admin_setup_datum in src.admin_setup)
 					if(admin_setup_datum.prompt_admins() == ADMIN_CANCEL_EVENT)
 						return
-			message_admins("[key_name_admin(usr)] force scheduled event [src.name].")
-			log_admin_private("[key_name(usr)] force scheduled event [src.name].")
-			SSgamemode.forced_next_events[src.track] += src
+			message_admins("[key_name_admin(usr)] forced scheduled event [src.name].")
+			log_admin_private("[key_name(usr)] forced scheduled event [src.name].")
+			SSgamemode.forced_next_events[src.track] = src
+		if("fire")
+			if(length(src.admin_setup))
+				for(var/datum/event_admin_setup/admin_setup_datum in src.admin_setup)
+					if(admin_setup_datum.prompt_admins() == ADMIN_CANCEL_EVENT)
+						return
+			message_admins("[key_name_admin(usr)] fired event [src.name].")
+			log_admin_private("[key_name(usr)] fired event [src.name].")
+			run_event(random = FALSE, admin_forced = TRUE)
 
 //monkestation addition ends - STORYTELLERS
 
@@ -343,7 +372,12 @@ Runs the event
 /datum/round_event/proc/announce_to_ghosts(atom/atom_of_interest)
 	if(control.alert_observers)
 		if (atom_of_interest)
-			notify_ghosts("[control.name] has an object of interest: [atom_of_interest]!", source=atom_of_interest, action=NOTIFY_ORBIT, header="Something's Interesting!")
+			notify_ghosts(
+				"[control.name] has an object of interest: [atom_of_interest]!",
+				source = atom_of_interest,
+				action = NOTIFY_ORBIT,
+				header = "Something's Interesting!",
+			)
 	return
 
 //Called when the tick is equal to the announce_when variable.
@@ -427,4 +461,3 @@ Runs the event
 	return ..()
 
 #undef RANDOM_EVENT_ADMIN_INTERVENTION_TIME
-#undef NEVER_TRIGGERED_BY_WIZARDS

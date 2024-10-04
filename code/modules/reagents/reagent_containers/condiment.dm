@@ -9,7 +9,7 @@
 	name = "condiment bottle"
 	desc = "Just your average condiment bottle."
 	icon = 'icons/obj/food/containers.dmi'
-	icon_state = "emptycondiment"
+	icon_state = "bottle"
 	inhand_icon_state = "beer" //Generic held-item sprite until unique ones are made.
 	lefthand_file = 'icons/mob/inhands/items/drinks_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/items/drinks_righthand.dmi'
@@ -207,14 +207,19 @@
 	. = ..()
 	var/datum/chemical_reaction/recipe_dough = GLOB.chemical_reactions_list[/datum/chemical_reaction/food/dough]
 	var/datum/chemical_reaction/recipe_cakebatter = GLOB.chemical_reactions_list[/datum/chemical_reaction/food/cakebatter]
+	var/datum/chemical_reaction/recipe_cakebatter_vegan = GLOB.chemical_reactions_list[/datum/chemical_reaction/food/cakebatter/vegan]
 	var/dough_flour_required = recipe_dough.required_reagents[/datum/reagent/consumable/flour]
 	var/dough_water_required = recipe_dough.required_reagents[/datum/reagent/water]
 	var/cakebatter_flour_required = recipe_cakebatter.required_reagents[/datum/reagent/consumable/flour]
 	var/cakebatter_eggyolk_required = recipe_cakebatter.required_reagents[/datum/reagent/consumable/eggyolk]
+	var/cakebatter_eggwhite_required = recipe_cakebatter.required_reagents[/datum/reagent/consumable/eggwhite]
 	var/cakebatter_sugar_required = recipe_cakebatter.required_reagents[/datum/reagent/consumable/sugar]
+	var/cakebatter_soy_required = recipe_cakebatter_vegan.required_reagents[/datum/reagent/consumable/soymilk]
 	. += "<b><i>You retreat inward and recall the teachings of... Making Dough...</i></b>"
 	. += span_notice("[dough_flour_required] flour, [dough_water_required] water makes normal dough. You can make flat dough from it.")
-	. += span_notice("[cakebatter_flour_required] flour, [cakebatter_eggyolk_required] egg yolk (or soy milk), [cakebatter_sugar_required] sugar makes cake dough. You can make pie dough from it.")
+	. += span_notice("[cakebatter_flour_required] flour, [cakebatter_eggyolk_required] egg yolk, [cakebatter_eggwhite_required] egg white, and [cakebatter_sugar_required] sugar makes cake dough.")
+	. += span_notice("Alternatively, a vegan cake is made with: [cakebatter_flour_required] flour, [cakebatter_soy_required] soy milk, and [cakebatter_sugar_required] sugar.")
+	. += span_notice("It can be flattened into pie dough and then cut into pastry base. Once baked, pastry base can be combined with sugar for donuts!")
 
 /obj/item/reagent_containers/condiment/soymilk
 	name = "soy milk"
@@ -273,6 +278,13 @@
 	list_reagents = list(/datum/reagent/consumable/vinegar = 50)
 	fill_icon_thresholds = null
 
+/obj/item/reagent_containers/condiment/cooking_oil
+	name = "cooking oil"
+	desc = "For all your deep-frying needs."
+	icon_state = "cooking_oil"
+	list_reagents = list(/datum/reagent/consumable/cooking_oil = 50)
+	fill_icon_thresholds = null
+
 /obj/item/reagent_containers/condiment/quality_oil
 	name = "quality oil"
 	desc = "For the fancy chef inside everyone."
@@ -317,6 +329,51 @@
 	list_reagents = list(/datum/reagent/consumable/ketchup = 50)
 	fill_icon_thresholds = null
 
+/obj/item/reagent_containers/condiment/worcestershire
+	name = "worcestershire sauce"
+	desc = "A fermented sauce of legend from old England. Makes almost anything better."
+	icon_state = "worcestershire"
+	list_reagents = list(/datum/reagent/consumable/worcestershire = 50)
+	fill_icon_thresholds = null
+
+/obj/item/reagent_containers/condiment/red_bay
+	name = "\improper Red Bay seasoning"
+	desc = "Mars' favourite seasoning."
+	icon_state = "red_bay"
+	list_reagents = list(/datum/reagent/consumable/red_bay = 50)
+	fill_icon_thresholds = null
+
+/obj/item/reagent_containers/condiment/curry_powder
+	name = "curry powder"
+	desc = "It's this yellow magic that makes curry taste like curry."
+	icon_state = "curry_powder"
+	list_reagents = list(/datum/reagent/consumable/curry_powder = 50)
+	fill_icon_thresholds = null
+
+/obj/item/reagent_containers/condiment/dashi_concentrate
+	name = "dashi concentrate"
+	desc = "A bottle of Amagi brand dashi concentrate. Simmer with water in a 1:8 ratio for a perfect dashi broth."
+	icon_state = "dashi_concentrate"
+	list_reagents = list(/datum/reagent/consumable/dashi_concentrate = 50)
+	fill_icon_thresholds = null
+
+/obj/item/reagent_containers/condiment/coconut_milk
+	name = "coconut milk"
+	desc = "It's coconut milk. Toasty!"
+	icon_state = "coconut_milk"
+	inhand_icon_state = "carton"
+	lefthand_file = 'icons/mob/inhands/items/drinks_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/items/drinks_righthand.dmi'
+	list_reagents = list(/datum/reagent/consumable/coconut_milk = 50)
+	fill_icon_thresholds = null
+
+/obj/item/reagent_containers/condiment/grounding_solution
+	name = "grounding solution"
+	desc = "A food-safe ionic solution designed to neutralise the enigmatic \"liquid electricity\" that is common to food from Sprout, forming harmless salt on contact."
+	icon_state = "grounding_solution"
+	list_reagents = list(/datum/reagent/consumable/grounding_solution = 50)
+	fill_icon_thresholds = null
+
 //technically condiment packs but they are non transparent
 
 /obj/item/reagent_containers/condiment/creamer
@@ -332,6 +389,19 @@
 	desc= "The amount of sugar thats already there wasn't enough for you?"
 	icon_state = "condi_chocolate"
 	list_reagents = list(/datum/reagent/consumable/choccyshake = 10)
+
+
+/obj/item/reagent_containers/condiment/hotsauce
+	name = "hotsauce bottle"
+	desc= "You can almost TASTE the stomach ulcers!"
+	icon_state = "hotsauce"
+	list_reagents = list(/datum/reagent/consumable/capsaicin = 50)
+
+/obj/item/reagent_containers/condiment/coldsauce
+	name = "coldsauce bottle"
+	desc= "Leaves the tongue numb from its passage."
+	icon_state = "coldsauce"
+	list_reagents = list(/datum/reagent/consumable/frostoil = 50)
 
 //Food packs. To easily apply deadly toxi... delicious sauces to your food!
 

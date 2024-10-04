@@ -48,10 +48,11 @@
 	has_progression = FALSE,
 	datum/uplink_handler/uplink_handler_override,
 )
+
 	if(!isitem(parent))
 		return COMPONENT_INCOMPATIBLE
 
-	RegisterSignal(parent, COMSIG_PARENT_ATTACKBY, PROC_REF(OnAttackBy))
+	RegisterSignal(parent, COMSIG_ATOM_ATTACKBY, PROC_REF(OnAttackBy))
 	RegisterSignal(parent, COMSIG_ITEM_ATTACK_SELF, PROC_REF(interact))
 	if(istype(parent, /obj/item/implant))
 		RegisterSignal(parent, COMSIG_IMPLANT_ACTIVATED, PROC_REF(implant_activation))
@@ -75,7 +76,7 @@
 			purchase_log = GLOB.uplink_purchase_logs_by_key[owner]
 		else
 			purchase_log = new(owner, src)
-		RegisterSignal(parent, COMSIG_PARENT_EXAMINE, PROC_REF(on_examine))
+		RegisterSignal(parent, COMSIG_ATOM_EXAMINE, PROC_REF(on_examine))
 	src.lockable = lockable
 	src.active = enabled
 	if(!uplink_handler_override)
@@ -119,6 +120,7 @@
 /// Sets the telecrystals of the uplink. It is bad practice to use this outside of the component itself.
 /datum/component/uplink/proc/set_telecrystals(new_telecrystal_amount)
 	uplink_handler.telecrystals = new_telecrystal_amount
+	uplink_handler.on_update()
 
 /datum/component/uplink/InheritComponent(datum/component/uplink/uplink)
 	lockable |= uplink.lockable
@@ -144,6 +146,11 @@
 
 	if(istype(item, /obj/item/stack/telecrystal))
 		load_tc(user, item)
+
+	if(!istype(item))
+		return
+
+	SEND_SIGNAL(item, COMSIG_ITEM_ATTEMPT_TC_REIMBURSE, user, src)
 
 /datum/component/uplink/proc/on_examine(datum/source, mob/user, list/examine_list)
 	SIGNAL_HANDLER
@@ -253,6 +260,23 @@
 	data["current_stock"] = remaining_stock
 	data["shop_locked"] = uplink_handler.shop_locked
 	data["purchased_items"] = length(uplink_handler.purchase_log?.purchase_log)
+	data["can_renegotiate"] = user.mind == uplink_handler.owner && uplink_handler.can_replace_objectives?.Invoke() == TRUE
+//monkestation edit start
+	data["locked_entries"] = uplink_handler.locked_entries
+	data["is_contractor"] = (uplink_handler.uplink_flag == UPLINK_CONTRACTORS)
+	var/list/contractor_items = list()
+	for(var/datum/contractor_item/item in uplink_handler.contractor_market_items)
+		contractor_items += list(list(
+			"id" = item.type,
+			"name" = item.name,
+			"desc" = item.desc,
+			"cost" = item.cost,
+			"stock" = item.stock,
+			"item_icon" = item.item_icon,
+		))
+	data["contractor_items"] = contractor_items
+	data["contractor_rep"] = uplink_handler.contractor_rep
+//monkestation edit end
 	return data
 
 /datum/component/uplink/ui_static_data(mob/user)
@@ -294,12 +318,24 @@
 			if(!lockable)
 				return TRUE
 			lock_uplink()
+		if("renegotiate_objectives")
+			uplink_handler.replace_objectives?.Invoke()
+			SStgui.update_uis(src)
 
 	if(!uplink_handler.has_objectives)
 		return TRUE
 
 	if(uplink_handler.owner?.current != ui.user || !uplink_handler.can_take_objectives)
 		return TRUE
+
+//monkestation edit start
+	switch(action)
+		if("buy_contractor")
+			var/item = params["item"]
+			for(var/datum/contractor_item/hub_item in uplink_handler.contractor_market_items)
+				if(hub_item.name == item)
+					hub_item.handle_purchase(uplink_handler, ui.user)
+//monkestation edit end
 
 	switch(action)
 		if("regenerate_objectives")

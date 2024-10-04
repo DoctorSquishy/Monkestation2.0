@@ -16,7 +16,7 @@
 	force = 6
 	base_pixel_x = -4
 	pixel_x = -4
-	custom_materials = list(/datum/material/iron=2000)
+	custom_materials = list(/datum/material/iron=SHEET_MATERIAL_AMOUNT)
 	clumsy_check = FALSE
 	fire_sound = 'sound/items/syringeproj.ogg'
 	var/load_sound = 'sound/weapons/gun/shotgun/insert_shell.ogg'
@@ -29,6 +29,14 @@
 	. = ..()
 	chambered = new /obj/item/ammo_casing/syringegun(src)
 	recharge_newshot()
+
+/obj/item/gun/syringe/apply_fantasy_bonuses(bonus)
+	. = ..()
+	max_syringes = modify_fantasy_variable("max_syringes", max_syringes, bonus, minimum = 1)
+
+/obj/item/gun/syringe/remove_fantasy_bonuses(bonus)
+	max_syringes = reset_fantasy_variable("max_syringes", max_syringes)
+	return ..()
 
 /obj/item/gun/syringe/handle_atom_del(atom/A)
 	. = ..()
@@ -43,7 +51,7 @@
 /obj/item/gun/syringe/can_shoot()
 	return syringes.len
 
-/obj/item/gun/syringe/handle_chamber()
+/obj/item/gun/syringe/handle_chamber(mob/living/user, empty_chamber = TRUE, from_firing = TRUE, chamber_next_round = TRUE)
 	if(chambered && !chambered.loaded_projectile) //we just fired
 		recharge_newshot()
 	update_appearance()
@@ -70,9 +78,6 @@
 	return TRUE
 
 /obj/item/gun/syringe/attackby(obj/item/A, mob/user, params, show_msg = TRUE)
-	if(istype(A, /obj/item/reagent_containers/syringe/bluespace))
-		balloon_alert(user, "[A.name] is too big!")
-		return TRUE
 	if(istype(A, /obj/item/reagent_containers/syringe))
 		if(syringes.len < max_syringes)
 			if(!user.transferItemToLoc(A, src))

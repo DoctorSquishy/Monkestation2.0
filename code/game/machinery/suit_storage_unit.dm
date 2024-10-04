@@ -133,6 +133,11 @@
 	storage_type = /obj/item/tank/jetpack/oxygen/harness
 	mod_type = /obj/item/mod/control/pre_equipped/nuclear
 
+/obj/machinery/suit_storage_unit/interdyne
+	mask_type = /obj/item/clothing/mask/gas/syndicate
+	storage_type = /obj/item/tank/internals/oxygen
+	mod_type = /obj/item/mod/control/pre_equipped/interdyne
+
 /obj/machinery/suit_storage_unit/void_old
 	suit_type = /obj/item/clothing/suit/space/nasavoid/old
 	helmet_type = /obj/item/clothing/head/helmet/space/nasavoid/old
@@ -161,7 +166,7 @@
 
 /obj/machinery/suit_storage_unit/Initialize(mapload)
 	. = ..()
-	wires = new /datum/wires/suit_storage_unit(src)
+	set_wires(new /datum/wires/suit_storage_unit(src))
 	if(suit_type)
 		suit = new suit_type(src)
 	if(helmet_type)

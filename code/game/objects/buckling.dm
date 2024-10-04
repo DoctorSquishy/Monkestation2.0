@@ -92,6 +92,9 @@
 	if(!buckled_mobs)
 		buckled_mobs = list()
 
+	if(M.buckled)
+		M.buckled.unbuckle_mob(M)
+
 	if(!is_buckle_possible(M, force, check_loc))
 		return FALSE
 
@@ -193,14 +196,19 @@
 	if(!has_buckled_mobs())
 		return
 	for(var/m in buckled_mobs)
+		if(isliving(m))
+			var/mob/living/living = m
+			if(!living.buckled) //this somehow happens?
+				buckled_mobs -= m
+				continue
 		unbuckle_mob(m, force)
 
 //Handle any extras after buckling
 //Called on buckle_mob()
-/atom/movable/proc/post_buckle_mob(mob/living/M)
+/atom/movable/proc/post_buckle_mob(mob/living/buckled_mob)
 
 //same but for unbuckle
-/atom/movable/proc/post_unbuckle_mob(mob/living/M)
+/atom/movable/proc/post_unbuckle_mob(mob/living/unbuckled_mob)
 
 /**
  * Simple helper proc that runs a suite of checks to test whether it is possible or not to buckle the target mob to src.
@@ -239,16 +247,16 @@
 		return FALSE
 
 	// Make sure the target isn't already buckled to something.
-	if(target.buckled)
-		return FALSE
+	//if(target.buckled)
+		//return FALSE
 
 	// Make sure this atom can still have more things buckled to it.
 	if(LAZYLEN(buckled_mobs) >= max_buckled_mobs)
 		return FALSE
 
 	// Stacking buckling leads to lots of jank and issues, better to just nix it entirely
-	if(target.has_buckled_mobs())
-		return FALSE
+	//if(target.has_buckled_mobs())
+		//return FALSE
 
 	// If the buckle requires restraints, make sure the target is actually restrained.
 	if(buckle_requires_restraints && !HAS_TRAIT(target, TRAIT_RESTRAINED))

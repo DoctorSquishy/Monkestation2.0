@@ -91,7 +91,7 @@
 					/obj/item/reagent_containers/blood/o_minus,
 					/obj/item/storage/pill_bottle/mining,
 					/obj/item/reagent_containers/pill/neurine,
-					/obj/item/stack/medical/bone_gel/four = 2,
+					/obj/item/stack/medical/bone_gel = 2,
 					/obj/item/vending_refill/medical,
 					/obj/item/vending_refill/drugs,
 				)
@@ -108,10 +108,11 @@
 		shmancy degrees? Just get started with this crate containing a medical duffelbag, \
 		Sterilizine spray and collapsible roller bed."
 	cost = CARGO_CRATE_VALUE * 6
-	contains = list(/obj/item/storage/backpack/duffelbag/med/surgery,
-					/obj/item/reagent_containers/medigel/sterilizine,
-					/obj/item/roller,
-				)
+	contains = list(
+		/obj/item/storage/backpack/duffelbag/med/surgery,
+		/obj/item/reagent_containers/medigel/sterilizine,
+		/obj/item/emergency_bed,
+	)
 	crate_name = "surgical supplies crate"
 
 /datum/supply_pack/medical/salglucanister
@@ -124,6 +125,7 @@
 	access = ACCESS_MEDICAL
 	contains = list(/obj/machinery/iv_drip/saline)
 
+/* Monkestation Removal: Old Virology
 /datum/supply_pack/medical/virus
 	name = "Virus Crate"
 	desc = "Contains twelve different bottles of several viral samples for virology \
@@ -135,11 +137,7 @@
 					/obj/item/reagent_containers/cup/bottle/cold,
 					/obj/item/reagent_containers/cup/bottle/random_virus = 4,
 					/obj/item/reagent_containers/cup/bottle/fake_gbs,
-					/obj/item/reagent_containers/cup/bottle/magnitis,
-					/obj/item/reagent_containers/cup/bottle/pierrot_throat,
 					/obj/item/reagent_containers/cup/bottle/brainrot,
-					/obj/item/reagent_containers/cup/bottle/anxiety,
-					/obj/item/reagent_containers/cup/bottle/beesease,
 					/obj/item/storage/box/syringes,
 					/obj/item/storage/box/beakers,
 					/obj/item/reagent_containers/cup/bottle/mutagen,
@@ -147,6 +145,7 @@
 	crate_name = "virus crate"
 	crate_type = /obj/structure/closet/crate/secure/plasma
 	dangerous = TRUE
+End Monkestation Removal*/
 
 /datum/supply_pack/medical/cmoturtlenecks
 	name = "Chief Medical Officer Turtlenecks"

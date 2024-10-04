@@ -128,7 +128,7 @@
 	else
 		return ..()
 
-/obj/machinery/button/emag_act(mob/user)
+/obj/machinery/button/emag_act(mob/user, obj/item/card/emag/emag_card)
 	. = ..()
 	if(obj_flags & EMAGGED)
 		return
@@ -139,9 +139,9 @@
 
 	// The device inside can be emagged by swiping the button
 	// returning TRUE will prevent feedback (so we can do our own)
-	if(device?.emag_act(user))
-		return
-	balloon_alert(user, "access overridden")
+	if(!device?.emag_act(user, emag_card))
+		balloon_alert(user, "access overridden")
+	return TRUE
 
 /obj/machinery/button/attack_ai(mob/user)
 	if(!silicon_access_disabled && !panel_open)
@@ -206,19 +206,22 @@
 		return
 
 	if(device && device.next_activate > world.time)
+		playsound(src, SFX_BUTTON_FAIL, vol = 45, vary = FALSE, extrarange = SHORT_RANGE_SOUND_EXTRARANGE, mixer_channel = CHANNEL_MACHINERY) // monkestation edit: button sounds
 		return
 
 	if(!allowed(user))
 		to_chat(user, span_alert("Access Denied."))
 		flick("[skin]-denied", src)
+		playsound(src, SFX_BUTTON_FAIL, vol = 45, vary = FALSE, extrarange = SHORT_RANGE_SOUND_EXTRARANGE, mixer_channel = CHANNEL_MACHINERY) // monkestation edit: button sounds
 		return
 
+	playsound(src, SFX_BUTTON_CLICK, vol = 45, vary = FALSE, extrarange = SHORT_RANGE_SOUND_EXTRARANGE, mixer_channel = CHANNEL_MACHINERY) // monkestation edit: button sounds
 	use_power(5)
 	icon_state = "[skin]1"
 
 	if(device)
 		device.pulsed(user)
-	SEND_GLOBAL_SIGNAL(COMSIG_GLOB_BUTTON_PRESSED,src)
+	SEND_GLOBAL_SIGNAL(COMSIG_GLOB_BUTTON_PRESSED, src)
 
 	addtimer(CALLBACK(src, TYPE_PROC_REF(/atom/, update_appearance)), 15)
 
@@ -354,5 +357,5 @@ MAPPING_DIRECTIONAL_HELPERS(/obj/machinery/button/door, 24)
 	desc = "Used for building buttons."
 	icon_state = "button"
 	result_path = /obj/machinery/button
-	custom_materials = list(/datum/material/iron=MINERAL_MATERIAL_AMOUNT)
+	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT)
 	pixel_shift = 24

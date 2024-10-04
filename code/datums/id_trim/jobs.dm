@@ -482,7 +482,7 @@
 	assignment = "Geneticist"
 	trim_state = "trim_geneticist"
 	department_color = COLOR_SCIENCE_PINK
-	subdepartment_color = COLOR_SCIENCE_PINK
+	subdepartment_color = COLOR_MEDICAL_BLUE
 	sechud_icon_state = SECHUD_GENETICIST
 	minimal_access = list(
 		ACCESS_GENETICS,
@@ -593,6 +593,7 @@
 		ACCESS_SERVICE,
 		ACCESS_SHIPPING,
 		ACCESS_WEAPONS,
+		ACCESS_PERMABRIG, // monkestation edit: add permabrig-only access
 		)
 	minimal_wildcard_access = list(
 		ACCESS_HOS,
@@ -789,12 +790,14 @@
 		)
 	job = /datum/job/psychologist
 
+//Monkestation Edit Start - QM is not a head
+
 /datum/id_trim/job/quartermaster
 	assignment = "Quartermaster"
 	trim_state = "trim_quartermaster"
-	department_color = COLOR_COMMAND_BLUE
+	department_color = COLOR_CARGO_BROWN
 	subdepartment_color = COLOR_CARGO_BROWN
-	department_state = "departmenthead"
+	department_state = "department"
 	sechud_icon_state = SECHUD_QUARTERMASTER
 	minimal_access = list(
 		ACCESS_AUX_BASE,
@@ -817,6 +820,8 @@
 		ACCESS_HOP,
 	)
 	job = /datum/job/quartermaster
+
+//Monkestation Edit End
 
 /datum/id_trim/job/research_director
 	assignment = "Research Director"
@@ -935,6 +940,7 @@
 		ACCESS_MINERAL_STOREROOM,
 		ACCESS_SECURITY,
 		ACCESS_WEAPONS,
+		ACCESS_PERMABRIG, // monkestation edit: add permabrig-only access
 		)
 	extra_access = list(
 		ACCESS_DETECTIVE,
@@ -1109,7 +1115,7 @@
 	job = /datum/job/station_engineer
 
 /datum/id_trim/job/virologist
-	assignment = "Virologist"
+	assignment = "Pathologist"
 	trim_state = "trim_virologist"
 	department_color = COLOR_MEDICAL_BLUE
 	subdepartment_color = COLOR_MEDICAL_BLUE
@@ -1147,6 +1153,7 @@
 		ACCESS_MINERAL_STOREROOM,
 		ACCESS_SECURITY,
 		ACCESS_WEAPONS,
+		ACCESS_PERMABRIG, // monkestation edit: add permabrig-only access
 		) // See /datum/job/warden/get_access()
 	extra_access = list(
 		ACCESS_DETECTIVE,

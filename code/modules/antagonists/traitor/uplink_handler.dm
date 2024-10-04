@@ -48,10 +48,19 @@
 	var/debug_mode = FALSE
 	/// Whether the shop is locked or not. If set to true, nothing can be purchased.
 	var/shop_locked = FALSE
+	/// Callback which returns true if you can choose to replace your objectives with different ones
+	var/datum/callback/can_replace_objectives
+	/// Callback which performs that operation
+	var/datum/callback/replace_objectives
 
 /datum/uplink_handler/New()
 	. = ..()
 	maximum_potential_objectives = CONFIG_GET(number/maximum_potential_objectives)
+
+/datum/uplink_handler/Destroy(force)
+	can_replace_objectives = null
+	replace_objectives = null
+	return ..()
 
 /// Called whenever an update occurs on this uplink handler. Used for UIs
 /datum/uplink_handler/proc/on_update()
@@ -70,12 +79,17 @@
 		return FALSE
 	return TRUE
 
-/datum/uplink_handler/proc/can_purchase_item(mob/user, datum/uplink_item/to_purchase)
+/datum/uplink_handler/proc/can_purchase_item(mob/user, datum/uplink_item/to_purchase, ignore_locked = FALSE) //monkestation edit: adds ignore_locked
 	if(debug_mode)
 		return TRUE
 
 	if(shop_locked)
 		return FALSE
+
+//monkestation edit start
+	if(!(ignore_locked) && (to_purchase.type in locked_entries))
+		return FALSE
+//monkestation edit end
 
 	if(to_purchase.lock_other_purchases)
 		// Can't purchase an uplink item that locks other purchases if you've already purchased something
@@ -93,7 +107,7 @@
 	return TRUE
 
 /datum/uplink_handler/proc/purchase_item(mob/user, datum/uplink_item/to_purchase, atom/movable/source)
-	if(!can_purchase_item(user, to_purchase))
+	if(!can_purchase_item(user, to_purchase) || !to_purchase.unique_checks(user, src, source)) //monkestation edit: adds the unique_checks() check
 		return
 
 	if(to_purchase.limited_stock != -1 && !(to_purchase.stock_key in item_stock))
@@ -109,14 +123,24 @@
 	on_update()
 	return TRUE
 
-/// Generates objectives for this uplink handler
-/datum/uplink_handler/proc/generate_objectives()
+/** Generates objectives for this uplink handler
+ * forced_types - an assoc list of objective types that when passed will always be generated first if possible to generate, value is how many of that type to generate
+ */
+/datum/uplink_handler/proc/generate_objectives(list/forced_types = list()) //monkestation edit: adds forced_types
 	var/potential_objectives_left = maximum_potential_objectives - (length(potential_objectives) + length(active_objectives))
-	var/list/objectives = SStraitor.category_handler.get_possible_objectives(progression_points)
+	var/list/objectives = SStraitor.category_handler.get_possible_objectives(progression_points, uplink_flag) //monkestation edit: adds uplink_flag
 	if(!length(objectives))
 		return
 	while(length(objectives) && potential_objectives_left > 0)
 		var/objective_typepath = pick_weight(objectives)
+//monkestation edit start
+		if(length(forced_types))
+			var/picked_type = pick(forced_types)
+			forced_types[picked_type] -= 1
+			if(!forced_types[picked_type])
+				forced_types -= picked_type
+			objective_typepath = picked_type
+//monkestation edit end
 		var/list/target_list = objectives
 		while(islist(objective_typepath))
 			if(!length(objective_typepath))
@@ -156,6 +180,7 @@
 		return
 	objective.forced = force
 	log_traitor("[key_name(owner)] has received a potential objective: [objective.to_debug_string()] | Forced: [force]")
+
 	objective.original_progression = objective.progression_reward
 	objective.update_progression_reward()
 	potential_objectives += objective

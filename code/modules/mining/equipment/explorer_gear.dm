@@ -24,6 +24,7 @@
 		/obj/item/tank/internals,
 		)
 	resistance_flags = FIRE_PROOF
+	clothing_traits = list(TRAIT_SNOWSTORM_IMMUNE)
 
 /datum/armor/hooded_explorer
 	melee = 30
@@ -126,6 +127,7 @@
 		/obj/item/spear,
 		/obj/item/tank/internals,
 		)
+	resistance_flags = FIRE_PROOF
 	armor_type = /datum/armor/cloak_goliath
 	hoodtype = /obj/item/clothing/head/hooded/cloakhood/goliath
 	body_parts_covered = CHEST|GROIN|ARMS
@@ -145,10 +147,10 @@
 			set_armor(/datum/armor/none)
 			user.visible_message(span_notice("[user] adjusts their [src] for ceremonial use."), span_notice("You adjust your [src] for ceremonial use."))
 		else
-			slot_flags = initial(slot_flags)			
+			slot_flags = initial(slot_flags)
 			set_armor(initial(armor_type))
 			user.visible_message(span_notice("[user] adjusts their [src] for defensive use."), span_notice("You adjust your [src] for defensive use."))
-			
+
 /datum/armor/cloak_goliath
 	melee = 35
 	bullet = 10
@@ -168,6 +170,7 @@
 	clothing_flags = SNUG_FIT
 	flags_inv = HIDEEARS|HIDEEYES|HIDEHAIR|HIDEFACIALHAIR
 	transparent_protection = HIDEMASK
+	resistance_flags = FIRE_PROOF
 
 /datum/armor/cloakhood_goliath
 	melee = 35

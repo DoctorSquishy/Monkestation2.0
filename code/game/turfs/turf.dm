@@ -99,6 +99,7 @@ GLOBAL_LIST_EMPTY(station_turfs)
 	/// Never directly access this, use get_explosive_block() instead
 	var/inherent_explosive_resistance = -1
 
+
 /turf/vv_edit_var(var_name, new_value)
 	var/static/list/banned_edits = list(NAMEOF_STATIC(src, x), NAMEOF_STATIC(src, y), NAMEOF_STATIC(src, z))
 	if(var_name in banned_edits)
@@ -180,6 +181,7 @@ GLOBAL_LIST_EMPTY(station_turfs)
 	. = QDEL_HINT_IWILLGC
 	if(!changing_turf)
 		stack_trace("Incorrect turf deletion")
+
 	changing_turf = FALSE
 	if(GET_LOWEST_STACK_OFFSET(z))
 		var/turf/T = GET_TURF_ABOVE(src)
@@ -188,6 +190,7 @@ GLOBAL_LIST_EMPTY(station_turfs)
 		T = GET_TURF_BELOW(src)
 		if(T)
 			T.multiz_turf_del(src, UP)
+
 	if(force)
 		..()
 		//this will completely wipe turf state
@@ -195,12 +198,13 @@ GLOBAL_LIST_EMPTY(station_turfs)
 		for(var/A in B.contents)
 			qdel(A)
 		return
-	QDEL_LIST(blueprint_data)
+
+	LAZYCLEARLIST(blueprint_data)
 	flags_1 &= ~INITIALIZED_1
 	requires_activation = FALSE
 	..()
 
-	if (length(vis_contents))
+	if(length(vis_contents))
 		vis_contents.Cut()
 	SEND_SIGNAL(src, COMSIG_TURF_DESTROY)
 
@@ -208,7 +212,7 @@ GLOBAL_LIST_EMPTY(station_turfs)
 /// Turfs DO NOT lose their signals when they get replaced, REMEMBER THIS
 /// It's possible because turfs are fucked, and if you have one in a list and it's replaced with another one, the list ref points to the new turf
 /// We do it because moving signals over was needlessly expensive, and bloated a very commonly used bit of code
-/turf/clear_signal_refs()
+/turf/_clear_signal_refs()
 	return
 
 /turf/attack_hand(mob/user, list/modifiers)
@@ -224,9 +228,11 @@ GLOBAL_LIST_EMPTY(station_turfs)
 		return
 
 	//move the turf
-	old_area.turfs_to_uncontain += src
+	LISTASSERTLEN(old_area.turfs_to_uncontain_by_zlevel, z, list())
+	LISTASSERTLEN(new_area.turfs_by_zlevel, z, list())
+	old_area.turfs_to_uncontain_by_zlevel[z] += src
+	new_area.turfs_by_zlevel[z] += src
 	new_area.contents += src
-	new_area.contained_turfs += src
 
 	//changes to make after turf has moved
 	on_change_area(old_area, new_area)
@@ -234,6 +240,9 @@ GLOBAL_LIST_EMPTY(station_turfs)
 /// Allows for reactions to an area change without inherently requiring change_area() be called (I hate maploading)
 /turf/proc/on_change_area(area/old_area, area/new_area)
 	transfer_area_lighting(old_area, new_area)
+	GLOB.SUNLIGHT_QUEUE_WORK += src
+	if(outdoor_effect)
+		GLOB.SUNLIGHT_QUEUE_UPDATE += outdoor_effect
 
 /turf/proc/multiz_turf_del(turf/T, dir)
 	SEND_SIGNAL(src, COMSIG_TURF_MULTIZ_DEL, T, dir)
@@ -294,20 +303,21 @@ GLOBAL_LIST_EMPTY(station_turfs)
 			return TRUE
 	return FALSE
 
-//zPassIn doesn't necessarily pass an atom!
-//direction is direction of travel of air
-/turf/proc/zPassIn(atom/movable/A, direction, turf/source)
+//The zpass procs exist to be overriden, not directly called
+//use can_z_pass for that
+///If we'd allow anything to travel into us
+/turf/proc/zPassIn(direction)
 	return FALSE
 
-//direction is direction of travel of air
-/turf/proc/zPassOut(atom/movable/A, direction, turf/destination, allow_anchored_movement)
+///If we'd allow anything to travel out of us
+/turf/proc/zPassOut(direction)
 	return FALSE
 
 //direction is direction of travel of air
 /turf/proc/zAirIn(direction, turf/source)
 	return FALSE
 
-//direction is direction of travel of air
+//direction is direction of travel
 /turf/proc/zAirOut(direction, turf/source)
 	return FALSE
 
@@ -521,9 +531,9 @@ GLOBAL_LIST_EMPTY(station_turfs)
 
 /turf/singularity_act()
 	if(underfloor_accessibility < UNDERFLOOR_INTERACTABLE)
-		for(var/obj/O in contents) //this is for deleting things like wires contained in the turf
-			if(HAS_TRAIT(O, TRAIT_T_RAY_VISIBLE))
-				O.singularity_act()
+		for(var/obj/on_top in contents) //this is for deleting things like wires contained in the turf
+			if(HAS_TRAIT(on_top, TRAIT_T_RAY_VISIBLE))
+				on_top.singularity_act()
 	ScrapeAway(flags = CHANGETURF_INHERIT_AIR)
 	return(2)
 
@@ -600,12 +610,12 @@ GLOBAL_LIST_EMPTY(station_turfs)
 	if((acidpwr <= 0) || (acid_volume <= 0))
 		return FALSE
 
-	AddComponent(/datum/component/acid, acidpwr, acid_volume)
-	for(var/obj/O in src)
-		if(underfloor_accessibility < UNDERFLOOR_INTERACTABLE && HAS_TRAIT(O, TRAIT_T_RAY_VISIBLE))
+	AddComponent(/datum/component/acid, acidpwr, acid_volume, GLOB.acid_overlay)
+	for(var/atom/movable/movable_atom as anything in src)
+		if(underfloor_accessibility < UNDERFLOOR_INTERACTABLE && HAS_TRAIT(movable_atom, TRAIT_T_RAY_VISIBLE))
 			continue
 
-		O.acid_act(acidpwr, acid_volume)
+		movable_atom.acid_act(acidpwr, acid_volume)
 
 	return . || TRUE
 
@@ -641,6 +651,11 @@ GLOBAL_LIST_EMPTY(station_turfs)
 
 /turf/AllowDrop()
 	return TRUE
+
+// monkestation start: fix runtime from turf.drop_location()
+/turf/drop_location()
+	return src
+// monkestation end
 
 /turf/proc/add_vomit_floor(mob/living/M, toxvomit = NONE, purge_ratio = 0.1)
 
@@ -733,20 +748,21 @@ GLOBAL_LIST_EMPTY(station_turfs)
  * Returns adjacent turfs to this turf that are reachable, in all cardinal directions
  *
  * Arguments:
- * * caller: The movable, if one exists, being used for mobility checks to see what tiles it can reach
- * * ID: An ID card that decides if we can gain access to doors that would otherwise block a turf
+ * * source: The movable, if one exists, being used for mobility checks to see what tiles it can reach
+ * * access: A list that decides if we can gain access to doors that would otherwise block a turf
  * * simulated_only: Do we only worry about turfs with simulated atmos, most notably things that aren't space?
  * * no_id: When true, doors with public access will count as impassible
 */
-/turf/proc/reachableAdjacentTurfs(atom/movable/caller, ID, simulated_only, no_id = FALSE)
+/turf/proc/reachableAdjacentTurfs(atom/movable/source, list/access, simulated_only, no_id = FALSE)
 	var/static/space_type_cache = typecacheof(/turf/open/space)
 	. = list()
 
+	var/datum/can_pass_info/pass_info = new(source, access, no_id)
 	for(var/iter_dir in GLOB.cardinals)
 		var/turf/turf_to_check = get_step(src,iter_dir)
 		if(!turf_to_check || (simulated_only && space_type_cache[turf_to_check.type]))
 			continue
-		if(turf_to_check.density || LinkBlockedWithAccess(turf_to_check, caller, ID, no_id = no_id))
+		if(turf_to_check.density || LinkBlockedWithAccess(turf_to_check, pass_info))
 			continue
 		. += turf_to_check
 
@@ -764,3 +780,7 @@ GLOBAL_LIST_EMPTY(station_turfs)
 	explosive_resistance -= get_explosive_block()
 	inherent_explosive_resistance = explosion_block
 	explosive_resistance += get_explosive_block()
+
+/// Returns whether it is safe for an atom to move across this turf
+/turf/proc/can_cross_safely(atom/movable/crossing)
+	return TRUE

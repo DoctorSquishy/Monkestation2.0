@@ -30,6 +30,13 @@
 #define IGNORE_STASIS (1<<1)
 /// If the incapacitated status effect will ignore a mob being agressively grabbed
 #define IGNORE_GRAB (1<<2)
+/// If the incapacited status effect will ignore a mob in cirt
+#define IGNORE_CRIT (1<<3)
+
+/// Maxamounts of fire stacks a mob can get
+#define MAX_FIRE_STACKS 20
+/// If a mob has a higher threshold than this, the icon shown will be increased to the big fire icon.
+#define MOB_BIG_FIRE_STACK_THRESHOLD 3
 
 // Grouped effect sources, see also code/__DEFINES/traits.dm
 
@@ -38,6 +45,8 @@
 #define STASIS_CHEMICAL_EFFECT "stasis_chemical"
 
 #define STASIS_SHAPECHANGE_EFFECT "stasis_shapechange"
+#define STASIS_ADMIN "stasis_admin"
+#define STASIS_LEGION_EATEN "stasis_eaten"
 
 #define STASIS_NETPOD_EFFECT "stasis_netpod"
 
@@ -104,10 +113,10 @@
 #define set_derpspeech(duration) set_timed_status_effect(duration, /datum/status_effect/speech/stutter/derpspeech)
 #define set_derpspeech_if_lower(duration) set_timed_status_effect(duration, /datum/status_effect/speech/stutter/derpspeech, TRUE)
 
-#define adjust_slurring(duration) adjust_timed_status_effect(duration, /datum/status_effect/speech/slurring/drunk)
-#define adjust_slurring_up_to(duration, up_to) adjust_timed_status_effect(duration, /datum/status_effect/speech/slurring/drunk, up_to)
-#define set_slurring(duration) set_timed_status_effect(duration, /datum/status_effect/speech/slurring/drunk)
-#define set_slurring_if_lower(duration) set_timed_status_effect(duration, /datum/status_effect/speech/slurring/drunk, TRUE)
+#define adjust_slurring(duration) adjust_timed_status_effect(duration, /datum/status_effect/speech/slurring/generic)
+#define adjust_slurring_up_to(duration, up_to) adjust_timed_status_effect(duration, /datum/status_effect/speech/slurring/generic, up_to)
+#define set_slurring(duration) set_timed_status_effect(duration, /datum/status_effect/speech/slurring/generic)
+#define set_slurring_if_lower(duration) set_timed_status_effect(duration, /datum/status_effect/speech/slurring/generic, TRUE)
 
 #define adjust_dizzy(duration) adjust_timed_status_effect(duration, /datum/status_effect/dizziness)
 #define adjust_dizzy_up_to(duration, up_to) adjust_timed_status_effect(duration, /datum/status_effect/dizziness, up_to)

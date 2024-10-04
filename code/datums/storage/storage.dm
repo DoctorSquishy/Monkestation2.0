@@ -31,7 +31,7 @@
 	/// list of all the mobs currently viewing the contents
 	var/list/is_using = list()
 
-	var/locked = FALSE
+	var/locked = STORAGE_NOT_LOCKED
 	/// whether or not we should open when clicked
 	var/attack_hand_interact = TRUE
 	/// whether or not we allow storage objects of the same size inside
@@ -121,14 +121,14 @@
 	RegisterSignal(resolve_parent, COMSIG_MOUSEDROPPED_ONTO, PROC_REF(on_mousedropped_onto))
 
 	RegisterSignal(resolve_parent, COMSIG_ATOM_EMP_ACT, PROC_REF(on_emp_act))
-	RegisterSignal(resolve_parent, COMSIG_PARENT_ATTACKBY, PROC_REF(on_attackby))
+	RegisterSignal(resolve_parent, COMSIG_ATOM_ATTACKBY, PROC_REF(on_attackby))
 	RegisterSignal(resolve_parent, COMSIG_ITEM_PRE_ATTACK, PROC_REF(on_preattack))
 	RegisterSignal(resolve_parent, COMSIG_OBJ_DECONSTRUCT, PROC_REF(on_deconstruct))
 
 	RegisterSignal(resolve_parent, COMSIG_ITEM_ATTACK_SELF, PROC_REF(mass_empty))
 
 	RegisterSignals(resolve_parent, list(COMSIG_CLICK_ALT, COMSIG_ATOM_ATTACK_GHOST, COMSIG_ATOM_ATTACK_HAND_SECONDARY), PROC_REF(open_storage_on_signal))
-	RegisterSignal(resolve_parent, COMSIG_PARENT_ATTACKBY_SECONDARY, PROC_REF(open_storage_attackby_secondary))
+	RegisterSignal(resolve_parent, COMSIG_ATOM_ATTACKBY_SECONDARY, PROC_REF(open_storage_attackby_secondary))
 
 	RegisterSignal(resolve_location, COMSIG_ATOM_ENTERED, PROC_REF(handle_enter))
 	RegisterSignal(resolve_location, COMSIG_ATOM_EXITED, PROC_REF(handle_exit))
@@ -136,6 +136,10 @@
 	RegisterSignal(resolve_parent, COMSIG_ITEM_EQUIPPED, PROC_REF(update_actions))
 
 	RegisterSignal(resolve_parent, COMSIG_TOPIC, PROC_REF(topic_handle))
+
+	// monke edit: bluespace compression kit
+	RegisterSignal(resolve_parent, COMSIG_ITEM_PRE_COMPRESS, PROC_REF(attempt_compression))
+	// monke end
 
 	orient_to_hud()
 
@@ -310,7 +314,7 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
  * @param messages if TRUE, will print out a message if the item is not valid
  * @param force bypass locked storage
  */
-/datum/storage/proc/can_insert(obj/item/to_insert, mob/user, messages = TRUE, force = FALSE)
+/datum/storage/proc/can_insert(obj/item/to_insert, mob/user, messages = TRUE, force = STORAGE_NOT_LOCKED)
 	var/obj/item/resolve_parent = parent?.resolve()
 	if(!resolve_parent)
 		return
@@ -325,7 +329,7 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 	if(!isitem(to_insert))
 		return FALSE
 
-	if(locked && !force)
+	if(locked > force)
 		return FALSE
 
 	if((to_insert == resolve_parent) || (to_insert == real_location))
@@ -400,10 +404,13 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 	if(!can_insert(to_insert, user, force = force))
 		return FALSE
 
+	SEND_SIGNAL(resolve_location, COMSIG_STORAGE_STORED_ITEM, to_insert, user, force)
+
 	to_insert.item_flags |= IN_STORAGE
 	to_insert.forceMove(resolve_location)
 	item_insertion_feedback(user, to_insert, override)
 	resolve_location.update_appearance()
+	SEND_SIGNAL(to_insert, COMSIG_ITEM_STORED)
 	return TRUE
 
 /**
@@ -983,7 +990,7 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 		resolve_parent.balloon_alert(to_show, "can't reach!")
 		return FALSE
 
-	if(!isliving(to_show) || to_show.incapacitated())
+	if(!isliving(to_show) || to_show.incapacitated(IGNORE_CRIT))
 		return FALSE
 
 	if(locked)

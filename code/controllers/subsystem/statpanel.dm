@@ -26,7 +26,7 @@ SUBSYSTEM_DEF(statpanels)
 		global_data = list(
 			"Map: [SSmapping.config?.map_name || "Loading..."]",
 			cached ? "Next Map: [cached.map_name]" : null,
-			"Storyteller: [SSgamemode.storyteller ? SSgamemode.storyteller.name : "N/A"]", //monkestation addition
+			"Storyteller: [!SSgamemode.secret_storyteller && SSgamemode.storyteller ? SSgamemode.storyteller.name : "Secret"]", //monkestation addition
 			"Round ID: [GLOB.round_id ? GLOB.round_id : "NULL"]",
 			"Server Time: [time2text(world.timeofday, "YYYY-MM-DD hh:mm:ss")]",
 			"Round Time: [ROUND_TIME()]",
@@ -172,17 +172,18 @@ SUBSYSTEM_DEF(statpanels)
 	for(var/image/target_image as anything in target.images)
 		if(!target_image.loc || target_image.loc.loc != target_mob.listed_turf || !target_image.override)
 			continue
-		overrides += target_image.loc
+		overrides[target_image.loc] = TRUE
 
 	var/list/atoms_to_display = list(target_mob.listed_turf)
+	var/should_check_obscured = (length(target_mob.listed_turf?.contents) < 25)
 	for(var/atom/movable/turf_content as anything in target_mob.listed_turf)
 		if(turf_content.mouse_opacity == MOUSE_OPACITY_TRANSPARENT)
 			continue
 		if(turf_content.invisibility > target_mob.see_invisible)
 			continue
-		if(turf_content in overrides)
+		if(overrides[turf_content])
 			continue
-		if(turf_content.IsObscured())
+		if(should_check_obscured && turf_content.IsObscured())
 			continue
 		atoms_to_display += turf_content
 
@@ -233,7 +234,7 @@ SUBSYSTEM_DEF(statpanels)
 		// Now, we're gonna queue image generation out of those refs
 		to_make += turf_item
 		already_seen[turf_item] = OBJ_IMAGE_LOADING
-		obj_window.RegisterSignal(turf_item, COMSIG_PARENT_QDELETING, TYPE_PROC_REF(/datum/object_window_info,viewing_atom_deleted)) // we reset cache if anything in it gets deleted
+		obj_window.RegisterSignal(turf_item, COMSIG_QDELETING, TYPE_PROC_REF(/datum/object_window_info,viewing_atom_deleted)) // we reset cache if anything in it gets deleted
 	return turf_items
 
 #undef OBJ_IMAGE_LOADING
@@ -328,7 +329,7 @@ SUBSYSTEM_DEF(statpanels)
 	. = ..()
 	src.parent = parent
 
-/datum/object_window_info/Destroy(force, ...)
+/datum/object_window_info/Destroy(force)
 	atoms_to_show = null
 	atoms_to_images = null
 	atoms_to_imagify = null

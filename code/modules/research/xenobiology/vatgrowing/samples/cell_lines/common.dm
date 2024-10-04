@@ -158,7 +158,7 @@
 	supplementary_reagents = list(
 		/datum/reagent/consumable/honey = 8, //Hunny.
 		/datum/reagent/growthserum = 5,
-		/datum/reagent/medicine/morphine = 4, //morphine is a vital nutrient for space bears, but it is better as a supplemental for gameplay reasons.
+		/datum/reagent/medicine/painkiller/morphine = 4, //morphine is a vital nutrient for space bears, but it is better as a supplemental for gameplay reasons.
 		/datum/reagent/consumable/nutriment/vitamin = 3)
 
 	suppressive_reagents = list(
@@ -226,7 +226,7 @@
 		/datum/reagent/consumable/corn_syrup = -6,
 		/datum/reagent/sulfur = -3) //sulfur repels snakes according to professor google.
 
-	resulting_atoms = list(/mob/living/simple_animal/hostile/retaliate/snake = 1)
+	resulting_atoms = list(/mob/living/basic/snake = 1)
 
 
 ///////////////////////////////////////////
@@ -245,11 +245,11 @@
 	suppressive_reagents = list(
 		/datum/reagent/consumable/frostoil = -4,
 		/datum/reagent/cryostylane = -4,
-		/datum/reagent/medicine/morphine = -2,
+		/datum/reagent/medicine/painkiller/morphine = -2,
 		/datum/reagent/consumable/ice = -2) //Brrr!
 
 	virus_suspectibility = 0
-	resulting_atoms = list(/mob/living/simple_animal/slime = 1)
+	resulting_atoms = list(/mob/living/basic/slime = 1)
 
 /datum/micro_organism/cell_line/blob_spore //shitty cell line to dilute the pool, feel free to make easier to grow if it doesn't interfer with growing the powerful mobs enough.
 	desc = "Immature blob spores"
@@ -265,7 +265,7 @@
 		/datum/reagent/napalm = -4)
 
 	virus_suspectibility = 0
-	resulting_atoms = list(/mob/living/simple_animal/hostile/blob/blobspore/independent = 2) //These are useless so we might as well spawn 2.
+	resulting_atoms = list(/mob/living/basic/blob_minion/spore = 2) //These are useless so we might as well spawn 2.
 
 /datum/micro_organism/cell_line/blobbernaut
 	desc = "Blobular myocytes"
@@ -284,7 +284,7 @@
 	suppressive_reagents = list(/datum/reagent/consumable/tinlux = -6)
 
 	virus_suspectibility = 0
-	resulting_atoms = list(/mob/living/simple_animal/hostile/blob/blobbernaut/independent = 1)
+	resulting_atoms = list(/mob/living/basic/blob_minion/blobbernaut = 1)
 
 /datum/micro_organism/cell_line/gelatinous_cube
 	desc = "Cubic ooze particles"
@@ -482,7 +482,7 @@
 /datum/micro_organism/cell_line/clown/fuck_up_growing(obj/machinery/plumbing/growing_vat/vat)
 	vat.visible_message(span_warning("The biological sample in [vat] seems to have created something horrific!"))
 
-	var/mob/selected_mob = pick(list(/mob/living/simple_animal/hostile/retaliate/clown/mutant/slow, /mob/living/simple_animal/hostile/retaliate/clown/fleshclown))
+	var/mob/selected_mob = pick(list(/mob/living/basic/clown/mutant/slow, /mob/living/basic/clown/fleshclown))
 
 	new selected_mob(get_turf(vat))
 	if(SEND_SIGNAL(vat.biological_sample, COMSIG_SAMPLE_GROWTH_COMPLETED) & SPARE_SAMPLE)
@@ -510,7 +510,7 @@
 		/datum/reagent/consumable/nothing = -2,
 		/datum/reagent/fuel/oil = -1)
 
-	resulting_atoms = list(/mob/living/simple_animal/hostile/retaliate/clown/banana = 1)
+	resulting_atoms = list(/mob/living/basic/clown/banana = 1)
 
 /datum/micro_organism/cell_line/clown/glutton
 	desc = "hyperadipogenic clown stem cells"
@@ -537,7 +537,7 @@
 		/datum/reagent/consumable/nothing = -2,
 		/datum/reagent/toxin/bad_food = -1)
 
-	resulting_atoms = list(/mob/living/simple_animal/hostile/retaliate/clown/mutant/glutton = 1)
+	resulting_atoms = list(/mob/living/basic/clown/mutant/glutton = 1)
 
 /datum/micro_organism/cell_line/clown/longclown
 	desc = "long clown bits"
@@ -560,7 +560,7 @@
 		/datum/reagent/consumable/nothing = -2,
 		/datum/reagent/sulfur = -1)
 
-	resulting_atoms = list(/mob/living/simple_animal/hostile/retaliate/clown/longface = 1)
+	resulting_atoms = list(/mob/living/basic/clown/longface = 1)
 
 /datum/micro_organism/cell_line/frog
 	desc = "anura amphibian cells"

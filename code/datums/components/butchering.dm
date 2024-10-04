@@ -34,6 +34,10 @@
 	if(isitem(parent))
 		RegisterSignal(parent, COMSIG_ITEM_ATTACK, PROC_REF(onItemAttack))
 
+/datum/component/butchering/Destroy(force)
+	butcher_callback = null
+	return ..()
+
 /datum/component/butchering/proc/onItemAttack(obj/item/source, mob/living/M, mob/living/user)
 	SIGNAL_HANDLER
 
@@ -87,10 +91,8 @@
 		log_combat(user, H, "wounded via throat slitting", source)
 		H.apply_damage(source.force, BRUTE, BODY_ZONE_HEAD, wound_bonus=CANT_WOUND) // easy tiger, we'll get to that in a sec
 		var/obj/item/bodypart/slit_throat = H.get_bodypart(BODY_ZONE_HEAD)
-		if(slit_throat)
-			var/datum/wound/slash/critical/screaming_through_a_slit_throat = new
-			screaming_through_a_slit_throat.apply_wound(slit_throat)
-		H.apply_status_effect(/datum/status_effect/neck_slice)
+		if (H.cause_wound_of_type_and_severity(WOUND_SLASH, slit_throat, WOUND_SEVERITY_CRITICAL))
+			H.apply_status_effect(/datum/status_effect/neck_slice)
 
 /**
  * Handles a user butchering a target
@@ -134,6 +136,14 @@
 			continue
 		carrion.set_custom_materials((carrion.custom_materials - meat_mats) + list(GET_MATERIAL_REF(/datum/material/meat/mob_meat, meat) = counterlist_sum(meat_mats)))
 
+	// transfer reagents to meat
+	if(meat.reagents)
+		var/meat_produced = 0
+		for(var/obj/item/food/meat/slab/target_meat in results)
+			meat_produced += 1
+		for(var/obj/item/food/meat/slab/target_meat in results)
+			meat.reagents.trans_to(target_meat, meat.reagents.total_volume / meat_produced, remove_blacklisted = TRUE)
+	//
 	if(butcher)
 		butcher.visible_message(span_notice("[butcher] butchers [meat]."), \
 								span_notice("You butcher [meat]."))

@@ -1,5 +1,6 @@
 GLOBAL_LIST_INIT(cassette_reviews, list())
 
+#define ADMIN_OPEN_REVIEW(id) "(<A href='?_src_=holder;[HrefToken(forceGlobal = TRUE)];open_music_review=[id]'>Open Review</a>)"
 /proc/submit_cassette_for_review(obj/item/device/cassette_tape/submitted, mob/user)
 	if(!user.client)
 		return
@@ -20,16 +21,8 @@ GLOBAL_LIST_INIT(cassette_reviews, list())
 	new_review.submitted_tape = submitted
 
 	GLOB.cassette_reviews["[new_review.id]"] = new_review
-
-	var/message = "[span_big(span_admin("[span_prefix("MUSIC APPROVAL:")] <EM>[key_name(user)]</EM> [ADMIN_OPEN_REVIEW(new_review.id)] has requested a review on their cassette."))]"
-
-	for(var/client/X in GLOB.admins)
-		X << 'sound/items/bikehorn.ogg'
-
-	to_chat(GLOB.admins,
-		type = MESSAGE_TYPE_ADMINCHAT,
-		html = message,
-		confidential = TRUE)
+	SEND_NOTFIED_ADMIN_MESSAGE('sound/items/bikehorn.ogg', "[span_big(span_admin("[span_prefix("MUSIC APPROVAL:")] <EM>[key_name(user)]</EM> [ADMIN_OPEN_REVIEW(new_review.id)] \
+															has requested a review on their cassette."))]")
 	to_chat(user, span_notice("Your Cassette has been sent to the Space Board of Music for review, you will be notified when an outcome has been made."))
 
 /obj/item/device/cassette_tape/proc/generate_cassette_json()
@@ -81,7 +74,7 @@ GLOBAL_LIST_INIT(cassette_reviews, list())
 
 	var/action_taken = FALSE
 
-/datum/cassette_review/Destroy(force, ...)
+/datum/cassette_review/Destroy(force)
 	. = ..()
 	QDEL_LIST(cassette_data)
 	submitter = null
@@ -126,6 +119,7 @@ GLOBAL_LIST_INIT(cassette_reviews, list())
 			approve_review(usr)
 		if("deny")
 			to_chat(submitter, span_warning("You feel a wave of disapointment wash over you, you can tell that your cassette was denied by the Space Board of Music"))
+			logger.Log(LOG_CATEGORY_MUSIC, "[submitter]'s tape has been rejected by [usr]", list("approver" = usr.name, "submitter" = submitter.name))
 			action_taken = TRUE
 
 /datum/cassette_review/proc/approve_review(mob/user)
@@ -135,7 +129,10 @@ GLOBAL_LIST_INIT(cassette_reviews, list())
 	to_chat(submitter, span_notice("You can feel the Space Board of Music has approved your cassette:[submitted_tape.name]."))
 	submitted_tape.forceMove(get_turf(submitter))
 	message_admins("[submitter]'s tape has been approved by [user]")
+	logger.Log(LOG_CATEGORY_MUSIC, "[submitter]'s tape has been approved by [user]", list("approver" = user.name, "submitter" = submitter.name))
 	action_taken = TRUE
 
 /proc/fetch_review(id)
 	return GLOB.cassette_reviews[id]
+
+#undef ADMIN_OPEN_REVIEW

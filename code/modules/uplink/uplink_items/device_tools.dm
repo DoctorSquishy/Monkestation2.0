@@ -19,7 +19,8 @@
 	desc = "The Syndicate surgery duffel bag is a toolkit containing all surgery tools, surgical drapes, \
 			a Syndicate brand MMI, a straitjacket, and a muzzle."
 	item = /obj/item/storage/backpack/duffelbag/syndie/surgery
-	cost = 3
+	cost = 4
+	surplus = 66
 
 /datum/uplink_item/device_tools/encryptionkey
 	name = "Syndicate Encryption Key"
@@ -37,7 +38,7 @@
 			the seemingly magical books of a certain cult. Though lacking the esoteric abilities \
 			of the originals, these inferior copies are still quite useful, being able to provide \
 			both weal and woe on the battlefield, even if they do occasionally bite off a finger."
-	item = /obj/item/storage/book/bible/syndicate
+	item = /obj/item/book/bible/syndicate
 	cost = 5
 
 /datum/uplink_item/device_tools/tram_remote
@@ -69,7 +70,7 @@
 	name = "Briefcase Launchpad"
 	desc = "A briefcase containing a launchpad, a device able to teleport items and people to and from targets up to eight tiles away from the briefcase. \
 			Also includes a remote control, disguised as an ordinary folder. Touch the briefcase with the remote to link it."
-	surplus = 0
+	surplus = 30 //monkestation edit: from 0 to 30
 	item = /obj/item/storage/briefcase/launchpad
 	cost = 6
 
@@ -82,11 +83,10 @@
 	item = /obj/item/storage/box/syndie_kit/syndicate_teleporter
 	cost = 8
 
-/datum/uplink_item/device_tools/camera_bug
-	name = "Camera Bug"
-	desc = "Enables you to view all cameras on the main network, set up motion alerts and track a target. \
-			Bugging cameras allows you to disable them remotely."
-	item = /obj/item/camera_bug
+/datum/uplink_item/device_tools/camera_app
+	name = "SyndEye Program"
+	desc = "A data disk containing a unique PC app that allows you to watch cameras and track crewmembers."
+	item = /obj/item/computer_disk/syndicate/camera_app
 	cost = 1
 	surplus = 90
 	purchasable_from = ~(UPLINK_NUKE_OPS | UPLINK_CLOWN_OPS)
@@ -245,7 +245,7 @@
 	progression_minimum = 30 MINUTES
 	item = /obj/item/sbeacondrop
 	cost = 10
-	surplus = 0 // not while there isnt one on any station
+	surplus = 50 // not while there isnt one on any station, monkestation edit: from 0 to 50, we have them
 	purchasable_from = ~(UPLINK_NUKE_OPS | UPLINK_CLOWN_OPS)
 
 /datum/uplink_item/device_tools/powersink
@@ -256,3 +256,16 @@
 	progression_minimum = 30 MINUTES
 	item = /obj/item/powersink
 	cost = 11
+
+/datum/uplink_item/device_tools/syndicate_contacts
+	name = "Polarized Contact Lenses"
+	desc = "High tech contact lenses that bind directly with the surface of your eyes to give them immunity to flashes and \
+			bright lights. Effective, affordable, and nigh undetectable."
+	item = /obj/item/syndicate_contacts
+	cost = 2 // monke: lower cost to 2TC
+
+/datum/uplink_item/device_tools/syndicate_climbing_hook
+	name = "Syndicate Climbing Hook"
+	desc = "High-tech rope, a refined hook structure, the peak of climbing technology. Only useful for climbing up holes, provided the operation site has any."
+	item = /obj/item/climbing_hook/syndicate
+	cost = 1

@@ -217,6 +217,8 @@
 		if(tgui_alert(usr,"This mob is being controlled by [M.key]. Are you sure you wish to give someone else control of it? [M.key] will be made a ghost.",,list("Yes","No")) != "Yes")
 			return
 	var/client/newkey = input(src, "Pick the player to put in control.", "New player") as null|anything in sort_list(GLOB.clients)
+	if(isnull(newkey))
+		return
 	var/mob/oldmob = newkey.mob
 	var/delmob = FALSE
 	if((isobserver(oldmob) || tgui_alert(usr,"Do you want to delete [newkey]'s old mob?","Delete?",list("Yes","No")) != "No"))
@@ -319,7 +321,7 @@
 			areas_with_air_alarm.Add(A.type)
 		CHECK_TICK
 
-	for(var/obj/machinery/requests_console/RC in GLOB.allConsoles)
+	for(var/obj/machinery/requests_console/RC in GLOB.req_console_all)
 		var/area/A = get_area(RC)
 		if(!A)
 			dat += "Skipped over [RC] in invalid location, [RC.loc].<br>"
@@ -600,6 +602,9 @@
 			dellog += "<li>Ignored force: [I.no_respect_force]</li>"
 		if (I.no_hint)
 			dellog += "<li>No hint: [I.no_hint]</li>"
+		if(LAZYLEN(I.extra_details))
+			var/details = I.extra_details.Join("</li><li>")
+			dellog += "<li>Extra Info: <ul><li>[details]</li></ul>"
 		dellog += "</ul></li>"
 
 	dellog += "</ol>"

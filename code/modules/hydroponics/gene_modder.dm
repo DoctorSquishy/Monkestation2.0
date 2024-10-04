@@ -330,6 +330,8 @@
 					if(disk && disk.gene && istype(disk.gene, G.type) && istype(G, /datum/plant_gene/core))
 						seed.genes -= G
 						var/datum/plant_gene/core/C = disk.gene.Copy()
+						var/datum/plant_gene/core/disk_core = disk.gene
+						C.value = disk_core.value
 						seed.genes += C
 						C.apply_stat(seed)
 						repaint_seed()
@@ -423,6 +425,10 @@
 	var/datum/plant_gene/gene
 	var/read_only = 0 //Well, it's still a floppy disk
 	obj_flags = UNIQUE_RENAME
+
+/obj/item/disk/plantgene/syndicate // Monkestation item
+	gene = new /datum/plant_gene/trait/noreact
+	read_only = 1
 
 /obj/item/disk/plantgene/Initialize(mapload)
 	. = ..()

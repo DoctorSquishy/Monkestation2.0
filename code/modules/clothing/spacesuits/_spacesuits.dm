@@ -12,7 +12,7 @@
 	clothing_flags = STOPSPRESSUREDAMAGE | THICKMATERIAL | SNUG_FIT | PLASMAMAN_HELMET_EXEMPT | HEADINTERNALS
 	armor_type = /datum/armor/helmet_space
 	flags_inv = HIDEMASK|HIDEEARS|HIDEEYES|HIDEFACE|HIDEHAIR|HIDEFACIALHAIR|HIDESNOUT
-
+	clothing_traits = list(TRAIT_SNOWSTORM_IMMUNE)
 	cold_protection = HEAD
 	min_cold_protection_temperature = SPACE_HELM_MIN_TEMP_PROTECT
 	heat_protection = HEAD
@@ -57,7 +57,7 @@
 	equip_delay_other = 80
 	resistance_flags = NONE
 	actions_types = list(/datum/action/item_action/toggle_spacesuit)
-	clothing_traits = list(LIQUID_PROTECTION)
+	clothing_traits = list(LIQUID_PROTECTION, TRAIT_SNOWSTORM_IMMUNE)
 	var/temperature_setting = BODYTEMP_NORMAL /// The default temperature setting
 	var/obj/item/stock_parts/cell/cell = /obj/item/stock_parts/cell/high /// If this is a path, this gets created as an object in Initialize.
 	var/cell_cover_open = FALSE /// Status of the cell cover on the suit
@@ -241,12 +241,15 @@
 	toggle_spacesuit(user)
 
 // let emags override the temperature settings
-/obj/item/clothing/suit/space/emag_act(mob/user)
-	if(!(obj_flags & EMAGGED))
-		obj_flags |= EMAGGED
-		user.visible_message(span_warning("You emag [src], overwriting thermal regulator restrictions."))
+/obj/item/clothing/suit/space/emag_act(mob/user, obj/item/card/emag/emag_card)
+	if(obj_flags & EMAGGED)
+		return FALSE
+	obj_flags |= EMAGGED
+	if (user)
+		balloon_alert(user, "thermal regulator restrictions overridden")
 		user.log_message("emagged [src], overwriting thermal regulator restrictions.", LOG_GAME)
 	playsound(src, SFX_SPARKS, 50, TRUE, SHORT_RANGE_SOUND_EXTRARANGE)
+	return TRUE
 
 // update the HUD icon
 /obj/item/clothing/suit/space/proc/update_hud_icon(mob/user)
@@ -296,9 +299,9 @@
 	user.apply_status_effect(/datum/status_effect/freon)
 	if(!ishuman(user))
 		return FIRELOSS
-	var/mob/living/carbon/human/humanafterall = user
-	var/datum/disease/advance/cold/pun = new //in the show, arnold survives his stunt, but catches a cold because of it
-	humanafterall.ForceContractDisease(pun, FALSE, TRUE) //this'll show up on health analyzers and the like
+	//var/mob/living/carbon/human/humanafterall = user
+	//var/datum/disease/advance/cold/pun = new //in the show, arnold survives his stunt, but catches a cold because of it
+	//humanafterall.ForceContractDisease(pun, FALSE, TRUE) //this'll show up on health analyzers and the like
 	return FIRELOSS
 
 #undef THERMAL_REGULATOR_COST

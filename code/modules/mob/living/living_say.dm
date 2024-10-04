@@ -142,6 +142,9 @@ GLOBAL_LIST_INIT(message_modes_stat_limits, list(
 			say_dead(original_message)
 			return
 
+	/*if(HAS_TRAIT(src, TRAIT_SOFTSPOKEN) && !HAS_TRAIT(src, TRAIT_SIGN_LANG)) MONKESTATION EDIT: Moved to be after radios.
+		message_mods[WHISPER_MODE] = MODE_WHISPER*/
+
 	if(client && SSlag_switch.measures[SLOWMODE_SAY] && !HAS_TRAIT(src, TRAIT_BYPASS_MEASURES) && !forced && src == usr)
 		if(!COOLDOWN_FINISHED(client, say_slowmode))
 			to_chat(src, span_warning("Message not sent due to slowmode. Please wait [SSlag_switch.slowmode_cooldown/10] seconds between messages.\n\"[message]\""))
@@ -228,15 +231,20 @@ GLOBAL_LIST_INIT(message_modes_stat_limits, list(
 	if(radio_return & NOPASS)
 		return TRUE
 
-	//No screams in space, unless you're next to someone.
-	var/turf/T = get_turf(src)
-	var/datum/gas_mixture/environment = T.return_air()
-	var/pressure = (environment)? environment.return_pressure() : 0
-	if(pressure < SOUND_MINIMUM_PRESSURE && !HAS_TRAIT(src, TRAIT_SIGN_LANG))
-		message_range = 1
+	if(!HAS_TRAIT(src, TRAIT_SIGN_LANG))
+		if(HAS_TRAIT(src, TRAIT_SOFTSPOKEN)) // MONKESTATION EDIT: Moved TRAIT_SOFTSPOKEN check to be after radios.
+			message_range = 1
+			spans |= SPAN_ITALICS
+			message_mods[WHISPER_MODE] = MODE_WHISPER
 
-	if(pressure < ONE_ATMOSPHERE*0.4) //Thin air, let's italicise the message
-		spans |= SPAN_ITALICS
+		//No screams in space, unless you're next to someone.
+		var/turf/our_turf = get_turf(src)
+		var/pressure = our_turf.return_air()?.return_pressure() || 0
+		if(pressure < SOUND_MINIMUM_PRESSURE)
+			message_range = 1
+
+		if(pressure < (ONE_ATMOSPHERE * 0.4)) //Thin air, let's italicise the message
+			spans |= SPAN_ITALICS
 
 	send_speech(message, message_range, src, bubble_type, spans, language, message_mods)//roughly 58% of living/say()'s total cost
 
@@ -245,7 +253,9 @@ GLOBAL_LIST_INIT(message_modes_stat_limits, list(
 	if(client && !HAS_TRAIT(src, TRAIT_SIGN_LANG))
 		var/ending = copytext_char(message, -1)
 		var/sound/speak_sound
-		if(ending == "?")
+		if(HAS_TRAIT(src, TRAIT_HELIUM))
+			speak_sound = sound('monkestation/sound/effects/helium_squeak.ogg')
+		else if(ending == "?")
 			speak_sound = voice_type2sound[voice_type]["?"]
 		else if(ending == "!")
 			speak_sound = voice_type2sound[voice_type]["!"]
@@ -261,6 +271,8 @@ GLOBAL_LIST_INIT(message_modes_stat_limits, list(
 	return TRUE
 
 /mob/living/Hear(message, atom/movable/speaker, datum/language/message_language, raw_message, radio_freq, list/spans, list/message_mods = list(), message_range=0)
+	if((SEND_SIGNAL(src, COMSIG_MOVABLE_PRE_HEAR, args) & COMSIG_MOVABLE_CANCEL_HEARING) || !GET_CLIENT(src))
+		return FALSE
 	if(!GET_CLIENT(src))
 		return
 	//monkestation edit
@@ -435,6 +447,9 @@ GLOBAL_LIST_INIT(message_modes_stat_limits, list(
  *
  * message - The message to treat.
  * capitalize_message - Whether we run capitalize() on the message after we're done.
+ *
+ * Returns a list, which is a packet of information corresponding to the message that has been treated, which
+ * contains the new message, as well as text-to-speech information.
  */
 /mob/living/proc/treat_message(message, capitalize_message = TRUE)
 	if(HAS_TRAIT(src, TRAIT_UNINTELLIGIBLE_SPEECH))
@@ -473,7 +488,7 @@ GLOBAL_LIST_INIT(message_modes_stat_limits, list(
 				I.talk_into(src, message, , spans, language, message_mods)
 			return ITALICS | REDUCE_RANGE
 
-	return 0
+	return NONE
 
 /mob/living/say_mod(input, list/message_mods = list())
 	if(message_mods[WHISPER_MODE] == MODE_WHISPER)

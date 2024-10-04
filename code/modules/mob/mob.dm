@@ -30,6 +30,7 @@
 	else if(ckey)
 		stack_trace("Mob without client but with associated ckey has been deleted.")
 
+	unset_machine()
 	remove_from_mob_list()
 	remove_from_dead_mob_list()
 	remove_from_alive_mob_list()
@@ -112,6 +113,17 @@
 /mob/GenerateTag()
 	. = ..()
 	tag = "mob_[next_mob_id++]"
+
+/mob/serialize_list(list/options, list/semvers)
+	. = ..()
+
+	.["tag"] = tag
+	.["name"] = name
+	.["ckey"] = ckey
+	.["key"] = key
+
+	SET_SERIALIZATION_SEMVER(semvers, "1.0.0")
+	return .
 
 /**
  * set every hud image in the given category active so other people with the given hud can see it.
@@ -545,7 +557,7 @@
 	if(is_blind()) //blind people see things differently (through touch)
 		if(!blind_examine_check(examinify))
 			return
-	else if(!(examine_turf?.luminosity || examine_turf.dynamic_lumcount) && \
+	else if(!(examine_turf?.luminosity || examine_turf?.dynamic_lumcount) && \
 		get_dist(src, examine_turf) > 1 && \
 		!has_nightvision()) // If you aren't blind, it's in darkness (that you can't see) and farther then next to you
 		return
@@ -894,10 +906,45 @@
 /// Performs the actual ritual of swapping hands, such as setting the held index variables
 /mob/proc/perform_hand_swap(held_index)
 	PROTECTED_PROC(TRUE)
+	if (!HAS_TRAIT(src, TRAIT_CAN_HOLD_ITEMS))
+		return FALSE
+
+	if(!held_index)
+		held_index = (active_hand_index % held_items.len) + 1
+
+	if(!isnum(held_index))
+		CRASH("You passed [held_index] into swap_hand instead of a number. WTF man")
+
+	var/previous_index = active_hand_index
+	active_hand_index = held_index
+	if(hud_used)
+		var/atom/movable/screen/inventory/hand/held_location
+		held_location = hud_used.hand_slots["[previous_index]"]
+		if(!isnull(held_location))
+			held_location.update_appearance()
+		held_location = hud_used.hand_slots["[held_index]"]
+		if(!isnull(held_location))
+			held_location.update_appearance()
 	return TRUE
 
-/mob/proc/activate_hand(selhand)
-	return
+/mob/proc/activate_hand(selected_hand)
+	if (!HAS_TRAIT(src, TRAIT_CAN_HOLD_ITEMS))
+		return
+
+	if(!selected_hand)
+		selected_hand = (active_hand_index % held_items.len)+1
+
+	if(istext(selected_hand))
+		selected_hand = lowertext(selected_hand)
+		if(selected_hand == "right" || selected_hand == "r")
+			selected_hand = 2
+		if(selected_hand == "left" || selected_hand == "l")
+			selected_hand = 1
+
+	if(selected_hand != active_hand_index)
+		swap_hand(selected_hand)
+	else
+		mode()
 
 /mob/proc/assess_threat(judgement_criteria, lasercolor = "", datum/callback/weaponcheck=null) //For sec bot threat assessment
 	return 0
@@ -959,7 +1006,7 @@
  * You can buckle on mobs if you're next to them since most are dense
  */
 /mob/buckle_mob(mob/living/M, force = FALSE, check_loc = TRUE, buckle_mob_flags= NONE)
-	if(M.buckled)
+	if(M.buckled && LAZYLEN(buckled_mobs) >= max_buckled_mobs)
 		return FALSE
 	return ..(M, force, check_loc, buckle_mob_flags)
 
@@ -1028,21 +1075,7 @@
 ///Can this mob use storage
 /mob/proc/canUseStorage()
 	return FALSE
-/**
- * Check if the other mob has any factions the same as us
- *
- * If exact match is set, then all our factions must match exactly
- */
-/mob/proc/faction_check_mob(mob/target, exact_match)
-	if(exact_match) //if we need an exact match, we need to do some bullfuckery.
-		var/list/faction_src = faction.Copy()
-		var/list/faction_target = target.faction.Copy()
-		if(!("[REF(src)]" in faction_target)) //if they don't have our ref faction, remove it from our factions list.
-			faction_src -= "[REF(src)]" //if we don't do this, we'll never have an exact match.
-		if(!("[REF(target)]" in faction_src))
-			faction_target -= "[REF(target)]" //same thing here.
-		return faction_check(faction_src, faction_target, TRUE)
-	return faction_check(faction, target.faction, FALSE)
+
 /*
  * Compare two lists of factions, returning true if any match
  *
@@ -1133,7 +1166,7 @@
 		else if( search_pda && istype(A, /obj/item/modular_computer/pda) )
 			var/obj/item/modular_computer/pda/PDA = A
 			if(PDA.saved_identification == oldname)
-				PDA.saved_identification = newname
+				PDA.imprint_id(name = newname)
 				PDA.UpdateDisplay()
 				if(!search_id)
 					break
@@ -1371,19 +1404,37 @@
 /mob/proc/set_nutrition(change) //Seriously fuck you oldcoders.
 	nutrition = max(0, change)
 
+///Apply a proper movespeed modifier based on items we have equipped
 /mob/proc/update_equipment_speed_mods()
-	var/speedies = equipped_speed_mods()
-	if(!speedies)
-		remove_movespeed_modifier(/datum/movespeed_modifier/equipment_speedmod)
+	var/speedies = 0
+	var/immutable_speedies = 0
+	for(var/obj/item/thing in get_equipped_speed_mod_items())
+		if(thing.item_flags & IMMUTABLE_SLOW)
+			immutable_speedies += thing.slowdown
+		else
+			speedies += thing.slowdown
+	if(immutable_speedies)
+		add_or_update_variable_movespeed_modifier(
+			/datum/movespeed_modifier/equipment_speedmod/immutable,
+			multiplicative_slowdown = immutable_speedies,
+		)
 	else
-		add_or_update_variable_movespeed_modifier(/datum/movespeed_modifier/equipment_speedmod, multiplicative_slowdown = speedies)
+		remove_movespeed_modifier(/datum/movespeed_modifier/equipment_speedmod/immutable)
 
-/// Gets the combined speed modification of all worn items
-/// Except base mob type doesnt really wear items
-/mob/proc/equipped_speed_mods()
-	for(var/obj/item/I in held_items)
-		if(I.item_flags & SLOWS_WHILE_IN_HAND)
-			. += I.slowdown
+	if(speedies)
+		add_or_update_variable_movespeed_modifier(
+			/datum/movespeed_modifier/equipment_speedmod,
+			multiplicative_slowdown = speedies,
+		)
+	else
+		remove_movespeed_modifier(/datum/movespeed_modifier/equipment_speedmod)
+
+///Get all items in our possession that should affect our movespeed
+/mob/proc/get_equipped_speed_mod_items()
+	. = list()
+	for(var/obj/item/thing in held_items)
+		if(thing.item_flags & SLOWS_WHILE_IN_HAND)
+			. += thing
 
 /mob/proc/set_stat(new_stat)
 	if(new_stat == stat)
@@ -1503,3 +1554,7 @@
 	set name = "View Skills"
 
 	mind?.print_levels(src)
+
+/mob/key_down(key, client/client, full_key)
+	..()
+	SEND_SIGNAL(src, COMSIG_MOB_KEYDOWN, key, client, full_key)

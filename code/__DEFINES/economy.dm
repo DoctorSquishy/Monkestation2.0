@@ -1,7 +1,7 @@
 /// Number of paychecks jobs start with at the creation of a new bank account for a player (So at shift-start or game join, but not a blank new account.)
 #define STARTING_PAYCHECKS 5
 /// How much mail the Economy SS will create per minute, regardless of firing time.
-#define MAX_MAIL_PER_MINUTE 3
+#define MAX_MAIL_PER_MINUTE 8
 /// Probability of using letters of envelope sprites on all letters.
 #define FULL_CRATE_LETTER_ODDS 70
 
@@ -22,7 +22,8 @@
 
 #define STATION_TARGET_BUFFER 25
 
-
+///The coefficient for the amount of dosh that's collected everytime some is earned or received.
+#define DEBT_COLLECTION_COEFF 0.75
 
 #define MAX_GRANT_DPT 500
 

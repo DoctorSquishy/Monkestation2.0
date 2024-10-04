@@ -65,21 +65,31 @@
 		/datum/reagent/fuel,
 		/datum/reagent/silver,
 	)
-	//these become available once the manipulator has been upgraded to tier 4 (femto)
+	//These become available once upgraded. (Monkestation Edit)
 	var/list/upgrade_reagents = list(
-		/datum/reagent/acetone,
-		/datum/reagent/ammonia,
-		/datum/reagent/ash,
-		/datum/reagent/diethylamine,
 		/datum/reagent/fuel/oil,
+		/datum/reagent/ammonia,
+		/datum/reagent/ash
+	)
+
+	var/list/upgrade_reagents2 = list(
+		/datum/reagent/acetone,
+		/datum/reagent/phenol,
+		/datum/reagent/diethylamine
+	)
+
+	var/list/upgrade_reagents3 = list(
+		/datum/reagent/medicine/mine_salve,
+		/datum/reagent/toxin,
 		/datum/reagent/saltpetre
 	)
+	
 	var/list/emagged_reagents = list(
 		/datum/reagent/toxin/carpotoxin,
 		/datum/reagent/medicine/mine_salve,
-		/datum/reagent/medicine/morphine,
+		/datum/reagent/medicine/painkiller/morphine,
 		/datum/reagent/drug/space_drugs,
-		/datum/reagent/toxin
+		/datum/reagent/australium
 	)
 
 	var/list/recording_recipe
@@ -153,13 +163,14 @@
 		. += beaker_overlay
 
 
-/obj/machinery/chem_dispenser/emag_act(mob/user)
+/obj/machinery/chem_dispenser/emag_act(mob/user, obj/item/card/emag/emag_card)
 	if(obj_flags & EMAGGED)
-		to_chat(user, span_warning("[src] has no functional safeties to emag."))
-		return
-	to_chat(user, span_notice("You short out [src]'s safeties."))
+		balloon_alert(user, "already emagged!")
+		return FALSE
+	balloon_alert(user, "safeties shorted out")
 	dispensable_reagents |= emagged_reagents//add the emagged reagents to the dispensable ones
 	obj_flags |= EMAGGED
+	return TRUE
 
 /obj/machinery/chem_dispenser/ex_act(severity, target)
 	if(severity <= EXPLODE_LIGHT)
@@ -212,7 +223,10 @@
 	var/beakerCurrentVolume = 0
 	if(beaker && beaker.reagents && beaker.reagents.reagent_list.len)
 		for(var/datum/reagent/R in beaker.reagents.reagent_list)
-			beakerContents.Add(list(list("name" = R.name, "volume" = round(R.volume, 0.01), "pH" = R.ph, "purity" = R.purity))) // list in a list because Byond merges the first list...
+			var/chem_name = R.name
+			if(istype(R, /datum/reagent/ammonia/urine) && user.client?.prefs.read_preference(/datum/preference/toggle/prude_mode))
+				chem_name = "Ammonia?"
+			beakerContents.Add(list(list("name" = chem_name, "volume" = round(R.volume, 0.01), "pH" = R.ph, "purity" = R.purity))) // list in a list because Byond merges the first list...
 			beakerCurrentVolume += R.volume
 	data["beakerContents"] = beakerContents
 
@@ -424,12 +438,13 @@
 	for(var/datum/stock_part/capacitor/capacitor in component_parts)
 		recharge_amount *= capacitor.tier
 		parts_rating += capacitor.tier
-	for(var/datum/stock_part/manipulator/manipulator in component_parts)
-		if (manipulator.tier > 3)
+	for(var/datum/stock_part/manipulator/manipulator in component_parts) // Monkestation Edit
+		if (manipulator.tier > 1)
 			dispensable_reagents |= upgrade_reagents
-		else
-			dispensable_reagents -= upgrade_reagents
-		parts_rating += manipulator.tier
+		if (manipulator.tier > 2)
+			dispensable_reagents |= upgrade_reagents2
+		if (manipulator.tier > 3)
+			dispensable_reagents |= upgrade_reagents3
 	powerefficiency = round(newpowereff, 0.01)
 
 /obj/machinery/chem_dispenser/proc/replace_beaker(mob/living/user, obj/item/reagent_containers/new_beaker)
@@ -477,7 +492,7 @@
 	has_panel_overlay = FALSE
 	dispensed_temperature = WATER_MATTERSTATE_CHANGE_TEMP // magical mystery temperature of 274.5, where ice does not melt, and water does not freeze
 	amount = 10
-	pixel_y = 6
+	anchored_tabletop_offset = 6
 	circuit = /obj/item/circuitboard/machine/chem_dispenser/drinks
 	working_state = null
 	nopower_state = null
@@ -494,6 +509,7 @@
 		/datum/reagent/consumable/lemonjuice,
 		/datum/reagent/consumable/lemon_lime,
 		/datum/reagent/consumable/limejuice,
+		/datum/reagent/consumable/melon_soda,
 		/datum/reagent/consumable/menthol,
 		/datum/reagent/consumable/orangejuice,
 		/datum/reagent/consumable/pineapplejuice,
@@ -501,6 +517,7 @@
 		/datum/reagent/consumable/shamblers,
 		/datum/reagent/consumable/spacemountainwind,
 		/datum/reagent/consumable/sodawater,
+		/datum/reagent/consumable/sol_dry,
 		/datum/reagent/consumable/space_up,
 		/datum/reagent/consumable/sugar,
 		/datum/reagent/consumable/tea,
@@ -566,6 +583,7 @@
 		/datum/reagent/consumable/ethanol/ale,
 		/datum/reagent/consumable/ethanol/applejack,
 		/datum/reagent/consumable/ethanol/beer,
+		/datum/reagent/consumable/ethanol/coconut_rum,
 		/datum/reagent/consumable/ethanol/cognac,
 		/datum/reagent/consumable/ethanol/creme_de_cacao,
 		/datum/reagent/consumable/ethanol/creme_de_coconut,
@@ -576,6 +594,7 @@
 		/datum/reagent/consumable/ethanol/kahlua,
 		/datum/reagent/consumable/ethanol/beer/maltliquor,
 		/datum/reagent/consumable/ethanol/navy_rum,
+		/datum/reagent/consumable/ethanol/rice_beer,
 		/datum/reagent/consumable/ethanol/rum,
 		/datum/reagent/consumable/ethanol/sake,
 		/datum/reagent/consumable/ethanol/tequila,
@@ -584,6 +603,7 @@
 		/datum/reagent/consumable/ethanol/vodka,
 		/datum/reagent/consumable/ethanol/whiskey,
 		/datum/reagent/consumable/ethanol/wine,
+		/datum/reagent/consumable/ethanol/yuyake,
 	)
 	upgrade_reagents = null
 	emagged_reagents = list(
@@ -690,7 +710,7 @@
 		/datum/reagent/fuel/oil,
 		/datum/reagent/saltpetre,
 		/datum/reagent/medicine/mine_salve,
-		/datum/reagent/medicine/morphine,
+		/datum/reagent/medicine/painkiller/morphine,
 		/datum/reagent/drug/space_drugs,
 		/datum/reagent/toxin,
 		/datum/reagent/toxin/plasma,

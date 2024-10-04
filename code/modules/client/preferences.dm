@@ -9,7 +9,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	/// Ensures that we always load the last used save, QOL
 	var/default_slot = 1
 	/// The maximum number of slots we're allowed to contain
-	var/max_save_slots = 3
+	var/max_save_slots = 20
 
 	/// Bitflags for communications that are muted
 	var/muted = NONE
@@ -88,7 +88,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	/// If set to TRUE, will update character_profiles on the next ui_data tick.
 	var/tainted_character_profiles = FALSE
 
-/datum/preferences/Destroy(force, ...)
+/datum/preferences/Destroy(force)
 	QDEL_NULL(character_preview_view)
 	QDEL_LIST(middleware)
 	value_cache = null
@@ -106,8 +106,9 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 		if(load_and_save && !fexists(path))
 			try_savefile_type_migration()
 		unlock_content = !!parent.IsByondMember()
-		if(unlock_content)
-			max_save_slots = 8
+		// monke edit: more save slots
+		//if(unlock_content)
+		//	max_save_slots = 8
 	else
 		CRASH("attempted to create a preferences datum without a client or mock!")
 	load_savefile()
@@ -209,7 +210,12 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 
 	switch (action)
 		if ("update_body")
-			character_preview_view?.update_body()
+			// monkestation start: janky bugfixing for runtimes
+			if(!QDELETED(character_preview_view))
+				character_preview_view.update_body()
+			else
+				addtimer(CALLBACK(src, PROC_REF(create_character_preview_view), usr), 0.5 SECONDS, TIMER_DELETE_ME)
+			// monkestation end
 		if ("change_slot")
 			// Save existing character
 			save_character()
@@ -223,7 +229,12 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 			for (var/datum/preference_middleware/preference_middleware as anything in middleware)
 				preference_middleware.on_new_character(usr)
 
-			character_preview_view.update_body()
+			// monkestation start: janky bugfixing for runtimes
+			if(!QDELETED(character_preview_view))
+				character_preview_view.update_body()
+			else
+				addtimer(CALLBACK(src, PROC_REF(create_character_preview_view), usr), 0.5 SECONDS, TIMER_DELETE_ME)
+			// monkestation end
 
 			return TRUE
 		if ("rotate")
@@ -272,12 +283,12 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 			var/default_value = read_preference(requested_preference.type)
 
 			// Yielding
-			var/new_color = input(
+			var/new_color = tgui_color_picker(
 				usr,
 				"Select new color",
 				null,
 				default_value || COLOR_WHITE,
-			) as color | null
+			)
 
 			if (!new_color)
 				return FALSE
@@ -381,18 +392,21 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	if (isnull(body))
 		create_body()
 	else
-		//body.wipe_state()
-		QDEL_NULL(body)
-		create_body()
+		body.wipe_state()
 	appearance = preferences.render_new_preview_appearance(body)
 
 /atom/movable/screen/map_view/char_preview/proc/create_body()
 	QDEL_NULL(body)
 
 	body = new
+	RegisterSignal(body, COMSIG_QDELETING, PROC_REF(clear_body))
 
 	// Without this, it doesn't show up in the menu
 	body.appearance_flags &= ~TILE_BOUND
+
+/atom/movable/screen/map_view/char_preview/proc/clear_body(atom/movable/deletee)
+	if(body == deletee)
+		body = null
 
 /datum/preferences/proc/create_character_profiles()
 	var/list/profiles = list()

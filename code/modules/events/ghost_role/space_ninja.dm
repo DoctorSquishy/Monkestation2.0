@@ -5,12 +5,9 @@
 	weight = 10
 	earliest_start = 45 MINUTES //monke edit: 20 to 45
 	min_players = 25 //monke edit: 20 to 25
-	dynamic_should_hijack = TRUE
+	//dynamic_should_hijack = TRUE
 	category = EVENT_CATEGORY_INVASION
 	description = "A space ninja infiltrates the station."
-	track = EVENT_TRACK_ROLESET
-	tags = list(TAG_COMBAT)
-	checks_antag_cap = TRUE
 
 /datum/round_event/ghost_role/space_ninja
 	minimum_required = 1
@@ -22,8 +19,8 @@
 		return MAP_ERROR
 
 	//selecting a candidate player
-	var/list/candidates = get_candidates(ROLE_NINJA, ROLE_NINJA)
-	if(!candidates.len)
+	var/list/candidates = SSpolling.poll_ghost_candidates(check_jobban = ROLE_NINJA, role = ROLE_NINJA, alert_pic = /obj/item/energy_katana)
+	if(!length(candidates))
 		return NOT_ENOUGH_PLAYERS
 
 	var/mob/dead/selected_candidate = pick(candidates)

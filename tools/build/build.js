@@ -75,6 +75,8 @@ export const DmTarget = new Juke.Target({
     'html/**',
     'icons/**',
     'interface/**',
+    'monkestation/code/**', // monke edit: ensure it also checks for updates in modular code
+    'monkestation/icons/**',
     `${DME_NAME}.dme`,
     NamedVersionFile,
   ],
@@ -311,8 +313,6 @@ export const CleanTarget = new Juke.Target({
   dependsOn: [TguiCleanTarget],
   executes: async () => {
     Juke.rm('*.{dmb,rsc}');
-    Juke.rm('*.mdme*');
-    Juke.rm('*.m.*');
     Juke.rm('_maps/templates.dm');
   },
 });

@@ -7,7 +7,7 @@
 		/datum/traitor_objective/ultimate/supermatter_cascade = 1,
 		/datum/traitor_objective/ultimate/infect_ai = 1,
 		/datum/traitor_objective/ultimate/dark_matteor = 1,
-		/datum/traitor_objective/ultimate/wizard = 1, //monkestation edit
+//		/datum/traitor_objective/ultimate/wizard = 1, //monkestation edit
 	)
 	weight = 100
 
@@ -32,6 +32,8 @@
 	. = ..()
 	handler.maximum_potential_objectives = 0
 	for(var/datum/traitor_objective/objective as anything in handler.potential_objectives)
+		if(objective == src)
+			continue
 		objective.fail_objective()
 	user.playsound_local(get_turf(user), 'sound/traitor/final_objective.ogg', vol = 100, vary = FALSE, channel = CHANNEL_TRAITOR)
 	handler.final_objective = name

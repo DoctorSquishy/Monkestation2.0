@@ -144,15 +144,31 @@
  */
 /datum/looping_sound/proc/play(soundfile, volume_override)
 	var/sound/sound_to_play = sound(soundfile)
+	// monkestation edit: volume mixer
+	var/actual_channel = channel || SSsounds.random_available_channel()
 	if(direct)
-		sound_to_play.channel = channel || SSsounds.random_available_channel() // monkestation edit
-		sound_to_play.volume = volume_override || volume //Use volume as fallback if theres no override
-		SEND_SOUND(parent, sound_to_play)
+		var/mob/mob_parent = parent
+		if(!istype(mob_parent)) // no point in playing directly to something that can't even hear sound anyways
+			return
+		mob_parent.playsound_local(
+			get_turf(parent),
+			sound_to_play,
+			volume_override || volume,
+			vary,
+			extra_range,
+			falloff_exponent = falloff_exponent,
+			pressure_affected = pressure_affected,
+			falloff_distance = falloff_distance,
+			use_reverb = use_reverb,
+			channel = actual_channel,
+			mixer_channel = actual_channel
+		)
+	// monkestation end
 	else
 		playsound(
 			parent,
 			sound_to_play,
-			volume,
+			volume_override || volume,
 			vary,
 			extra_range,
 			falloff_exponent = falloff_exponent,
@@ -160,8 +176,10 @@
 			ignore_walls = ignore_walls,
 			falloff_distance = falloff_distance,
 			use_reverb = use_reverb,
-			channel = channel, //monkestation edit
-			mixer_channel = channel
+			// monkestation start: volume mixer
+			channel = actual_channel,
+			mixer_channel = actual_channel,
+			// monkestation end
 		)
 
 /// Returns the sound we should now be playing.
@@ -170,7 +188,7 @@
 	if(!each_once)
 		. = play_from
 		while(!isfile(.) && !isnull(.))
-			. = pick_weight(.)
+			. = pick_weight(fill_with_ones(.))
 		return .
 
 
@@ -182,7 +200,7 @@
 		// Tree is a list of lists containign files
 		// If an entry in the tree goes to 0 length, we cut it from the list
 		tree += list(.)
-		. = pick_weight(.)
+		. = pick_weight(fill_with_ones(.))
 
 	if(!isfile(.))
 		return
@@ -217,10 +235,10 @@
 /// A simple proc to change who our parent is set to, also handling registering and unregistering the QDELETING signals on the parent.
 /datum/looping_sound/proc/set_parent(new_parent)
 	if(parent)
-		UnregisterSignal(parent, COMSIG_PARENT_QDELETING)
+		UnregisterSignal(parent, COMSIG_QDELETING)
 	parent = new_parent
 	if(parent)
-		RegisterSignal(parent, COMSIG_PARENT_QDELETING, PROC_REF(handle_parent_del))
+		RegisterSignal(parent, COMSIG_QDELETING, PROC_REF(handle_parent_del))
 
 /// A simple proc that lets us know whether the sounds are currently active or not.
 /datum/looping_sound/proc/is_active()

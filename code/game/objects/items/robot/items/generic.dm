@@ -17,6 +17,7 @@
 	icon_state = "elecarm"
 	/// Cost to use the stun arm
 	var/charge_cost = 1000
+	COOLDOWN_DECLARE(non_charge_cooldown)
 
 /obj/item/borg/stun/attack(mob/living/attacked_mob, mob/living/user)
 	if(ishuman(attacked_mob))
@@ -30,8 +31,16 @@
 			return
 
 	user.do_attack_animation(attacked_mob)
-	attacked_mob.Paralyze(100)
 	attacked_mob.adjust_stutter(10 SECONDS)
+	if(ishuman(user) && !COOLDOWN_FINISHED(src, non_charge_cooldown))
+		attacked_mob.stamina.adjust(-5)
+		attacked_mob.visible_message(span_danger("[user] weakly prods [attacked_mob] with [src]!"), \
+					span_userdanger("[user] weakly prods you with [src]!"))
+		COOLDOWN_START(src, non_charge_cooldown, 3 SECONDS)
+		return
+
+	attacked_mob.stamina.adjust(-100)
+	COOLDOWN_START(src, non_charge_cooldown, 5 SECONDS)
 
 	attacked_mob.visible_message(span_danger("[user] prods [attacked_mob] with [src]!"), \
 					span_userdanger("[user] prods you with [src]!"))
@@ -298,12 +307,13 @@
 	/// Harm alarm cooldown
 	COOLDOWN_DECLARE(alarm_cooldown)
 
-/obj/item/harmalarm/emag_act(mob/user)
+/obj/item/harmalarm/emag_act(mob/user, obj/item/card/emag/emag_card)
 	obj_flags ^= EMAGGED
 	if(obj_flags & EMAGGED)
-		to_chat(user, "<font color='red'>You short out the safeties on [src]!</font>")
+		balloon_alert(user, "safeties shorted")
 	else
-		to_chat(user, "<font color='red'>You reset the safeties on [src]!</font>")
+		balloon_alert(user, "safeties reset")
+	return TRUE
 
 /obj/item/harmalarm/attack_self(mob/user)
 	var/safety = !(obj_flags & EMAGGED)

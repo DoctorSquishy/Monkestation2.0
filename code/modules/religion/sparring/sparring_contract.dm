@@ -39,6 +39,7 @@
 	data["set_area"] = arena?.name
 	data["set_stakes"] = stakes_condition
 	data["possible_areas"] = get_possible_areas()
+	data["stakes_holy_match"] = STAKES_HOLY_MATCH
 
 	return data
 
@@ -83,7 +84,7 @@
 		if(!isnull(resolved))
 			resolved_opponents += resolved
 
-	if(user in resolved_opponents && params["stakes"] == STAKES_HOLY_MATCH)
+	if((user in resolved_opponents) && params["stakes"] == STAKES_HOLY_MATCH)
 		to_chat(user, span_warning("This contract refuses to be signed up for a holy match by a previous holy match loser. Pick a different stake!"))
 
 	//any updating of the terms should update the UI to display new terms

@@ -91,7 +91,7 @@
 	verb_say = "beeps"
 	verb_yell = "blares"
 	pressure_resistance = 15
-	pass_flags_self = PASSMACHINE
+	pass_flags_self = PASSMACHINE | LETPASSCLICKS
 	max_integrity = 200
 	layer = BELOW_OBJ_LAYER //keeps shit coming out of the machine from ending up underneath it.
 	flags_ricochet = RICOCHET_HARD
@@ -180,7 +180,7 @@
 		flags_1 |= PREVENT_CONTENTS_EXPLOSION_1
 	}
 
-	if(HAS_TRAIT(SSstation, STATION_TRAIT_BOTS_GLITCHED))
+	if(HAS_TRAIT(SSstation, STATION_TRAIT_BOTS_GLITCHED) && !SSticker.HasRoundStarted()) // monkestation edit: only glitch roundstart bots
 		randomize_language_if_on_station()
 	SEND_GLOBAL_SIGNAL(COMSIG_GLOB_NEW_MACHINE, src)
 
@@ -188,11 +188,7 @@
 
 /obj/machinery/LateInitialize()
 	. = ..()
-	power_change()
-	if(use_power == NO_POWER_USE)
-		return
-	update_current_power_usage()
-	setup_area_power_relationship()
+	post_machine_initialize()
 
 /obj/machinery/Destroy()
 	GLOB.machines.Remove(src)
@@ -210,6 +206,21 @@
 	QDEL_NULL(circuit)
 	unset_static_power()
 	return ..()
+
+/**
+ * Called in LateInitialize meant to be the machine replacement to it
+ * This sets up power for the machine and requires parent be called,
+ * ensuring power works on all machines unless exempted with NO_POWER_USE.
+ * This is the proc to override if you want to do anything in LateInitialize.
+ */
+/obj/machinery/proc/post_machine_initialize()
+	SHOULD_CALL_PARENT(TRUE)
+	power_change()
+	if(use_power == NO_POWER_USE)
+		return
+	update_current_power_usage()
+	setup_area_power_relationship()
+
 
 /**
  * proc to call when the machine starts to require power after a duration of not requiring power
@@ -290,7 +301,6 @@
 
 /obj/machinery/proc/process_atmos()//If you dont use process why are you here
 	return PROCESS_KILL
-
 
 ///Called when we want to change the value of the machine_stat variable. Holds bitflags.
 /obj/machinery/proc/set_machine_stat(new_value)
@@ -400,6 +410,9 @@
 /obj/machinery/proc/close_machine(atom/movable/target, density_to_set = TRUE)
 	state_open = FALSE
 	set_density(density_to_set)
+	if (!density)
+		update_appearance()
+		return
 	if(!target)
 		for(var/atom in loc)
 			if (!(can_be_occupant(atom)))
@@ -592,13 +605,7 @@
 	if(!isliving(user))
 		return FALSE //no ghosts allowed, sorry
 
-	var/is_dextrous = FALSE
-	if(isanimal(user))
-		var/mob/living/simple_animal/user_as_animal = user
-		if (user_as_animal.dextrous)
-			is_dextrous = TRUE
-
-	if(!issilicon(user) && !is_dextrous && !user.can_hold_items())
+	if(!issilicon(user) && !user.can_hold_items())
 		return FALSE //spiders gtfo
 
 	if(issilicon(user)) // If we are a silicon, make sure the machine allows silicons to interact with it
@@ -745,7 +752,7 @@
 		return
 	update_last_used(user)
 
-/obj/machinery/tool_act(mob/living/user, obj/item/tool, tool_type)
+/obj/machinery/tool_act(mob/living/user, obj/item/tool, tool_type, is_right_clicking)
 	if(SEND_SIGNAL(user, COMSIG_TRY_USE_MACHINE, src) & COMPONENT_CANT_USE_MACHINE_TOOLS)
 		return TOOL_ACT_MELEE_CHAIN_BLOCKING
 	. = ..()
@@ -767,6 +774,7 @@
 /obj/machinery/proc/RefreshParts()
 	SHOULD_CALL_PARENT(TRUE)
 	//reset to baseline
+	/*
 	idle_power_usage = initial(idle_power_usage)
 	active_power_usage = initial(active_power_usage)
 	if(!component_parts || !component_parts.len)
@@ -781,10 +789,13 @@
 
 	idle_power_usage = initial(idle_power_usage) * (1 + parts_energy_rating)
 	active_power_usage = initial(active_power_usage) * (1 + parts_energy_rating)
+	*/
 	update_current_power_usage()
 	SEND_SIGNAL(src, COMSIG_MACHINERY_REFRESH_PARTS)
 
 /obj/machinery/proc/default_pry_open(obj/item/crowbar, close_after_pry = FALSE, open_density = FALSE, closed_density = TRUE)
+	if(ismob(crowbar)) // monkestation edit: make certain issues clearer with an explicit runtime
+		CRASH("The user should not be passed to /obj/machinery/proc/default_pry_open, only the tool being used.")
 	. = !(state_open || panel_open || is_operational || (flags_1 & NODECONSTRUCT_1)) && crowbar.tool_behaviour == TOOL_CROWBAR
 	if(!.)
 		return
@@ -795,6 +806,8 @@
 		close_machine(density_to_set = closed_density)
 
 /obj/machinery/proc/default_deconstruction_crowbar(obj/item/crowbar, ignore_panel = 0, custom_deconstruct = FALSE)
+	if(ismob(crowbar)) // monkestation edit: make certain issues clearer with an explicit runtime
+		CRASH("The user should not be passed to /obj/machinery/proc/default_deconstruction_crowbar, only the tool being used.")
 	. = (panel_open || ignore_panel) && !(flags_1 & NODECONSTRUCT_1) && crowbar.tool_behaviour == TOOL_CROWBAR
 	if(!. || custom_deconstruct)
 		return
@@ -811,12 +824,23 @@
 	spawn_frame(disassembled)
 
 	for(var/part in component_parts)
+		var/area/shipbreak/A = get_area(src)
 		if(istype(part, /datum/stock_part))
 			var/datum/stock_part/datum_part = part
-			new datum_part.physical_object_type(loc)
+			var/obj/item/item = new datum_part.physical_object_type(loc)
+			if(istype(A) && item.get_shipbreaking_reward()) //shipbreaking
+				var/obj/item/reward = item.get_shipbreaking_reward()
+				if(reward)
+					new reward(loc)
+					qdel(item)
 		else
 			var/obj/item/obj_part = part
 			obj_part.forceMove(loc)
+			if(istype(A) && obj_part.get_shipbreaking_reward()) //shipbreaking
+				var/obj/item/reward = obj_part.get_shipbreaking_reward()
+				if(reward)
+					new reward(loc)
+					qdel(obj_part)
 			if(istype(obj_part, /obj/item/circuitboard/machine))
 				var/obj/item/circuitboard/machine/board = obj_part
 				for(var/component in board.req_components) //loop through all stack components and spawn them
@@ -914,46 +938,7 @@
 	wrench.play_tool_sound(src, 50)
 	setDir(turn(dir,-90))
 	to_chat(user, span_notice("You rotate [src]."))
-	return TRUE
-
-/obj/proc/can_be_unfasten_wrench(mob/user, silent) //if we can unwrench this object; returns SUCCESSFUL_UNFASTEN and FAILED_UNFASTEN, which are both TRUE, or CANT_UNFASTEN, which isn't.
-	if(!(isfloorturf(loc) || isindestructiblefloor(loc)) && !anchored)
-		to_chat(user, span_warning("[src] needs to be on the floor to be secured!"))
-		return FAILED_UNFASTEN
-	return SUCCESSFUL_UNFASTEN
-
-/obj/proc/default_unfasten_wrench(mob/user, obj/item/wrench, time = 20) //try to unwrench an object in a WONDERFUL DYNAMIC WAY
-	if((flags_1 & NODECONSTRUCT_1) || wrench.tool_behaviour != TOOL_WRENCH)
-		return CANT_UNFASTEN
-
-	var/turf/ground = get_turf(src)
-	if(!anchored && ground.is_blocked_turf(exclude_mobs = TRUE, source_atom = src))
-		to_chat(user, span_notice("You fail to secure [src]."))
-		return CANT_UNFASTEN
-	var/can_be_unfasten = can_be_unfasten_wrench(user)
-	if(!can_be_unfasten || can_be_unfasten == FAILED_UNFASTEN)
-		return can_be_unfasten
-	if(time)
-		to_chat(user, span_notice("You begin [anchored ? "un" : ""]securing [src]..."))
-	wrench.play_tool_sound(src, 50)
-	var/prev_anchored = anchored
-	//as long as we're the same anchored state and we're either on a floor or are anchored, toggle our anchored state
-	if(!wrench.use_tool(src, user, time, extra_checks = CALLBACK(src, PROC_REF(unfasten_wrench_check), prev_anchored, user)))
-		return FAILED_UNFASTEN
-	if(!anchored && ground.is_blocked_turf(exclude_mobs = TRUE, source_atom = src))
-		to_chat(user, span_notice("You fail to secure [src]."))
-		return CANT_UNFASTEN
-	to_chat(user, span_notice("You [anchored ? "un" : ""]secure [src]."))
-	set_anchored(!anchored)
-	playsound(src, 'sound/items/deconstruct.ogg', 50, TRUE)
-	SEND_SIGNAL(src, COMSIG_OBJ_DEFAULT_UNFASTEN_WRENCH, anchored)
-	return SUCCESSFUL_UNFASTEN
-
-/obj/proc/unfasten_wrench_check(prev_anchored, mob/user) //for the do_after, this checks if unfastening conditions are still valid
-	if(anchored != prev_anchored)
-		return FALSE
-	if(can_be_unfasten_wrench(user, TRUE) != SUCCESSFUL_UNFASTEN) //if we aren't explicitly successful, cancel the fuck out
-		return FALSE
+	SEND_SIGNAL(src, COMSIG_MACHINERY_DEFAULT_ROTATE_WRENCH, user, wrench)
 	return TRUE
 
 /obj/machinery/proc/exchange_parts(mob/user, obj/item/storage/part_replacer/replacer_tool)
@@ -1120,8 +1105,6 @@
 	if(machine_stat & BROKEN)
 		. += span_notice("It looks broken and non-functional.")
 	if(!(resistance_flags & INDESTRUCTIBLE))
-		if(resistance_flags & ON_FIRE)
-			. += span_warning("It's on fire!")
 		var/healthpercent = (atom_integrity/max_integrity) * 100
 		switch(healthpercent)
 			if(50 to 99)

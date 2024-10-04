@@ -86,14 +86,15 @@
 
 	limb._embed_object(weapon) // on the inside... on the inside...
 	weapon.forceMove(victim)
-	RegisterSignals(weapon, list(COMSIG_MOVABLE_MOVED, COMSIG_PARENT_QDELETING), PROC_REF(weaponDeleted))
+	RegisterSignals(weapon, list(COMSIG_MOVABLE_MOVED, COMSIG_QDELETING), PROC_REF(weaponDeleted))
 	victim.visible_message(span_danger("[weapon] [harmful ? "embeds" : "sticks"] itself [harmful ? "in" : "to"] [victim]'s [limb.plaintext_zone]!"), span_userdanger("[weapon] [harmful ? "embeds" : "sticks"] itself [harmful ? "in" : "to"] your [limb.plaintext_zone]!"))
 
 	var/damage = weapon.throwforce
 	if(harmful)
 		victim.throw_alert(ALERT_EMBEDDED_OBJECT, /atom/movable/screen/alert/embeddedobject)
 		playsound(victim,'sound/weapons/bladeslice.ogg', 40)
-		weapon.add_mob_blood(victim)//it embedded itself in you, of course it's bloody!
+		if (limb.can_bleed())
+			weapon.add_mob_blood(victim)//it embedded itself in you, of course it's bloody!
 		damage += weapon.w_class * impact_pain_mult
 		victim.add_mood_event("embedded", /datum/mood_event/embedded)
 
@@ -108,7 +109,7 @@
 		victim.clear_alert(ALERT_EMBEDDED_OBJECT)
 		victim.clear_mood_event("embedded")
 	if(weapon)
-		UnregisterSignal(weapon, list(COMSIG_MOVABLE_MOVED, COMSIG_PARENT_QDELETING))
+		UnregisterSignal(weapon, list(COMSIG_MOVABLE_MOVED, COMSIG_QDELETING))
 	weapon = null
 	limb = null
 	return ..()
@@ -117,11 +118,11 @@
 	RegisterSignal(parent, COMSIG_MOVABLE_MOVED, PROC_REF(jostleCheck))
 	RegisterSignal(parent, COMSIG_CARBON_EMBED_RIP, PROC_REF(ripOut))
 	RegisterSignal(parent, COMSIG_CARBON_EMBED_REMOVAL, PROC_REF(safeRemove))
-	RegisterSignal(parent, COMSIG_PARENT_ATTACKBY, PROC_REF(checkTweeze))
+	RegisterSignal(parent, COMSIG_ATOM_ATTACKBY, PROC_REF(checkTweeze))
 	RegisterSignal(parent, COMSIG_MAGIC_RECALL, PROC_REF(magic_pull))
 
 /datum/component/embedded/UnregisterFromParent()
-	UnregisterSignal(parent, list(COMSIG_MOVABLE_MOVED, COMSIG_CARBON_EMBED_RIP, COMSIG_CARBON_EMBED_REMOVAL, COMSIG_PARENT_ATTACKBY, COMSIG_MAGIC_RECALL))
+	UnregisterSignal(parent, list(COMSIG_MOVABLE_MOVED, COMSIG_CARBON_EMBED_RIP, COMSIG_CARBON_EMBED_REMOVAL, COMSIG_ATOM_ATTACKBY, COMSIG_MAGIC_RECALL))
 
 /datum/component/embedded/process(seconds_per_tick)
 	var/mob/living/carbon/victim = parent
@@ -221,10 +222,10 @@
 
 	var/mob/living/carbon/victim = parent
 	limb._unembed_object(weapon)
-	UnregisterSignal(weapon, list(COMSIG_MOVABLE_MOVED, COMSIG_PARENT_QDELETING)) // have to do it here otherwise we trigger weaponDeleted()
+	UnregisterSignal(weapon, list(COMSIG_MOVABLE_MOVED, COMSIG_QDELETING)) // have to do it here otherwise we trigger weaponDeleted()
 
 	if(!weapon.unembedded()) // if it hasn't deleted itself due to drop del
-		UnregisterSignal(weapon, list(COMSIG_MOVABLE_MOVED, COMSIG_PARENT_QDELETING))
+		UnregisterSignal(weapon, list(COMSIG_MOVABLE_MOVED, COMSIG_QDELETING))
 		if(to_hands)
 			INVOKE_ASYNC(to_hands, TYPE_PROC_REF(/mob, put_in_hands), weapon)
 		else
@@ -303,7 +304,7 @@
 		return
 	var/damage = weapon.w_class * remove_pain_mult
 	limb.receive_damage(brute=(1-pain_stam_pct) * damage * 1.5, sharpness=SHARP_EDGED) // Performs exit wounds and flings the user to the caster if nearby
-	limb.force_wound_upwards(/datum/wound/pierce/moderate)
+	victim.cause_wound_of_type_and_severity(WOUND_PIERCE, limb, WOUND_SEVERITY_MODERATE)
 	victim.stamina.adjust(-pain_stam_pct * damage)
 	playsound(get_turf(victim), 'sound/effects/wounds/blood2.ogg', 50, TRUE)
 

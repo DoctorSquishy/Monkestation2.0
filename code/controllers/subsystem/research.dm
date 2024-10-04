@@ -64,10 +64,24 @@ SUBSYSTEM_DEF(research)
 		/obj/item/assembly/signaler/anomaly/dimensional = MAX_CORES_DIMENSIONAL,
 	)
 
+	///our total xenobiology points
+	var/xenobio_points
 	/// Lookup list for ordnance briefers.
 	var/list/ordnance_experiments = list()
 	/// Lookup list for scipaper partners.
 	var/list/scientific_partners = list()
+
+	var/list/slime_core_prices = list()
+
+	var/static/list/default_core_prices = list(
+		SLIME_VALUE_TIER_1,
+		SLIME_VALUE_TIER_2,
+		SLIME_VALUE_TIER_3,
+		SLIME_VALUE_TIER_4,
+		SLIME_VALUE_TIER_5,
+		SLIME_VALUE_TIER_6,
+		SLIME_VALUE_TIER_7,
+	)
 
 /datum/controller/subsystem/research/Initialize()
 	point_types = TECHWEB_POINT_TYPE_LIST_ASSOCIATIVE_NAMES
@@ -79,6 +93,7 @@ SUBSYSTEM_DEF(research)
 	autosort_categories()
 	error_design = new
 	error_node = new
+	initialize_slime_prices()
 	return SS_INIT_SUCCESS
 
 /datum/controller/subsystem/research/fire()
@@ -91,6 +106,9 @@ SUBSYSTEM_DEF(research)
 				bitcoins = single_server_income.Copy()
 				break //Just need one to work.
 
+		if (techweb_list.nanite_bonus)
+			bitcoins[TECHWEB_POINT_TYPE_GENERIC] += techweb_list.nanite_bonus
+
 		if(!isnull(techweb_list.last_income))
 			var/income_time_difference = world.time - techweb_list.last_income
 			techweb_list.last_bitcoins = bitcoins  // Doesn't take tick drift into account
@@ -99,6 +117,19 @@ SUBSYSTEM_DEF(research)
 			techweb_list.add_point_list(bitcoins)
 
 		techweb_list.last_income = world.time
+
+	for(var/core_type in slime_core_prices)
+		var/obj/item/slime_extract/core = core_type
+		var/price_mod = rand(SLIME_RANDOM_MODIFIER_MIN * 1000000, SLIME_RANDOM_MODIFIER_MAX * 1000000) / 1000000
+		var/price_limiter = 1 - ((default_core_prices[initial(core.tier)] * SLIME_SELL_MINIMUM_MODIFIER) / slime_core_prices[core_type])
+		slime_core_prices[core_type] = (1 + price_mod * price_limiter) * slime_core_prices[core_type]
+
+/datum/controller/subsystem/research/proc/initialize_slime_prices()
+	for(var/core_type in subtypesof(/obj/item/slime_extract))
+		var/obj/item/slime_extract/core = core_type
+		if(!initial(core.tier))
+			continue
+		slime_core_prices[core_type] = default_core_prices[initial(core.tier)]
 
 /datum/controller/subsystem/research/proc/autosort_categories()
 	for(var/i in techweb_nodes)

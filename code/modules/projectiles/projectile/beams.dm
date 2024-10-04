@@ -7,9 +7,9 @@
 	hitsound = 'sound/weapons/sear.ogg'
 	hitsound_wall = 'sound/weapons/effects/searwall.ogg'
 	armor_flag = LASER
-	eyeblur = 2
+	eyeblur = 4 SECONDS
 	impact_effect_type = /obj/effect/temp_visual/impact_effect/red_laser
-	light_system = MOVABLE_LIGHT
+	light_system = OVERLAY_LIGHT
 	light_outer_range = 1
 	light_power = 1
 	light_color = COLOR_SOFT_RED
@@ -46,7 +46,7 @@
 	muzzle_type = /obj/effect/projectile/muzzle/heavy_laser
 	impact_type = /obj/effect/projectile/impact/heavy_laser
 
-/obj/projectile/beam/laser/on_hit(atom/target, blocked = FALSE)
+/obj/projectile/beam/laser/on_hit(atom/target, blocked = 0, pierce_hit)
 	. = ..()
 	if(iscarbon(target))
 		var/mob/living/carbon/M = target
@@ -106,8 +106,6 @@
 	stamina = 45
 	paralyze_timer = 5 SECONDS
 	armor_flag = ENERGY
-	hitsound = 'sound/weapons/tap.ogg'
-	eyeblur = 0
 	impact_effect_type = /obj/effect/temp_visual/impact_effect/blue_laser
 	light_color = LIGHT_COLOR_BLUE
 	tracer_type = /obj/effect/projectile/tracer/disabler
@@ -137,7 +135,7 @@
 	impact_type = /obj/effect/projectile/impact/pulse
 	wound_bonus = 10
 
-/obj/projectile/beam/pulse/on_hit(atom/target, blocked = FALSE)
+/obj/projectile/beam/pulse/on_hit(atom/target, blocked = 0, pierce_hit)
 	. = ..()
 	if (!QDELETED(target) && (isturf(target) || isstructure(target)))
 		if(isobj(target))
@@ -154,7 +152,7 @@
 	projectile_piercing = ALL
 	var/pierce_hits = 2
 
-/obj/projectile/beam/pulse/heavy/on_hit(atom/target, blocked = FALSE)
+/obj/projectile/beam/pulse/heavy/on_hit(atom/target, blocked = 0, pierce_hit)
 	if(pierce_hits <= 0)
 		projectile_piercing = NONE
 	pierce_hits -= 1
@@ -198,7 +196,7 @@
 	impact_effect_type = /obj/effect/temp_visual/impact_effect/blue_laser
 	light_color = LIGHT_COLOR_BLUE
 
-/obj/projectile/beam/lasertag/on_hit(atom/target, blocked = FALSE)
+/obj/projectile/beam/lasertag/on_hit(atom/target, blocked = 0, pierce_hit)
 	. = ..()
 	if(ishuman(target))
 		var/mob/living/carbon/human/M = target
@@ -228,23 +226,6 @@
 /obj/projectile/beam/lasertag/bluetag/hitscan
 	hitscan = TRUE
 
-//a shrink ray that shrinks stuff, which grows back after a short while.
-/obj/projectile/beam/shrink
-	name = "shrink ray"
-	icon_state = "blue_laser"
-	hitsound = 'sound/weapons/shrink_hit.ogg'
-	damage = 0
-	damage_type = STAMINA
-	armor_flag = ENERGY
-	impact_effect_type = /obj/effect/temp_visual/impact_effect/shrink
-	light_color = LIGHT_COLOR_BLUE
-	var/shrink_time = 90
-
-/obj/projectile/beam/shrink/on_hit(atom/target, blocked = FALSE)
-	. = ..()
-	if(isopenturf(target) || isindestructiblewall(target))//shrunk floors wouldnt do anything except look weird, i-walls shouldn't be bypassable
-		return
-	target.AddComponent(/datum/component/shrink, shrink_time)
-
-/obj/projectile/beam/shrink/is_hostile_projectile()
-	return TRUE
+/obj/projectile/magic/shrink/alien
+	antimagic_flags = NONE
+	shrink_time = 9 SECONDS

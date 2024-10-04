@@ -43,6 +43,14 @@
 	var/list/pinned_to = list()
 	/// flags that let the module ability be used in odd circumstances
 	var/allow_flags = NONE
+	/// The suit's supports_variations_flags, currently only for the chestplate and the helmet parts of the MODsuit.
+	var/suit_supports_variations_flags = NONE
+	/// Does this module have a separate head sprite? Useful for muzzled sprites
+	var/has_head_sprite = FALSE
+	/// Is the module's visuals head-only when active? Useful for visors and such, to avoid multiplying the amount of overlay with empty images
+	var/head_only_when_active = FALSE
+	/// Is the module's visuals head-only when inactive? Useful for visors and such, to avoid multiplying the amount of overlay with empty images
+	var/head_only_when_inactive = FALSE
 	/// Timer for the cooldown
 	COOLDOWN_DECLARE(cooldown_timer)
 
@@ -53,13 +61,13 @@
 	if(ispath(device))
 		device = new device(src)
 		ADD_TRAIT(device, TRAIT_NODROP, MOD_TRAIT)
-		RegisterSignal(device, COMSIG_PARENT_QDELETING, PROC_REF(on_device_deletion))
+		RegisterSignal(device, COMSIG_QDELETING, PROC_REF(on_device_deletion))
 		RegisterSignal(src, COMSIG_ATOM_EXITED, PROC_REF(on_exit))
 
 /obj/item/mod/module/Destroy()
 	mod?.uninstall(src)
 	if(device)
-		UnregisterSignal(device, COMSIG_PARENT_QDELETING)
+		UnregisterSignal(device, COMSIG_QDELETING)
 		QDEL_NULL(device)
 	return ..()
 
@@ -329,6 +337,8 @@
 	var/list/accepted_anomalies = list(/obj/item/assembly/signaler/anomaly)
 	/// If this one starts with a core in.
 	var/prebuilt = FALSE
+	/// If the core is removable once socketed.
+	var/core_removable = TRUE
 
 /obj/item/mod/module/anomaly_locked/Initialize(mapload)
 	. = ..()
@@ -347,13 +357,15 @@
 	if(!length(accepted_anomalies))
 		return
 	if(core)
-		. += span_notice("There is a [core.name] installed in it. You could remove it with a <b>screwdriver</b>...")
+		. += span_notice("There is a [core.name] installed in it. [core_removable ? "You could remove it with a <b>screwdriver</b>..." : "Unfortunately, due to a design quirk, it's unremovable."]")
 	else
 		var/list/core_list = list()
 		for(var/path in accepted_anomalies)
 			var/atom/core_path = path
 			core_list += initial(core_path.name)
 		. += span_notice("You need to insert \a [english_list(core_list, and_text = " or ")] for this module to function.")
+		if(!core_removable)
+			. += span_notice("Due to some design quirk, once a core is inserted, it won't be removable.")
 
 /obj/item/mod/module/anomaly_locked/on_select()
 	if(!core)
@@ -390,6 +402,9 @@
 	if(!core)
 		balloon_alert(user, "no core!")
 		return
+	if(!core_removable)
+		balloon_alert(user, "can't remove core!")
+		return
 	balloon_alert(user, "removing core...")
 	if(!do_after(user, 3 SECONDS, target = src))
 		balloon_alert(user, "interrupted!")
@@ -404,3 +419,45 @@
 /obj/item/mod/module/anomaly_locked/update_icon_state()
 	icon_state = initial(icon_state) + (core ? "-core" : "")
 	return ..()
+
+/**
+ * Proc that handles the mutable_appearances of the module on the MODsuits
+ *
+ * Arguments:
+ * * standing - The mutable_appearance we're taking as a reference for this one, mainly to use its layer.
+ * * module_icon_state - The name of the icon_state we'll be using for the module on the MODsuit.
+ */
+/obj/item/mod/module/proc/handle_module_icon(mutable_appearance/standing, module_icon_state)
+	. = list()
+	if(mod.wearer)
+		if(mod.chestplate && (mod.chestplate.supports_variations_flags & CLOTHING_DIGITIGRADE_VARIATION) && (mod.wearer.dna.species.bodytype & BODYTYPE_DIGITIGRADE))
+			suit_supports_variations_flags |= CLOTHING_DIGITIGRADE_VARIATION
+
+		if(mod.helmet && (mod.helmet.supports_variations_flags & CLOTHING_SNOUTED_VARIATION) && (mod.wearer.dna.species.bodytype & BODYTYPE_SNOUTED))
+			suit_supports_variations_flags |= CLOTHING_SNOUTED_VARIATION
+
+	var/icon_to_use = 'icons/mob/clothing/modsuit/mod_modules.dmi'
+	var/icon_state_to_use = module_icon_state
+	var/add_overlay = TRUE
+	if(suit_supports_variations_flags && (supports_variations_flags & CLOTHING_DIGITIGRADE_VARIATION))
+		icon_to_use = 'monkestation/icons/mob/mod.dmi'
+		icon_state_to_use = "[module_icon_state]_digi"
+
+		if((active && head_only_when_active) | (!active && head_only_when_inactive))
+			add_overlay = FALSE
+
+	if(add_overlay)
+		var/mutable_appearance/module_icon = mutable_appearance(icon_to_use, icon_state_to_use, layer = standing.layer + 0.1) // Just changed the raw icon path to icon_to_use and the used_overlay to icon_state_to_use
+		module_icon.appearance_flags |= RESET_COLOR
+		. += module_icon
+
+	if(has_head_sprite)
+		icon_to_use = 'monkestation/icons/mob/mod.dmi'
+		icon_state_to_use = "[module_icon_state]_head"
+
+		if(suit_supports_variations_flags && (supports_variations_flags & CLOTHING_SNOUTED_VARIATION))
+			icon_state_to_use = "[icon_state_to_use]_muzzled"
+
+		var/mutable_appearance/additional_module_icon = mutable_appearance(icon_to_use, icon_state_to_use, layer = standing.layer + 0.1)
+		additional_module_icon.appearance_flags |= RESET_COLOR
+		. += additional_module_icon

@@ -21,7 +21,6 @@
 	// Useful where the integer 0 is the entire message. Use case is enabling to_chat(target, some_boolean) while preventing to_chat(target, "")
 	html = "[html]"
 	text = "[text]"
-
 	if(!target)
 		return
 	if(!html && !text)
@@ -35,23 +34,17 @@
 	if(text) message["text"] = text
 	if(html) message["html"] = html
 	if(avoid_highlighting) message["avoidHighlighting"] = avoid_highlighting
-	var/message_blob = TGUI_CREATE_MESSAGE("chat/message", message)
-	var/message_html = message_to_html(message)
-	if(islist(target))
-		for(var/_target in target)
-			var/client/client = CLIENT_FROM_VAR(_target)
-			if(client)
-				// Send to tgchat
-				client.tgui_panel?.window.send_raw_message(message_blob)
-				// Send to old chat
-				SEND_TEXT(client, message_html)
-		return
-	var/client/client = CLIENT_FROM_VAR(target)
-	if(client)
-		// Send to tgchat
-		client.tgui_panel?.window.send_raw_message(message_blob)
-		// Send to old chat
-		SEND_TEXT(client, message_html)
+
+	//Monkestation Edit: REPLAYS
+	if(!confidential)
+		if(html)
+			SSdemo.write_chat(target, html)
+		else
+			SSdemo.write_chat(target, message)
+	//Monkestation Edit: REPLAYS
+
+	// send it immediately
+	SSchat.send_immediate(target, message)
 
 /**
  * Sends the message to the recipient (target).
@@ -75,7 +68,7 @@
 	confidential = FALSE
 )
 	if(isnull(Master) || !SSchat?.initialized || !MC_RUNNING(SSchat.init_stage))
-		to_chat_immediate(target, html, type, text, avoid_highlighting)
+		to_chat_immediate(target, html, type, text, avoid_highlighting, confidential = confidential)
 		return
 
 	// Useful where the integer 0 is the entire message. Use case is enabling to_chat(target, some_boolean) while preventing to_chat(target, "")
@@ -95,4 +88,11 @@
 	if(text) message["text"] = text
 	if(html) message["html"] = html
 	if(avoid_highlighting) message["avoidHighlighting"] = avoid_highlighting
+
+	if(!confidential) //Monkestation Edit: REPLAYS
+		if(html)
+			SSdemo.write_chat(target, html)
+		else
+			SSdemo.write_chat(target, message) //Monkestation Edit: REPLAYS
+
 	SSchat.queue(target, message)

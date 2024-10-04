@@ -1,6 +1,15 @@
 import { BooleanLike } from 'common/react';
 import { useLocalState, useSharedState } from '../../backend';
-import { Box, Button, Input, Section, Tabs, NoticeBox, Stack } from '../../components';
+import {
+  Box,
+  Button,
+  Input,
+  Section,
+  Tabs,
+  NoticeBox,
+  Stack,
+  Dimmer,
+} from '../../components';
 import type { InfernoNode } from 'inferno';
 
 type GenericUplinkProps = {
@@ -11,23 +20,21 @@ type GenericUplinkProps = {
   handleBuy: (item: Item) => void;
 };
 
-export const GenericUplink = (props: GenericUplinkProps, context) => {
+export const GenericUplink = (props: GenericUplinkProps) => {
   const {
     currency = 'cr',
     categories,
 
     handleBuy,
   } = props;
-  const [searchText, setSearchText] = useLocalState(context, 'searchText', '');
+  const [searchText, setSearchText] = useLocalState('searchText', '');
   const [selectedCategory, setSelectedCategory] = useLocalState(
-    context,
     'category',
-    categories[0]
+    categories[0],
   );
   const [compactMode, setCompactMode] = useSharedState(
-    context,
     'compactModeUplink',
-    false
+    false,
   );
   let items = props.items.filter((value) => {
     if (searchText.length === 0) {
@@ -53,7 +60,8 @@ export const GenericUplink = (props: GenericUplinkProps, context) => {
             onClick={() => setCompactMode(!compactMode)}
           />
         </>
-      }>
+      }
+    >
       <Stack>
         {searchText.length === 0 && (
           <Stack.Item mr={1}>
@@ -62,7 +70,8 @@ export const GenericUplink = (props: GenericUplinkProps, context) => {
                 <Tabs.Tab
                   key={category}
                   selected={category === selectedCategory}
-                  onClick={() => setSelectedCategory(category)}>
+                  onClick={() => setSelectedCategory(category)}
+                >
                   {category}
                 </Tabs.Tab>
               ))}
@@ -95,6 +104,7 @@ export type Item<ItemData = {}> = {
   cost: InfernoNode | string;
   desc: InfernoNode | string;
   disabled: BooleanLike;
+  is_locked: BooleanLike;
   extraData?: ItemData;
 };
 
@@ -105,23 +115,40 @@ export type ItemListProps = {
   handleBuy: (item: Item) => void;
 };
 
-const ItemList = (props: ItemListProps, context: any) => {
+const ItemList = (props: ItemListProps) => {
   const { compactMode, items, handleBuy } = props;
   return (
     <Stack vertical>
       {items.map((item, index) => (
         <Stack.Item key={index}>
-          <Section
-            key={item.name}
-            title={item.name}
-            buttons={
-              <Button
-                content={item.cost}
-                disabled={item.disabled}
-                onClick={(e) => handleBuy(item)}
-              />
-            }>
-            {compactMode ? null : item.desc}
+          <Section>
+            <Section
+              key={item.name}
+              title={item.name}
+              buttons={
+                <Button
+                  content={item.cost}
+                  disabled={item.disabled}
+                  onClick={(e) => handleBuy(item)}
+                />
+              }
+            >
+              {compactMode ? null : item.desc}
+            </Section>
+            {(item.is_locked && (
+              <Dimmer>
+                <Box
+                  color="red"
+                  fontFamily={'Bahnschrift'}
+                  fontSize={2}
+                  align={'top'}
+                  as="span"
+                >
+                  ENTRY LOCKED
+                </Box>
+              </Dimmer>
+            )) ||
+              null}
           </Section>
         </Stack.Item>
       ))}

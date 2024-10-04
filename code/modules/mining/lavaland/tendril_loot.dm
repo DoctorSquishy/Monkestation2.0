@@ -38,28 +38,28 @@
 	name = "Kinetic Accelerator Offensive Mining Explosion Mod"
 	desc = "A device which causes kinetic accelerators to fire AoE blasts that destroy rock and damage creatures."
 	id = "hyperaoemod"
-	materials = list(/datum/material/iron = 7000, /datum/material/glass = 3000, /datum/material/silver = 3000, /datum/material/gold = 3000, /datum/material/diamond = 4000)
+	materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT*3.5, /datum/material/glass = SHEET_MATERIAL_AMOUNT*1.5, /datum/material/silver =SHEET_MATERIAL_AMOUNT*1.5, /datum/material/gold =SHEET_MATERIAL_AMOUNT*1.5, /datum/material/diamond = SHEET_MATERIAL_AMOUNT*2)
 	build_path = /obj/item/borg/upgrade/modkit/aoe/turfs/andmobs
 
 /datum/design/unique_modkit/rapid_repeater
 	name = "Kinetic Accelerator Rapid Repeater Mod"
 	desc = "A device which greatly reduces a kinetic accelerator's cooldown on striking a living target or rock, but greatly increases its base cooldown."
 	id = "repeatermod"
-	materials = list(/datum/material/iron = 5000, /datum/material/glass = 5000, /datum/material/uranium = 8000, /datum/material/bluespace = 2000)
+	materials = list(/datum/material/iron =HALF_SHEET_MATERIAL_AMOUNT * 5, /datum/material/glass =SHEET_MATERIAL_AMOUNT * 2.5, /datum/material/uranium = SHEET_MATERIAL_AMOUNT*4, /datum/material/bluespace =SHEET_MATERIAL_AMOUNT)
 	build_path = /obj/item/borg/upgrade/modkit/cooldown/repeater
 
 /datum/design/unique_modkit/resonator_blast
 	name = "Kinetic Accelerator Resonator Blast Mod"
 	desc = "A device which causes kinetic accelerators to fire shots that leave and detonate resonator blasts."
 	id = "resonatormod"
-	materials = list(/datum/material/iron = 5000, /datum/material/glass = 5000, /datum/material/silver = 5000, /datum/material/uranium = 5000)
+	materials = list(/datum/material/iron =HALF_SHEET_MATERIAL_AMOUNT*5, /datum/material/glass =HALF_SHEET_MATERIAL_AMOUNT*5, /datum/material/silver =HALF_SHEET_MATERIAL_AMOUNT*5, /datum/material/uranium =SHEET_MATERIAL_AMOUNT * 2.5)
 	build_path = /obj/item/borg/upgrade/modkit/resonator_blasts
 
 /datum/design/unique_modkit/bounty
 	name = "Kinetic Accelerator Death Syphon Mod"
 	desc = "A device which causes kinetic accelerators to permanently gain damage against creature types killed with it."
 	id = "bountymod"
-	materials = list(/datum/material/iron = 4000, /datum/material/silver = 4000, /datum/material/gold = 4000, /datum/material/bluespace = 4000)
+	materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT*2, /datum/material/silver = SHEET_MATERIAL_AMOUNT*2, /datum/material/gold = SHEET_MATERIAL_AMOUNT*2, /datum/material/bluespace = SHEET_MATERIAL_AMOUNT*2)
 	reagents_list = list(/datum/reagent/blood = 40)
 	build_path = /obj/item/borg/upgrade/modkit/bounty
 
@@ -106,22 +106,25 @@
 		return
 	var/failText = span_warning("The snake seems unsatisfied with your incomplete oath and returns to its previous place on the rod, returning to its dormant, wooden state. You must stand still while completing your oath!")
 	to_chat(itemUser, span_notice("The wooden snake that was carved into the rod seems to suddenly come alive and begins to slither down your arm! The compulsion to help others grows abnormally strong..."))
-	if(do_after(itemUser, 40, target = itemUser))
+	//The "iscarbon" is to prevent telekinetic grabs using the rod.
+	//If we don't do this, we create a memory leak if someone uses telekinetic grab on the rod and binds it.
+	//For consistency (and the safety - we want to prevent this at all costs), we do this on each step.
+	if(do_after(itemUser, 40, target = itemUser) && iscarbon(src.loc))
 		itemUser.say("I swear to fulfill, to the best of my ability and judgment, this covenant:", forced = "hippocratic oath")
 	else
 		to_chat(itemUser, failText)
 		return
-	if(do_after(itemUser, 20, target = itemUser))
+	if(do_after(itemUser, 20, target = itemUser) && iscarbon(src.loc))
 		itemUser.say("I will apply, for the benefit of the sick, all measures that are required, avoiding those twin traps of overtreatment and therapeutic nihilism.", forced = "hippocratic oath")
 	else
 		to_chat(itemUser, failText)
 		return
-	if(do_after(itemUser, 30, target = itemUser))
+	if(do_after(itemUser, 30, target = itemUser) && iscarbon(src.loc))
 		itemUser.say("I will remember that I remain a member of society, with special obligations to all my fellow human beings, those sound of mind and body as well as the infirm.", forced = "hippocratic oath")
 	else
 		to_chat(itemUser, failText)
 		return
-	if(do_after(itemUser, 30, target = itemUser))
+	if(do_after(itemUser, 30, target = itemUser) && iscarbon(src.loc))
 		itemUser.say("If I do not violate this oath, may I enjoy life and art, respected while I live and remembered with affection thereafter. May I always act so as to preserve the finest traditions of my calling and may I long experience the joy of healing those who seek my help.", forced = "hippocratic oath")
 	else
 		to_chat(itemUser, failText)
@@ -198,14 +201,14 @@
 				continue
 			regurgitate_guardian(guardian)
 
-/obj/item/clothing/neck/necklace/memento_mori/proc/consume_guardian(mob/living/simple_animal/hostile/guardian/guardian)
+/obj/item/clothing/neck/necklace/memento_mori/proc/consume_guardian(mob/living/basic/guardian/guardian)
 	new /obj/effect/temp_visual/guardian/phase/out(get_turf(guardian))
 	guardian.locked = TRUE
 	guardian.forceMove(src)
 	to_chat(guardian, span_userdanger("You have been locked away in your summoner's pendant!"))
 	guardian.playsound_local(get_turf(guardian), 'sound/magic/summonitems_generic.ogg', 50, TRUE)
 
-/obj/item/clothing/neck/necklace/memento_mori/proc/regurgitate_guardian(mob/living/simple_animal/hostile/guardian/guardian)
+/obj/item/clothing/neck/necklace/memento_mori/proc/regurgitate_guardian(mob/living/basic/guardian/guardian)
 	guardian.locked = FALSE
 	guardian.recall(forced = TRUE)
 	to_chat(guardian, span_notice("You have been returned back from your summoner's pendant!"))
@@ -272,7 +275,7 @@
 	desc = "Happy to light your way."
 	icon = 'icons/obj/lighting.dmi'
 	icon_state = "orb"
-	light_system = MOVABLE_LIGHT
+	light_system = OVERLAY_LIGHT
 	light_outer_range = 7
 	light_flags = LIGHT_ATTACHED
 	layer = ABOVE_ALL_MOB_LAYER
@@ -421,7 +424,7 @@
 		return
 
 	user.status_flags &= ~GODMODE
-	user.notransform = FALSE
+	REMOVE_TRAIT(user, TRAIT_NO_TRANSFORM, REF(src))
 	user.forceMove(get_turf(src))
 	user.visible_message(span_danger("[user] pops back into reality!"))
 
@@ -432,7 +435,7 @@
 	setDir(user.dir)
 
 	user.forceMove(src)
-	user.notransform = TRUE
+	ADD_TRAIT(user, TRAIT_NO_TRANSFORM, REF(src))
 	user.status_flags |= GODMODE
 
 	user_ref = WEAKREF(user)
@@ -446,8 +449,8 @@
 	return
 
 /obj/effect/immortality_talisman/relaymove(mob/living/user, direction)
-	// Won't really come into play since our mob has notransform and cannot move,
-	// but regardless block all relayed moves, becuase no, you cannot move in the void.
+	// Won't really come into play since our mob has TRAIT_NO_TRANSFORM and cannot move,
+	// but regardless block all relayed moves, because no, you cannot move in the void.
 	return
 
 /obj/effect/immortality_talisman/singularity_pull()
@@ -892,18 +895,19 @@
 	name = "Scan Target"
 	desc = "Contact may or may not be close."
 
-/obj/item/organ/internal/cyberimp/arm/katana
+/obj/item/organ/internal/cyberimp/arm/item_set/katana
 	name = "dark shard"
 	desc = "An eerie metal shard surrounded by dark energies."
 	icon = 'icons/obj/lavaland/artefacts.dmi'
 	icon_state = "cursed_katana_organ"
 	status = ORGAN_ORGANIC
+	encode_info = AUGMENT_NO_REQ
 	organ_flags = ORGAN_FROZEN|ORGAN_UNREMOVABLE
 	items_to_create = list(/obj/item/cursed_katana)
 	extend_sound = 'sound/items/unsheath.ogg'
 	retract_sound = 'sound/items/sheath.ogg'
 
-/obj/item/organ/internal/cyberimp/arm/katana/attack_self(mob/user, modifiers)
+/obj/item/organ/internal/cyberimp/arm/item_set/katana/attack_self(mob/user, modifiers)
 	. = ..()
 	to_chat(user, span_userdanger("The mass goes up your arm and goes inside it!"))
 	playsound(user, 'sound/magic/demon_consume.ogg', 50, TRUE)
@@ -913,10 +917,10 @@
 	user.temporarilyRemoveItemFromInventory(src, TRUE)
 	Insert(user)
 
-/obj/item/organ/internal/cyberimp/arm/katana/screwdriver_act(mob/living/user, obj/item/screwtool)
+/obj/item/organ/internal/cyberimp/arm/item_set/katana/screwdriver_act(mob/living/user, obj/item/screwtool)
 	return
 
-/obj/item/organ/internal/cyberimp/arm/katana/Retract()
+/obj/item/organ/internal/cyberimp/arm/item_set/katana/Retract()
 	var/obj/item/cursed_katana/katana = active_item
 	if(!katana || katana.shattered)
 		return FALSE
@@ -948,6 +952,7 @@
 	force = 15
 	armour_penetration = 30
 	block_chance = 30
+	block_sound = 'sound/weapons/parry.ogg'
 	sharpness = SHARP_EDGED
 	w_class = WEIGHT_CLASS_HUGE
 	attack_verb_continuous = list("attacks", "slashes", "stabs", "slices", "tears", "lacerates", "rips", "dices", "cuts")

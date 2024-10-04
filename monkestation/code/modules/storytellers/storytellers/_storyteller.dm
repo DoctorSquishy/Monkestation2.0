@@ -40,8 +40,8 @@
 	/// Whether the storyteller has the distributions disabled. Important for ghost storytellers
 	var/disable_distribution = FALSE
 
-	/// Whether people can vote for the storyteller
-	var/votable = TRUE
+	/// Whether a storyteller is pickable/can be voted for
+	var/restricted = FALSE
 	/// If defined, will need a minimum of population to be votable
 	var/population_min
 	/// If defined, it will not be votable if exceeding the population
@@ -54,14 +54,26 @@
 	var/roundstart_prob = 25
 	///do we ignore ran_roundstart
 	var/ignores_roundstart = FALSE
+	///is a storyteller always able to be voted for(also does not count for the amount of storytellers to pick from)
+	var/always_votable = FALSE
+	///weight this has of being picked for random storyteller/showing up in the vote if not always_votable
+	var/weight = 0
 
 /datum/storyteller/process(delta_time)
-	if(!round_started) // we are differing roundstarted ones until base roundstart so we can get cooler stuff
+	if(!round_started || disable_distribution) // we are differing roundstarted ones until base roundstart so we can get cooler stuff
 		return
-	if(disable_distribution)
-		return
+
 	if(!guarantees_roundstart_roleset && prob(roundstart_prob) && !roundstart_checks)
 		roundstart_checks = TRUE
+
+	if(SSgamemode.current_roundstart_event && !SSgamemode.ran_roundstart && (guarantees_roundstart_roleset || roundstart_checks))
+		buy_event(SSgamemode.current_roundstart_event, EVENT_TRACK_ROLESET, TRUE)
+		if(EVENT_TRACK_ROLESET in SSgamemode.forced_next_events)
+			SSgamemode.forced_next_events[EVENT_TRACK_ROLESET] = null
+			SSgamemode.forced_next_events -= EVENT_TRACK_ROLESET
+
+		log_storyteller("Running SSgamemode.current_roundstart_event\[[SSgamemode.current_roundstart_event]\]")
+		SSgamemode.current_roundstart_event = null
 		if(!ignores_roundstart)
 			SSgamemode.ran_roundstart = TRUE
 
@@ -110,7 +122,7 @@
 		var/list/valid_events = list()
 		// Determine which events are valid to pick
 		for(var/datum/round_event_control/event as anything in mode.event_pools[track])
-			var/players_amt = get_active_player_count(alive_check = 1, afk_check = 1, human_check = 1)
+			var/players_amt = get_active_player_count(alive_check = TRUE, afk_check = TRUE, human_check = TRUE)
 			if(event.can_spawn_event(players_amt))
 				if(QDELETED(event))
 					message_admins("[event.name] was deleted!")
@@ -145,12 +157,11 @@
 	var/total_cost = bought_event.cost * mode.point_thresholds[track]
 	if(!bought_event.roundstart)
 		total_cost *= (1 + (rand(-cost_variance, cost_variance)/100)) //Apply cost variance if not roundstart event
-	mode.event_track_points[track] -= total_cost
+	mode.event_track_points[track] = max(mode.event_track_points[track] - total_cost, 0)
 	message_admins("Storyteller purchased and triggered [bought_event] event, on [track] track, for [total_cost] cost.")
 	if(bought_event.roundstart)
 		if(!ignores_roundstart)
 			SSgamemode.ran_roundstart = TRUE
-		SSgamemode.current_roundstart_event = bought_event
 		mode.TriggerEvent(bought_event, forced)
 	else
 		mode.schedule_event(bought_event, 3 MINUTES, total_cost, _forced = forced)
@@ -177,3 +188,5 @@
 /datum/storyteller/guide
 	name = "The Guide"
 	desc = "The Guide will provide a balanced and varied experience. Consider this the default experience."
+	weight = 6
+	always_votable = TRUE

@@ -1,6 +1,6 @@
 /obj/effect/decal/cleanable
 	gender = PLURAL
-	layer = ABOVE_NORMAL_TURF_LAYER
+	layer = FLOOR_CLEAN_LAYER
 	var/list/random_icon_states = null
 	///I'm sorry but cleanable/blood code is ass, and so is blood_DNA
 	var/blood_state = ""
@@ -15,6 +15,8 @@
 	var/datum/reagent/decal_reagent
 	///The amount of reagent this decal holds, if decal_reagent is defined
 	var/reagent_amount = 0
+
+	var/list/diseases = list()
 
 /obj/effect/decal/cleanable/Initialize(mapload, list/datum/disease/diseases)
 	. = ..()
@@ -31,12 +33,16 @@
 					return INITIALIZE_HINT_QDEL
 
 	if(LAZYLEN(diseases))
+
 		var/list/datum/disease/diseases_to_add = list()
 		for(var/datum/disease/D in diseases)
-			if(D.spread_flags & DISEASE_SPREAD_CONTACT_FLUIDS)
+			if(D.spread_flags & (DISEASE_SPREAD_CONTACT_FLUIDS))
 				diseases_to_add += D
 		if(LAZYLEN(diseases_to_add))
 			AddComponent(/datum/component/infective, diseases_to_add)
+		for(var/datum/disease/D in diseases)
+			if(D.spread_flags & (DISEASE_SPREAD_BLOOD))
+				src.diseases |= D
 
 	AddElement(/datum/element/beauty, beauty)
 
@@ -76,16 +82,14 @@
 	if(W.get_temperature()) //todo: make heating a reagent holder proc
 		if(istype(W, /obj/item/clothing/mask/cigarette))
 			return
-		else
-			var/hotness = W.get_temperature()
-			reagents.expose_temperature(hotness)
-			to_chat(user, span_notice("You heat [name] with [W]!"))
+		var/hotness = W.get_temperature()
+		reagents?.expose_temperature(hotness)
+		to_chat(user, span_notice("You heat [name] with [W]!"))
 	else
 		return ..()
 
 /obj/effect/decal/cleanable/fire_act(exposed_temperature, exposed_volume)
-	if(reagents)
-		reagents.expose_temperature(exposed_temperature)
+	reagents?.expose_temperature(exposed_temperature)
 	..()
 
 

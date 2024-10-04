@@ -13,6 +13,7 @@
 	var/drydesc = "Looks like it's been here a while. Eew." //as above
 	var/drytime = 0
 	var/count = 0
+	var/footprint_sprite = null
 
 /obj/effect/decal/cleanable/blood/Initialize(mapload)
 	. = ..()
@@ -232,7 +233,7 @@
 	name = "footprints"
 	desc = "WHOSE FOOTPRINTS ARE THESE?"
 	icon = 'icons/effects/footprints.dmi'
-	icon_state = "blood1"
+	icon_state = "blood_shoes_enter"
 	random_icon_states = null
 	blood_state = BLOOD_STATE_HUMAN //the icon state to load images from
 	var/entered_dirs = 0
@@ -247,12 +248,13 @@
 	dryname = "dried footprints"
 	drydesc = "HMM... SOMEONE WAS HERE!"
 
-/obj/effect/decal/cleanable/blood/footprints/Initialize(mapload)
+/obj/effect/decal/cleanable/blood/footprints/Initialize(mapload, footprint_sprite)
+	src.footprint_sprite = footprint_sprite
 	. = ..()
 	icon_state = "" //All of the footprint visuals come from overlays
 	if(mapload)
 		entered_dirs |= dir //Keep the same appearance as in the map editor
-		update_appearance()
+	update_appearance(mapload ? (ALL) : (UPDATE_NAME | UPDATE_DESC))
 
 //Rotate all of the footprint directions too
 /obj/effect/decal/cleanable/blood/footprints/setDir(newdir)
@@ -274,6 +276,21 @@
 	update_appearance()
 	return ..()
 
+/obj/effect/decal/cleanable/blood/footprints/update_name(updates)
+	switch(footprint_sprite)
+		if(FOOTPRINT_SPRITE_CLAWS)
+			name = "clawprints"
+		if(FOOTPRINT_SPRITE_SHOES)
+			name = "footprints"
+		if(FOOTPRINT_SPRITE_PAWS)
+			name = "pawprints"
+	dryname = "dried [name]"
+	return ..()
+
+/obj/effect/decal/cleanable/blood/footprints/update_desc(updates)
+	desc = "WHOSE [uppertext(name)] ARE THESE?"
+	return ..()
+
 /obj/effect/decal/cleanable/blood/footprints/update_icon()
 	. = ..()
 	alpha = min(BLOODY_FOOTPRINT_BASE_ALPHA + (255 - BLOODY_FOOTPRINT_BASE_ALPHA) * bloodiness / (BLOOD_ITEM_MAX / 2), 255)
@@ -288,22 +305,22 @@ GLOBAL_LIST_EMPTY(bloody_footprints_cache)
 	. = ..()
 	for(var/Ddir in GLOB.cardinals)
 		if(entered_dirs & Ddir)
-			var/image/bloodstep_overlay = GLOB.bloody_footprints_cache["entered-[blood_state]-[Ddir]"]
+			var/image/bloodstep_overlay = GLOB.bloody_footprints_cache["entered-[footprint_sprite]-[blood_state]-[Ddir]"]
 			if(!bloodstep_overlay)
-				GLOB.bloody_footprints_cache["entered-[blood_state]-[Ddir]"] = bloodstep_overlay = image(icon, "[blood_state]1", dir = Ddir)
+				GLOB.bloody_footprints_cache["entered-[footprint_sprite]-[blood_state]-[Ddir]"] = bloodstep_overlay = image(icon, "[blood_state]_[footprint_sprite]_enter", dir = Ddir)
 			. += bloodstep_overlay
 
 		if(exited_dirs & Ddir)
-			var/image/bloodstep_overlay = GLOB.bloody_footprints_cache["exited-[blood_state]-[Ddir]"]
+			var/image/bloodstep_overlay = GLOB.bloody_footprints_cache["exited-[footprint_sprite]-[blood_state]-[Ddir]"]
 			if(!bloodstep_overlay)
-				GLOB.bloody_footprints_cache["exited-[blood_state]-[Ddir]"] = bloodstep_overlay = image(icon, "[blood_state]2", dir = Ddir)
+				GLOB.bloody_footprints_cache["exited-[footprint_sprite]-[blood_state]-[Ddir]"] = bloodstep_overlay = image(icon, "[blood_state]_[footprint_sprite]_exit", dir = Ddir)
 			. += bloodstep_overlay
 
 
 /obj/effect/decal/cleanable/blood/footprints/examine(mob/user)
 	. = ..()
 	if((shoe_types.len + species_types.len) > 0)
-		. += "You recognise the footprints as belonging to:"
+		. += "You recognise the [name] as belonging to:"
 		for(var/sole in shoe_types)
 			var/obj/item/clothing/item = sole
 			var/article = initial(item.gender) == PLURAL ? "Some" : "A"
@@ -313,14 +330,18 @@ GLOBAL_LIST_EMPTY(bloody_footprints_cache)
 			if(species == "unknown")
 				. += "Some <B>feet</B>."
 			else if(species == SPECIES_MONKEY)
-				. += "[icon2html('icons/mob/species/human/human.dmi', user, "monkey")] Some <B>monkey feet</B>."
+				. += "[icon2html('icons/mob/species/human/human.dmi', user, "monkey")] Some <B>monkey paws</B>."
+			else if(species == SPECIES_SIMIAN)
+				. += "[icon2html('monkestation/icons/mob/species/simian/bodyparts.dmi', user, "simian_l_leg")] Some <B>simian paws</B>."
+			else if(species == SPECIES_LIZARD)
+				. += "[icon2html('icons/mob/species/lizard/bodyparts.dmi', user, "digitigrade_l_leg")] Some <B>lizard claws</B>."
 			else if(species == SPECIES_HUMAN)
 				. += "[icon2html('icons/mob/species/human/bodyparts.dmi', user, "default_human_l_leg")] Some <B>human feet</B>."
 			else
 				. += "[icon2html('icons/mob/species/human/bodyparts.dmi', user, "[species]_l_leg")] Some <B>[species] feet</B>."
 
-/obj/effect/decal/cleanable/blood/footprints/replace_decal(obj/effect/decal/cleanable/C)
-	if(blood_state != C.blood_state) //We only replace footprints of the same type as us
+/obj/effect/decal/cleanable/blood/footprints/replace_decal(obj/effect/decal/cleanable/blood/blood_decal)
+	if(blood_state != blood_decal.blood_state || footprint_sprite != blood_decal.footprint_sprite) //We only replace footprints of the same type as us
 		return FALSE
 	return ..()
 
@@ -344,6 +365,8 @@ GLOBAL_LIST_EMPTY(bloody_footprints_cache)
 	var/splatter_strength = 3
 	/// Insurance so that we don't keep moving once we hit a stoppoint
 	var/hit_endpoint = FALSE
+	/// Type of squirt decals we should try to create when moving
+	var/line_type = /obj/effect/decal/cleanable/blood/line
 
 /obj/effect/decal/cleanable/blood/hitsplatter/Initialize(mapload, splatter_strength)
 	. = ..()
@@ -364,7 +387,7 @@ GLOBAL_LIST_EMPTY(bloody_footprints_cache)
 	var/datum/move_loop/loop = SSmove_manager.move_towards(src, target_turf, delay, timeout = delay * range, priority = MOVEMENT_ABOVE_SPACE_PRIORITY, flags = MOVEMENT_LOOP_START_FAST)
 	RegisterSignal(loop, COMSIG_MOVELOOP_PREPROCESS_CHECK, PROC_REF(pre_move))
 	RegisterSignal(loop, COMSIG_MOVELOOP_POSTPROCESS, PROC_REF(post_move))
-	RegisterSignal(loop, COMSIG_PARENT_QDELETING, PROC_REF(loop_done))
+	RegisterSignal(loop, COMSIG_QDELETING, PROC_REF(loop_done))
 
 /obj/effect/decal/cleanable/blood/hitsplatter/proc/pre_move(datum/move_loop/source)
 	SIGNAL_HANDLER
@@ -392,6 +415,17 @@ GLOBAL_LIST_EMPTY(bloody_footprints_cache)
 			splatter_strength--
 	if(splatter_strength <= 0) // we used all the puff so we delete it.
 		qdel(src)
+		return
+	if(line_type && isturf(loc))
+		var/obj/effect/decal/cleanable/line = locate(line_type) in loc
+		if(line)
+			line.add_blood_DNA(blood_dna_info)
+		else
+			line = new line_type(loc, get_dir(prev_loc, loc))
+			line.add_blood_DNA(blood_dna_info)
+			line.alpha = 0
+			animate(line, alpha = initial(line.alpha), time = 2)
+
 
 /obj/effect/decal/cleanable/blood/hitsplatter/proc/loop_done(datum/source)
 	SIGNAL_HANDLER
@@ -433,3 +467,4 @@ GLOBAL_LIST_EMPTY(bloody_footprints_cache)
 	the_window.vis_contents += final_splatter
 	the_window.bloodied = TRUE
 	qdel(src)
+

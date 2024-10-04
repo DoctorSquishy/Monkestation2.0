@@ -188,7 +188,7 @@
 				return FALSE
 			//I'd have this done inside the signal, but that'd have to be asynced,
 			//while we want the UI to be updated after the color is chosen, not before.
-			var/chosen_color = input(user, "Pick new color", painting_implement, params["old_color"]) as color|null
+			var/chosen_color = tgui_color_picker(user, "Pick new color", painting_implement, params["old_color"])
 			if(!chosen_color || IS_DEAD_OR_INCAP(user) || !user.is_holding(painting_implement))
 				return FALSE
 			SEND_SIGNAL(painting_implement, COMSIG_PAINTING_TOOL_PALETTE_COLOR_CHANGED, chosen_color, params["color_index"])
@@ -449,7 +449,7 @@
 	name = "painting frame"
 	desc = "The perfect showcase for your favorite deathtrap memories."
 	icon = 'icons/obj/signs.dmi'
-	custom_materials = list(/datum/material/wood = 2000)
+	custom_materials = list(/datum/material/wood =SHEET_MATERIAL_AMOUNT)
 	resistance_flags = FLAMMABLE
 	flags_1 = NONE
 	icon_state = "frame-empty"
@@ -462,7 +462,7 @@
 	icon = 'icons/obj/signs.dmi'
 	icon_state = "frame-empty"
 	base_icon_state = "frame"
-	custom_materials = list(/datum/material/wood = 2000)
+	custom_materials = list(/datum/material/wood =SHEET_MATERIAL_AMOUNT)
 	resistance_flags = FLAMMABLE
 	buildable_sign = FALSE
 	///Canvas we're currently displaying.
@@ -643,7 +643,7 @@
 /obj/item/wallframe/painting/large
 	name = "large painting frame"
 	desc = "The perfect showcase for your favorite deathtrap memories. Make sure you have enough space to mount this one to the wall."
-	custom_materials = list(/datum/material/wood = 4000)
+	custom_materials = list(/datum/material/wood = SHEET_MATERIAL_AMOUNT*2)
 	icon_state = "frame-large-empty"
 	result_path = /obj/structure/sign/painting/large
 	pixel_shift = 0 //See [/obj/structure/sign/painting/large/proc/finalize_size]
@@ -670,7 +670,7 @@
 
 /obj/structure/sign/painting/large
 	icon = 'icons/obj/art/artstuff_64x64.dmi'
-	custom_materials = list(/datum/material/wood = 4000)
+	custom_materials = list(/datum/material/wood = SHEET_MATERIAL_AMOUNT*2)
 	accepted_canvas_types = list(
 		/obj/item/canvas/thirtysix_twentyfour,
 		/obj/item/canvas/fortyfive_twentyseven,

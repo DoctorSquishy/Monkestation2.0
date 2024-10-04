@@ -53,12 +53,14 @@
 	duration = 8 SECONDS
 	alert_type = /atom/movable/screen/alert/status_effect/realignment
 	tick_interval = 0.2 SECONDS
+	show_duration = TRUE
 
 /datum/status_effect/realignment/get_examine_text()
 	return span_notice("[owner.p_theyre(TRUE)] glowing a soft white.")
 
 /datum/status_effect/realignment/on_apply()
 	ADD_TRAIT(owner, TRAIT_PACIFISM, id)
+	ADD_TRAIT(owner, TRAIT_CANT_STAMCRIT, id)
 	owner.add_filter(id, 2, list("type" = "outline", "color" = "#d6e3e7", "size" = 2))
 	var/filter = owner.get_filter(id)
 	animate(filter, alpha = 127, time = 1 SECONDS, loop = -1)
@@ -67,10 +69,11 @@
 
 /datum/status_effect/realignment/on_remove()
 	REMOVE_TRAIT(owner, TRAIT_PACIFISM, id)
+	REMOVE_TRAIT(owner, TRAIT_CANT_STAMCRIT, id)
 	owner.remove_filter(id)
 
 /datum/status_effect/realignment/tick(seconds_per_tick, times_fired)
-	owner.stamina.adjust(5)
+	owner.stamina.adjust(15, TRUE)
 	owner.AdjustAllImmobility(-0.5 SECONDS)
 
 /atom/movable/screen/alert/status_effect/realignment

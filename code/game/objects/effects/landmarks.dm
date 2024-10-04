@@ -33,6 +33,7 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark)
 	var/jobspawn_override = FALSE
 	var/delete_after_roundstart = TRUE
 	var/used = FALSE
+	var/required_jobtitle
 
 /obj/effect/landmark/start/proc/after_round_start()
 	if(delete_after_roundstart)
@@ -76,7 +77,7 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark)
 
 /obj/effect/landmark/start/bitrunner
 	name = "Bitrunner"
-	icon_state = "x3"
+	icon_state = "Bitrunner"
 
 /obj/effect/landmark/start/bartender
 	name = "Bartender"
@@ -183,7 +184,7 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark)
 	icon_state = "Chief Medical Officer"
 
 /obj/effect/landmark/start/virologist
-	name = "Virologist"
+	name = "Pathologist"
 	icon_state = "Virologist"
 
 /obj/effect/landmark/start/psychologist

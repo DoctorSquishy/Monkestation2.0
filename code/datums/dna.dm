@@ -362,20 +362,21 @@ GLOBAL_LIST_INIT(total_uf_len_by_block, populate_total_uf_len_by_block())
 			set_uni_feature_block(blocknumber, construct_block(GLOB.pod_hair_list.Find(features["pod_hair"]), GLOB.pod_hair_list.len))
 
 //Please use add_mutation or activate_mutation instead
-/datum/dna/proc/force_give(datum/mutation/human/HM)
-	if(holder && HM)
-		if(HM.class == MUT_NORMAL)
-			set_se(1, HM)
-		. = HM.on_acquiring(holder)
+/datum/dna/proc/force_give(datum/mutation/human/human_mutation)
+	if(holder && human_mutation)
+		if(human_mutation.class == MUT_NORMAL)
+			set_se(1, human_mutation)
+		. = human_mutation.on_acquiring(holder)
 		if(.)
-			qdel(HM)
+			qdel(human_mutation)
 		update_instability()
 
 //Use remove_mutation instead
-/datum/dna/proc/force_lose(datum/mutation/human/HM)
-	if(holder && (HM in mutations))
-		set_se(0, HM)
-		. = HM.on_losing(holder)
+/datum/dna/proc/force_lose(datum/mutation/human/human_mutation)
+	if(holder && (human_mutation in mutations))
+		set_se(0, human_mutation)
+		. = human_mutation.on_losing(holder)
+		qdel(human_mutation) // qdel mutations on removal
 		update_instability(FALSE)
 		return
 
@@ -506,10 +507,12 @@ GLOBAL_LIST_INIT(total_uf_len_by_block, populate_total_uf_len_by_block())
 		update_mutations_overlay()// no lizard with human hulk overlay please.
 
 
-/mob/proc/has_dna()
+/mob/proc/has_dna() as /datum/dna
+	RETURN_TYPE(/datum/dna)
 	return
 
 /mob/living/carbon/has_dna()
+	RETURN_TYPE(/datum/dna)
 	return dna
 
 /// Returns TRUE if the mob is allowed to mutate via its DNA, or FALSE if otherwise.
@@ -848,7 +851,8 @@ GLOBAL_LIST_INIT(total_uf_len_by_block, populate_total_uf_len_by_block())
 				apply_status_effect(/datum/status_effect/go_away)
 			if(7)
 				to_chat(src, span_notice("Oh, I actually feel quite alright!"))
-				ForceContractDisease(new/datum/disease/decloning()) //slow acting, non-viral clone damage based GBS
+				infect_disease_predefined(DISEASE_DECLONING, TRUE, "[ROUND_TIME()] Infected by DNA Instability")
+				//ForceContractDisease(new/datum/disease/decloning()) //slow acting, non-viral clone damage based GBS
 			if(8)
 				var/list/elligible_organs = list()
 				for(var/obj/item/organ/internal/internal_organ in organs) //make sure we dont get an implant or cavity item
@@ -862,7 +866,7 @@ GLOBAL_LIST_INIT(total_uf_len_by_block, populate_total_uf_len_by_block())
 					if(prob(20))
 						O.animate_atom_living()
 			if(9 to 10)
-				ForceContractDisease(new/datum/disease/gastrolosis())
+				//ForceContractDisease(new/datum/disease/gastrolosis())
 				to_chat(src, span_notice("Oh, I actually feel quite alright!"))
 	else
 		switch(rand(0,6))

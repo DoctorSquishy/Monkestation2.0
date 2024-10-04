@@ -33,14 +33,16 @@
 	var/datum/reagent/sweetener
 
 
-/datum/component/ice_cream_holder/Initialize(max_scoops = DEFAULT_MAX_ICE_CREAM_SCOOPS,
-											change_name = TRUE,
-											filled_name,
-											change_desc = FALSE,
-											x_offset = 0,
-											y_offset = 0,
-											datum/reagent/sweetener = /datum/reagent/consumable/sugar,
-											list/prefill_flavours)
+/datum/component/ice_cream_holder/Initialize(
+	max_scoops = DEFAULT_MAX_ICE_CREAM_SCOOPS,
+	change_name = TRUE,
+	filled_name,
+	change_desc = FALSE,
+	x_offset = 0,
+	y_offset = 0,
+	datum/reagent/sweetener = /datum/reagent/consumable/sugar,
+	list/prefill_flavours,
+)
 	if(!IS_EDIBLE(parent)) /// There is no easy way to add servings to those non-item edibles, but I won't stop you.
 		return COMPONENT_INCOMPATIBLE
 
@@ -59,7 +61,7 @@
 	if(change_name)
 		RegisterSignal(owner, COMSIG_ATOM_UPDATE_NAME, PROC_REF(on_update_name))
 	if(!change_desc)
-		RegisterSignal(owner, COMSIG_PARENT_EXAMINE_MORE, PROC_REF(on_examine_more))
+		RegisterSignal(owner, COMSIG_ATOM_EXAMINE_MORE, PROC_REF(on_examine_more))
 	else
 		RegisterSignal(owner, COMSIG_ATOM_UPDATE_DESC, PROC_REF(on_update_desc))
 
@@ -169,7 +171,7 @@
 	if(compare_list(our_scoops, icecream_order.wanted_flavors))
 		return COMPONENT_CORRECT_ORDER
 
-/datum/component/ice_cream_holder/proc/sell_ice_cream(obj/item/source, mob/living/simple_animal/robot_customer/sold_to)
+/datum/component/ice_cream_holder/proc/sell_ice_cream(obj/item/source, mob/living/basic/robot_customer/sold_to)
 	SIGNAL_HANDLER
 
 	//the price of ice cream scales with the number of scoops. Yummy.

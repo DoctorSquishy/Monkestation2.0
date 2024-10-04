@@ -25,7 +25,6 @@
 	RegisterSignal(parent, COMSIG_MOVABLE_BUCKLE, PROC_REF(try_infect_buckle))
 	RegisterSignal(parent, COMSIG_MOVABLE_BUMP, PROC_REF(try_infect_collide))
 	RegisterSignal(parent, COMSIG_MOVABLE_IMPACT_ZONE, PROC_REF(try_infect_impact_zone))
-	RegisterSignal(parent, COMSIG_ATOM_EXTRAPOLATOR_ACT, PROC_REF(extrapolation))
 	if(isitem(parent))
 		RegisterSignal(parent, COMSIG_ITEM_ATTACK_ZONE, PROC_REF(try_infect_attack_zone))
 		RegisterSignal(parent, COMSIG_ITEM_ATTACK, PROC_REF(try_infect_attack))
@@ -39,9 +38,11 @@
 /datum/component/infective/proc/try_infect_eat(datum/source, mob/living/eater, mob/living/feeder)
 	SIGNAL_HANDLER
 
+	/* TODO VIROLOGY: Convert to new diseases
 	for(var/V in diseases)
 		eater.ForceContractDisease(V)
 	try_infect(feeder, BODY_ZONE_L_ARM)
+	*/
 
 /datum/component/infective/proc/try_infect_drink(datum/source, mob/living/drinker, mob/living/feeder)
 	SIGNAL_HANDLER
@@ -124,14 +125,10 @@
 
 	output_diseases |= diseases
 
-/datum/component/infective/proc/try_infect(mob/living/L, target_zone)
-	for(var/V in diseases)
-		L.ContactContractDisease(V, target_zone)
-
-/datum/component/infective/proc/extrapolation(datum/source, mob/user, obj/item/extrapolator/E, scan = TRUE)
-	SIGNAL_HANDLER
-
-	if(scan)
-		E.scan(source, diseases, user)
-	else
-		INVOKE_ASYNC(E, TYPE_PROC_REF(/obj/item/extrapolator, extrapolate), source, diseases, user)
+/datum/component/infective/proc/try_infect(mob/living/living, target_zone)
+	if(length(diseases))
+		var/block = living.check_contact_sterility(BODY_ZONE_EVERYTHING)
+		var/list/contact = filter_disease_by_spread(diseases, required = DISEASE_SPREAD_CONTACT_SKIN)
+		if(length(contact) && !block)
+			for(var/datum/disease/advanced/V as anything in contact)
+				living.try_contact_infect(V, note="(Skin Contact - (Infective Component), coming from [src.parent])")

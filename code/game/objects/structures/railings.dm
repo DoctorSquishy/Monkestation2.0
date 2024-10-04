@@ -8,18 +8,20 @@
 	density = TRUE
 	anchored = TRUE
 	pass_flags_self = LETPASSTHROW|PASSSTRUCTURE
-	/// armor more or less consistent with grille. max_integrity about one time and a half that of a grille.
+	/// armor is a little bit less than a grille. max_integrity about half that of a grille.
 	armor_type = /datum/armor/structure_railing
-	max_integrity = 75
+	max_integrity = 25
 
 	var/climbable = TRUE
 	///Initial direction of the railing.
 	var/ini_dir
+	///item released when deconstructed
+	var/item_deconstruct = /obj/item/stack/rods
 
 /datum/armor/structure_railing
-	melee = 50
-	bullet = 70
-	laser = 70
+	melee = 35
+	bullet = 50
+	laser = 50
 	energy = 100
 	bomb = 10
 
@@ -38,6 +40,19 @@
 			COMSIG_ATOM_EXIT = PROC_REF(on_exit),
 		)
 		AddElement(/datum/element/connect_loc, loc_connections)
+
+	var/static/list/tool_behaviors = list(
+		TOOL_WELDER = list(
+			SCREENTIP_CONTEXT_LMB = "Repair",
+		),
+		TOOL_WRENCH = list(
+			SCREENTIP_CONTEXT_LMB = "Anchor/Unanchor",
+		),
+		TOOL_WIRECUTTER = list(
+			SCREENTIP_CONTEXT_LMB = "Deconstruct",
+		),
+	)
+	AddElement(/datum/element/contextual_screentip_tools, tool_behaviors)
 
 	AddComponent(/datum/component/simple_rotation, ROTATION_NEEDS_ROOM)
 
@@ -61,18 +76,21 @@
 /obj/structure/railing/AltClick(mob/user)
 	return ..() // This hotkey is BLACKLISTED since it's used by /datum/component/simple_rotation
 
+/* monkestation edit: replaced in [monkestation\code\modules\blueshift\structures\wooden_fence.dm]
 /obj/structure/railing/wirecutter_act(mob/living/user, obj/item/I)
 	. = ..()
-	if(!anchored)
-		to_chat(user, span_warning("You cut apart the railing."))
-		I.play_tool_sound(src, 100)
-		deconstruct()
-		return TRUE
+	to_chat(user, span_warning("You cut apart the railing."))
+	I.play_tool_sound(src, 100)
+	deconstruct()
+	return TRUE
+monkestation end */
 
 /obj/structure/railing/deconstruct(disassembled)
-	if(!(flags_1 & NODECONSTRUCT_1))
-		var/obj/item/stack/rods/rod = new /obj/item/stack/rods(drop_location(), 6)
-		transfer_fingerprints_to(rod)
+	if((flags_1 & NODECONSTRUCT_1))
+		return ..()
+	var/rods_to_make = istype(src,/obj/structure/railing/corner) ? 1 : 2
+	var/obj/rod = new item_deconstruct(drop_location(), rods_to_make)
+	transfer_fingerprints_to(rod)
 	return ..()
 
 ///Implements behaviour that makes it possible to unanchor the railing.
@@ -92,7 +110,7 @@
 		return . || mover.throwing || mover.movement_type & (FLYING | FLOATING)
 	return TRUE
 
-/obj/structure/railing/CanAStarPass(obj/item/card/id/ID, to_dir, atom/movable/caller, no_id = FALSE)
+/obj/structure/railing/CanAStarPass(to_dir, datum/can_pass_info/pass_info)
 	if(!(to_dir & dir))
 		return TRUE
 	return ..()
@@ -124,3 +142,36 @@
 /obj/structure/railing/proc/check_anchored(checked_anchored)
 	if(anchored == checked_anchored)
 		return TRUE
+
+
+/obj/structure/railing/wooden_fence
+	name = "wooden fence"
+	desc = "wooden fence meant to keep animals in."
+	icon = 'icons/obj/structures.dmi'
+	icon_state = "wooden_railing"
+	item_deconstruct = /obj/item/stack/sheet/mineral/wood
+	plane = GAME_PLANE_FOV_HIDDEN
+	layer = ABOVE_MOB_LAYER
+	standard_smoothing = FALSE
+
+/obj/structure/railing/wooden_fence/Initialize(mapload)
+	. = ..()
+	RegisterSignal(src, COMSIG_ATOM_DIR_CHANGE, PROC_REF(on_change_layer))
+	adjust_dir_layer(dir)
+
+/obj/structure/railing/wooden_fence/proc/on_change_layer(datum/source, old_dir, new_dir)
+	SIGNAL_HANDLER
+	adjust_dir_layer(new_dir)
+
+/obj/structure/railing/wooden_fence/proc/adjust_dir_layer(direction)
+	var/new_layer = (direction & NORTH) ? MOB_LAYER : ABOVE_MOB_LAYER
+	layer = new_layer
+
+
+/obj/structure/railing/corner/end/wooden_fence
+	icon = 'icons/obj/structures.dmi'
+	icon_state = "wooden_railing_corner"
+
+/obj/structure/railing/corner/end/flip/wooden_fence
+	icon = 'icons/obj/structures.dmi'
+	icon_state = "wooden_railing_corner_flipped"

@@ -46,7 +46,7 @@
 // Displays static object lighting updates
 // Also enables some debug vars on sslighting that can be used to modify
 // How extensively we prune lighting corners to update
-#define VISUALIZE_LIGHT_UPDATES
+// #define VISUALIZE_LIGHT_UPDATES
 
 #define VISUALIZE_ACTIVE_TURFS //Highlights atmos active turfs in green
 #define TRACK_MAX_SHARE //Allows max share tracking, for use in the atmos debugging ui
@@ -65,7 +65,8 @@
 // If this is uncommented, we do a single run though of the game setup and tear down process with unit tests in between
 // #define UNIT_TESTS
 
-// If this is uncommented, will attempt to load and initialize prof.dll/libprof.so.
+// If this is uncommented, will attempt to load and initialize prof.dll/libprof.so by default.
+// Even if it's not defined, you can pass "tracy" via -params in order to try to load it.
 // We do not ship byond-tracy. Build it yourself here: https://github.com/mafemergency/byond-tracy/
 // #define USE_BYOND_TRACY
 
@@ -98,7 +99,7 @@
 #endif
 
 #ifndef PRELOAD_RSC //set to:
-#define PRELOAD_RSC 2 // 0 to allow using external resources or on-demand behaviour;
+#define PRELOAD_RSC 1 // 0 to allow using external resources or on-demand behaviour;
 #endif // 1 to use the default behaviour;
 								// 2 for preloading absolutely everything;
 
@@ -112,7 +113,7 @@
 #warn compiling in TESTING mode. testing() debug messages will be visible.
 #endif
 
-#ifdef CIBUILDING
+#if defined(CIBUILDING) && !defined(OPENDREAM)
 #define UNIT_TESTS
 #endif
 
@@ -137,8 +138,15 @@
 #define CBT
 #endif
 
-#if !defined(CBT) && !defined(SPACEMAN_DMM)
-#warn Building with Dream Maker is no longer supported and will result in errors.
-#warn In order to build, run BUILD.bat in the root directory.
-#warn Consider switching to VSCode editor instead, where you can press Ctrl+Shift+B to build.
+#if defined(OPENDREAM)
+	#if !defined(CIBUILDING)
+		#warn You are building with OpenDream. Remember to build TGUI manually.
+		#warn You can do this by running tgui-build.cmd from the bin directory.
+	#endif
+#else
+	#if !defined(CBT) && !defined(SPACEMAN_DMM)
+		#warn Building with Dream Maker is no longer supported and will result in errors.
+		#warn In order to build, run BUILD.cmd in the root directory.
+		#warn Consider switching to VSCode editor instead, where you can press Ctrl+Shift+B to build.
+	#endif
 #endif

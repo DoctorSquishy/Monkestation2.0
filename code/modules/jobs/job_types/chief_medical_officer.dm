@@ -11,7 +11,7 @@
 	supervisors = SUPERVISOR_CAPTAIN
 	req_admin_notify = 1
 	minimal_player_age = 7
-	exp_requirements = 180
+	exp_requirements = 300
 	exp_required_type = EXP_TYPE_CREW
 	exp_required_type_department = EXP_TYPE_MEDICAL
 	exp_granted_type = EXP_TYPE_CREW
@@ -40,7 +40,7 @@
 	)
 	family_heirlooms = list(/obj/item/storage/medkit/ancient/heirloom, /obj/item/scalpel, /obj/item/hemostat, /obj/item/circular_saw, /obj/item/retractor, /obj/item/cautery)
 	rpg_title = "High Cleric"
-	job_flags = JOB_ANNOUNCE_ARRIVAL | JOB_CREW_MANIFEST | JOB_EQUIP_RANK | JOB_CREW_MEMBER | JOB_NEW_PLAYER_JOINABLE | JOB_BOLD_SELECT_TEXT | JOB_REOPEN_ON_ROUNDSTART_LOSS | JOB_ASSIGN_QUIRKS | JOB_CAN_BE_INTERN
+	job_flags = STATION_JOB_FLAGS | JOB_BOLD_SELECT_TEXT | JOB_CANNOT_OPEN_SLOTS
 
 	voice_of_god_power = 1.4 //Command staff has authority
 
@@ -78,7 +78,7 @@
 	box = /obj/item/storage/box/survival/medical
 	chameleon_extras = list(
 		/obj/item/gun/syringe,
-		/obj/item/stamp/cmo,
+		/obj/item/stamp/head/cmo,
 		)
 	skillchips = list(/obj/item/skillchip/entrails_reader)
 

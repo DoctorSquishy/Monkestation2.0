@@ -101,12 +101,13 @@
 	else
 		..()
 
-/mob/living/simple_animal/bot/floorbot/emag_act(mob/user)
-	..()
+/mob/living/simple_animal/bot/floorbot/emag_act(mob/user, obj/item/card/emag/emag_card)
+	. = ..()
 	if(!(bot_cover_flags & BOT_COVER_EMAGGED))
 		return
-	if(user)
-		to_chat(user, span_danger("[src] buzzes and beeps."))
+	balloon_alert(user, "safeties disabled")
+	audible_message(span_danger("[src] buzzes oddly!"))
+	return TRUE
 
 ///mobs should use move_resist instead of anchored.
 /mob/living/simple_animal/bot/floorbot/proc/toggle_magnet(engage = TRUE, change_icon = TRUE)
@@ -248,9 +249,9 @@
 		if(!length(path))
 			if(!isturf(target))
 				var/turf/TL = get_turf(target)
-				path = get_path_to(src, TL, max_distance=30, id=access_card,simulated_only = FALSE)
+				path = get_path_to(src, TL, max_distance=30, access=access_card.GetAccess(), simulated_only = FALSE)
 			else
-				path = get_path_to(src, target, max_distance=30, id=access_card,simulated_only = FALSE)
+				path = get_path_to(src, target, max_distance=30, access=access_card.GetAccess(), simulated_only = FALSE)
 
 			if(!bot_move(target))
 				add_to_ignore(target)

@@ -55,7 +55,7 @@ GLOBAL_VAR_INIT(normal_ooc_colour, "#002eb8")
 
 	msg = emoji_parse(msg)
 
-	if(SSticker.HasRoundStarted() && (msg[1] in list(".",";",":","#") || findtext_char(msg, "say", 1, 5)))
+	if(SSticker.HasRoundStarted() && ((msg[1] in list(".",";",":","#")) || findtext_char(msg, "say", 1, 5)))
 		if(tgui_alert(usr,"Your message \"[raw_msg]\" looks like it was meant for in game communication, say it in OOC?", "Meant for OOC?", list("Yes", "No")) != "Yes")
 			return
 
@@ -71,7 +71,6 @@ GLOBAL_VAR_INIT(normal_ooc_colour, "#002eb8")
 	if(!(prefs.chat_toggles & CHAT_OOC))
 		to_chat(src, span_danger("You have OOC muted."))
 		return
-
 	mob.log_talk(raw_msg, LOG_OOC)
 
 	var/keyname = key
@@ -85,6 +84,10 @@ GLOBAL_VAR_INIT(normal_ooc_colour, "#002eb8")
 	if(patreon.access_rank > 0)
 		var/datum/asset/spritesheet/sheet = get_asset_datum(/datum/asset/spritesheet/chat)
 		keyname = "[sheet.icon_tag("patreon")][keyname]"
+
+	if(twitch.access_rank > 0)
+		var/datum/asset/spritesheet/sheet = get_asset_datum(/datum/asset/spritesheet/chat)
+		keyname = "[sheet.icon_tag("twitch")][keyname]"
 
 	//The linkify span classes and linkify=TRUE below make ooc text get clickable chat href links if you pass in something resembling a url
 	for(var/client/receiver as anything in GLOB.clients)
@@ -140,7 +143,7 @@ GLOBAL_VAR_INIT(normal_ooc_colour, "#002eb8")
 	set category = "Server"
 	if(IsAdminAdvancedProcCall())
 		return
-	var/newColor = input(src, "Please select the new player OOC color.", "OOC color") as color|null
+	var/newColor = tgui_color_picker(src, "Please select the new player OOC color.", "OOC color")
 	if(isnull(newColor))
 		return
 	if(!check_rights(R_FUN))
@@ -453,3 +456,12 @@ GLOBAL_VAR_INIT(normal_ooc_colour, "#002eb8")
 	set hidden = TRUE
 
 	init_verbs()
+
+/client/proc/export_preferences()
+	set name = "Export Preferences"
+	set desc = "Export your current preferences to a file."
+	set category = "OOC"
+
+	ASSERT(prefs, "User attempted to export preferences while preferences were null!") // what the fuck
+
+	prefs.savefile.export_json_to_client(usr, ckey)

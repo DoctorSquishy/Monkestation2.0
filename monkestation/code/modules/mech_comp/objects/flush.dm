@@ -19,15 +19,19 @@
 	. = ..()
 	if(. == SUCCESSFUL_UNFASTEN)
 		if(anchored)
-			trunk = locate() in src.loc
-			if(trunk)
-				trunk.linked = src
+			trunk_check()
 		else
 			trunk = null
 
 /obj/item/mcobject/flusher/proc/flush(datum/mcmessage/input)
+	trunk_check()
 	if(!trunk || !COOLDOWN_FINISHED(src, flush_cd) || !input?.cmd)
 		return
+
+	if(QDELETED(trunk))
+		trunk = null
+		return
+
 	var/count = 0
 	for(var/atom/movable/listed_movable in src.loc)
 		if(listed_movable.anchored)
@@ -49,9 +53,17 @@
 
 	COOLDOWN_START(src, flush_cd, 5 SECONDS)
 
-/obj/item/mcobject/flusher/proc/expel(obj/structure/disposalholder/holder)
-	var/turf/target
-	for(var/atom/movable/AM in holder)
-		target = get_offset_target_turf(holder, rand(5)-rand(5), rand(5)-rand(5))
-		AM?.throw_at(target, 5, 1)
-	qdel(holder)
+/obj/item/mcobject/flusher/proc/expel(obj/structure/disposalholder/H)
+	playsound(src, 'sound/machines/hiss.ogg', 50, FALSE, FALSE)
+	flick("comp_flush1", src)
+	pipe_eject(H)
+
+	H.vent_gas(loc)
+	qdel(H)
+
+/obj/item/mcobject/flusher/proc/trunk_check()
+	trunk = locate() in src.loc
+	if(trunk)
+		trunk.linked = src
+	else
+		trunk = null

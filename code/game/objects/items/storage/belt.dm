@@ -74,6 +74,8 @@
 		/obj/item/weldingtool,
 		/obj/item/wirecutters,
 		/obj/item/wrench,
+		/obj/item/spess_knife,
+		/obj/item/melee/sickly_blade/knock, //monkestation edit(maybe)
 		/obj/item/clockwork/replica_fabricator, //monkestation edit
 		/obj/item/clockwork/clockwork_slab, //monkestation edit
 	))
@@ -246,6 +248,7 @@
 		/obj/item/reagent_containers/dropper,
 		/obj/item/reagent_containers/cup/beaker,
 		/obj/item/reagent_containers/cup/bottle,
+		/obj/item/reagent_containers/cup/tube,
 		/obj/item/reagent_containers/hypospray,
 		/obj/item/reagent_containers/medigel,
 		/obj/item/reagent_containers/pill,
@@ -272,7 +275,7 @@
 /obj/item/storage/belt/medical/paramedic/PopulateContents()
 	SSwardrobe.provide_type(/obj/item/sensor_device, src)
 	SSwardrobe.provide_type(/obj/item/stack/medical/gauze/twelve, src)
-	SSwardrobe.provide_type(/obj/item/stack/medical/bone_gel/four, src)
+	SSwardrobe.provide_type(/obj/item/stack/medical/bone_gel, src)
 	SSwardrobe.provide_type(/obj/item/stack/sticky_tape/surgical, src)
 	SSwardrobe.provide_type(/obj/item/reagent_containers/syringe, src)
 	SSwardrobe.provide_type(/obj/item/reagent_containers/cup/bottle/ammoniated_mercury, src)
@@ -298,7 +301,7 @@
 	SSwardrobe.provide_type(/obj/item/pinpointer/crew, src)
 	SSwardrobe.provide_type(/obj/item/scalpel/advanced, src)
 	SSwardrobe.provide_type(/obj/item/retractor/advanced, src)
-	SSwardrobe.provide_type(/obj/item/stack/medical/bone_gel/four, src)
+	SSwardrobe.provide_type(/obj/item/stack/medical/bone_gel, src)
 	SSwardrobe.provide_type(/obj/item/cautery/advanced, src)
 	SSwardrobe.provide_type(/obj/item/surgical_drapes, src)
 	update_appearance()
@@ -334,6 +337,7 @@
 		/obj/item/clothing/gloves,
 		/obj/item/flashlight/seclite,
 		/obj/item/food/donut,
+		/obj/item/food/spaghetti/security, //monkestation change: tactical belt spaghetti
 		/obj/item/grenade,
 		/obj/item/holosign_creator/security,
 		/obj/item/knife/combat,
@@ -342,7 +346,7 @@
 		/obj/item/reagent_containers/spray/pepper,
 		/obj/item/restraints/handcuffs,
 		/obj/item/restraints/legcuffs/bola,
-		/obj/item/food/spaghetti/security, //monkestation change: tactical belt spaghetti
+		/obj/item/stock_parts/cell/microfusion, //monkestation edit
 	))
 
 /obj/item/storage/belt/security/full/PopulateContents()
@@ -477,7 +481,7 @@
 	icon_state = "championbelt"
 	inhand_icon_state = "championbelt"
 	worn_icon_state = "championbelt"
-	custom_materials = list(/datum/material/gold=400)
+	custom_materials = list(/datum/material/gold=SMALL_MATERIAL_AMOUNT *4)
 
 /obj/item/storage/belt/champion/Initialize(mapload)
 	. = ..()
@@ -635,7 +639,7 @@
 
 /obj/item/storage/belt/wands/Initialize(mapload)
 	. = ..()
-	atom_storage.max_slots = 6
+	atom_storage.max_slots = 7
 	atom_storage.set_holdable(list(
 		/obj/item/gun/magic/wand,
 	))
@@ -647,6 +651,7 @@
 	new /obj/item/gun/magic/wand/teleport(src)
 	new /obj/item/gun/magic/wand/door(src)
 	new /obj/item/gun/magic/wand/fireball(src)
+	new /obj/item/gun/magic/wand/shrink(src)
 
 	for(var/obj/item/gun/magic/wand/W in contents) //All wands in this pack come in the best possible condition
 		W.max_charges = initial(W.max_charges)
@@ -848,6 +853,7 @@
 		/obj/item/plant_analyzer,
 		/obj/item/reagent_containers/cup/beaker,
 		/obj/item/reagent_containers/cup/bottle,
+		/obj/item/reagent_containers/cup/tube,
 		/obj/item/reagent_containers/spray/pestspray,
 		/obj/item/reagent_containers/spray/plantbgone,
 		/obj/item/secateurs,

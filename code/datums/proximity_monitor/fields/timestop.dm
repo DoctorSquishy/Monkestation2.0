@@ -36,7 +36,7 @@
 	for(var/mob/living/to_check in GLOB.player_list)
 		if(HAS_TRAIT(to_check, TRAIT_TIME_STOP_IMMUNE))
 			immune[to_check] = TRUE
-	for(var/mob/living/simple_animal/hostile/guardian/stand in GLOB.parasites)
+	for(var/mob/living/basic/guardian/stand in GLOB.parasites)
 		if(stand.summoner && HAS_TRAIT(stand.summoner, TRAIT_TIME_STOP_IMMUNE)) //It would only make sense that a person's stand would also be immune.
 			immune[stand] = TRUE
 	if(start)
@@ -82,7 +82,7 @@
 	src.immune = immune
 	src.antimagic_flags = antimagic_flags
 	src.channelled = channelled
-	recalculate_field()
+	recalculate_field(full_recalc = TRUE)
 	START_PROCESSING(SSfastprocess, src)
 
 /datum/proximity_monitor/advanced/timestop/Destroy()
@@ -93,7 +93,7 @@
 	STOP_PROCESSING(SSfastprocess, src)
 	return ..()
 
-/datum/proximity_monitor/advanced/timestop/field_turf_crossed(atom/movable/movable, turf/location)
+/datum/proximity_monitor/advanced/timestop/field_turf_crossed(atom/movable/movable, turf/old_location, turf/new_location)
 	freeze_atom(movable)
 
 /datum/proximity_monitor/advanced/timestop/proc/freeze_atom(atom/movable/A)

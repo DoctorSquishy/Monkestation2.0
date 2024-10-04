@@ -28,11 +28,18 @@
 
 /obj/structure/closet/emcloset/PopulateContents()
 	..()
+	//MONKESTATION EDIT START
+	//if (prob(40))  removed this
+	//	new /obj/item/storage/toolbox/emergency(src)
+	new /obj/item/storage/toolbox/emergency(src)
+	new /obj/item/storage/box/emergency_eva(src)
+	new /obj/item/tank/internals/emergency_oxygen(src)
+	new /obj/item/clothing/mask/breath(src)
+	new /obj/item/tank/internals/oxygen(src)
+	new /obj/item/clothing/mask/breath(src)
+	//MONKESTATION EDIT STOP
 
-	if (prob(40))
-		new /obj/item/storage/toolbox/emergency(src)
-
-	switch (pick_weight(list("small" = 35, "aid" = 30, "tank" = 20, "both" = 10, "nothing" = 4)))
+	switch (pick_weight(list("small" = 50, "aid" = 50, "tank" = 50, "both" = 50, "nothing" = 4))) //monkestation edit
 		if ("small")
 			new /obj/item/tank/internals/emergency_oxygen(src)
 			new /obj/item/tank/internals/emergency_oxygen(src)
@@ -51,6 +58,9 @@
 		if ("both")
 			new /obj/item/tank/internals/emergency_oxygen(src)
 			new /obj/item/clothing/mask/breath(src)
+			new /obj/item/tank/internals/oxygen(src) // monkestation edit
+			new /obj/item/clothing/mask/breath(src) // monkestion edit
+
 
 		if ("nothing")
 			// doot
@@ -92,6 +102,11 @@
 	icon_state = "eng"
 	icon_door = "eng_tool"
 
+/obj/structure/closet/toolcloset/populate_contents_immediate()
+	. = ..()
+	if(prob(5))
+		new /obj/item/clothing/gloves/color/yellow(src) //Monkestation edit: Moves this to immediate for unit tests.
+
 /obj/structure/closet/toolcloset/PopulateContents()
 	..()
 	if(prob(40))
@@ -120,8 +135,6 @@
 		new /obj/item/stack/cable_coil(src)
 	if(prob(20))
 		new /obj/item/multitool(src)
-	if(prob(5))
-		new /obj/item/clothing/gloves/color/yellow(src)
 	if(prob(40))
 		new /obj/item/clothing/head/utility/hardhat(src)
 

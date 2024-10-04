@@ -230,12 +230,15 @@
 /obj/machinery/hydroponics/bullet_act(obj/projectile/Proj)
 	if(!myseed)
 		return ..()
-	if(istype(Proj , /obj/projectile/energy/floramut))
+	if(istype(Proj , /obj/projectile/energy/flora/mut))
 		mutate()
-	else if(istype(Proj , /obj/projectile/energy/florayield))
+	else if(istype(Proj , /obj/projectile/energy/flora/yield))
 		return myseed.bullet_act(Proj)
-	else if(istype(Proj , /obj/projectile/energy/florarevolution))
-		mutatespecie_new()
+	else if(istype(Proj , /obj/projectile/energy/flora/evolution))
+		if(myseed)
+			if(LAZYLEN(myseed.mutatelist))
+				myseed.mutate()
+		mutatespecie()
 	else
 		return ..()
 
@@ -246,11 +249,14 @@
 		myseed.forceMove(src)
 
 	update_appearance()
-	if((world.time > (lastcycle + cycledelay) && waterlevel > 10 && reagents.total_volume > 2 && pestlevel < 10 && weedlevel < 10) || bio_boosted)
+	if((world.time > (lastcycle + cycledelay) && waterlevel > 10 && (reagents.total_volume > 2 || self_sustaining) && pestlevel < 10 && weedlevel < 10) || bio_boosted)
 		lastcycle = world.time
 		if(myseed && plant_status != HYDROTRAY_PLANT_DEAD)
 			// Advance age
-			age++
+			var/growth_mult = (1.01 ** -myseed.maturation)
+			//Checks if a self sustaining tray is fully grown and fully "functional" (corpse flowers require a specific age to produce miasma)
+			if(!(age > max(myseed.maturation, myseed.production) && (growth >= myseed.harvest_age * growth_mult) && self_sustaining))
+				age++
 
 			needs_update = TRUE
 			growth += 3
@@ -267,9 +273,9 @@
 			apply_chemicals(lastuser?.resolve())
 			// Nutrients deplete slowly
 			if(bio_boosted)
-				adjust_plant_nutriments((reagents.total_volume * ((nutriment_drain_precent * 0.2) * 0.01)))
+				adjust_plant_nutriments(max(reagents.total_volume * ((nutriment_drain_precent * 0.2) * 0.01), 0.05))
 			else
-				adjust_plant_nutriments((reagents.total_volume * (nutriment_drain_precent * 0.01)))
+				adjust_plant_nutriments(max(reagents.total_volume * (nutriment_drain_precent * 0.01), 0.05))
 
 /**
  * Photosynthesis
@@ -364,7 +370,6 @@
 			if(age > (myseed.lifespan - repeated_harvest))
 				adjust_plant_health(-rand(1,5) / rating)
 
-			var/growth_mult = (1.01 ** -myseed.maturation)
 			// Harvest code
 			if(growth >= myseed.harvest_age * growth_mult)
 			//if(myseed.harvest_age < age * max(myseed.production * 0.044, 0.5) && (myseed.harvest_age) < (age - lastproduce) * max(myseed.production * 0.044, 0.5) && (!harvest && !dead))
@@ -475,7 +480,6 @@
 
 /obj/machinery/hydroponics/proc/update_plant_overlay()
 	var/mutable_appearance/plant_overlay = mutable_appearance(myseed.growing_icon, layer = OBJ_LAYER + 0.01)
-	plant_overlay.pixel_y = myseed.seed_offset
 	switch(plant_status)
 		if(HYDROTRAY_PLANT_DEAD)
 			plant_overlay.icon_state = myseed.icon_dead
@@ -651,7 +655,7 @@
 		if(8 to 9)
 			new_seed = new /obj/item/seeds/chanter(src)
 		if(6 to 7)
-			new_seed = new /obj/item/seeds/tower(src)
+			new_seed = new /obj/item/seeds/tree(src)
 		if(4 to 5)
 			new_seed = new /obj/item/seeds/plump(src)
 		else
@@ -790,16 +794,16 @@
 
 /obj/machinery/hydroponics/attackby(obj/item/O, mob/user, params)
 	//Called when mob user "attacks" it with object O
-	if(istype(O, /obj/item/bio_cube))
+	if(istype(O, /obj/item/stack/biocube))
 		if(bio_boosted)
 			to_chat(user, span_notice("This tray is already bio-boosted please wait until its no longer bio-boosted to apply it again"))
 			return
-		var/obj/item/bio_cube/attacked_cube = O
+		var/obj/item/stack/biocube/attacked_cube = O
 		bio_boosted = TRUE
-		addtimer(CALLBACK(src, PROC_REF(end_boost)), attacked_cube.total_duration)
-		to_chat(user, span_notice("The [attacked_cube.name] dissolves boosting the growth of plants for [attacked_cube.total_duration * 0.1] seconds."))
+		var/boost_time = attacked_cube.boost_time()
+		addtimer(CALLBACK(src, PROC_REF(end_boost)), boost_time)
+		to_chat(user, span_notice("\The [attacked_cube] dissolves boosting the growth of plants for [DisplayTimeText(boost_time)]."))
 		qdel(attacked_cube)
-
 	if(IS_EDIBLE(O) || is_reagent_container(O))  // Syringe stuff (and other reagent containers now too)
 		var/obj/item/reagent_containers/reagent_source = O
 
@@ -1339,7 +1343,7 @@
 
 /// Tray Setters - The following procs adjust the tray or plants variables, and make sure that the stat doesn't go out of bounds.///
 /obj/machinery/hydroponics/proc/adjust_plant_nutriments(adjustamt)
-	reagents.remove_any(adjustamt)
+	reagents.remove_all(adjustamt)
 
 /obj/machinery/hydroponics/proc/increase_sustaining(amount)
 	sustaining_precent += amount

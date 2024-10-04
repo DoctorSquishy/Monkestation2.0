@@ -113,8 +113,12 @@
 	desc = "Pricy sterile gloves that are thicker than latex. Excellent grip ensures very fast carrying of patients along with the faster use time of various chemical related items."
 	icon_state = "nitrile"
 	inhand_icon_state = "greyscale_gloves"
+	armor_type = /datum/armor/nitrile
 	greyscale_colors = "#99eeff"
 	clothing_traits = list(TRAIT_QUICKER_CARRY, TRAIT_FASTMED)
+
+/datum/armor/nitrile
+	bio = 100
 
 /obj/item/clothing/gloves/tinkerer
 	name = "tinker's gloves"
@@ -125,7 +129,7 @@
 	siemens_coefficient = 0.8
 	armor_type = /datum/armor/tinker_gloves
 	clothing_traits = list(TRAIT_QUICK_BUILD)
-	custom_materials = list(/datum/material/iron=2000, /datum/material/silver=1500, /datum/material/gold = 1000)
+	custom_materials = list(/datum/material/iron=SHEET_MATERIAL_AMOUNT, /datum/material/silver=HALF_SHEET_MATERIAL_AMOUNT*1.5, /datum/material/gold =HALF_SHEET_MATERIAL_AMOUNT)
 	resistance_flags = NONE
 
 /datum/armor/tinker_gloves

@@ -19,7 +19,7 @@ All the important duct code:
 	///our ductnet, wich tracks what we're connected to
 	var/datum/ductnet/duct
 	///amount we can transfer per process. note that the ductnet can carry as much as the lowest capacity duct
-	var/capacity = 10
+	var/capacity = 1000
 
 	///the color of our duct
 	var/duct_color = COLOR_VERY_LIGHT_GRAY
@@ -325,7 +325,7 @@ All the important duct code:
 	singular_name = "duct"
 	icon = 'icons/obj/plumbing/fluid_ducts.dmi'
 	icon_state = "ducts"
-	mats_per_unit = list(/datum/material/iron=500)
+	mats_per_unit = list(/datum/material/iron=SMALL_MATERIAL_AMOUNT*5)
 	w_class = WEIGHT_CLASS_TINY
 	novariants = FALSE
 	max_amount = 50

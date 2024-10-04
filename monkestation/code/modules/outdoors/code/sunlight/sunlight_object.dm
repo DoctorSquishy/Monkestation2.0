@@ -17,6 +17,22 @@ Sunlight System
 				     Emits light to SKY_BLOCKED tiles, and fully white to display the overlay color
 */
 
+// Keep in mind. Lighting corners accept the bottom left (northwest) set of cords to them as input
+#define GENERATE_MISSING_CORNERS(gen_for) \
+	if (!gen_for.lighting_corner_NE) { \
+		gen_for.lighting_corner_NE = new /datum/lighting_corner(gen_for.x, gen_for.y, gen_for.z); \
+	} \
+	if (!gen_for.lighting_corner_SE) { \
+		gen_for.lighting_corner_SE = new /datum/lighting_corner(gen_for.x, gen_for.y - 1, gen_for.z); \
+	} \
+	if (!gen_for.lighting_corner_SW) { \
+		gen_for.lighting_corner_SW = new /datum/lighting_corner(gen_for.x - 1, gen_for.y - 1, gen_for.z); \
+	} \
+	if (!gen_for.lighting_corner_NW) { \
+		gen_for.lighting_corner_NW = new /datum/lighting_corner(gen_for.x - 1, gen_for.y, gen_for.z); \
+	} \
+	gen_for.lighting_corners_initialised = TRUE;
+
 /atom/movable/outdoor_effect
 	name = ""
 	mouse_opacity = 0
@@ -105,7 +121,7 @@ Sunlight System
 		if(IS_OPAQUE_TURF(T)) /* get_corners used to do opacity checks for arse */
 			continue
 		if (!T.lighting_corners_initialised)
-			T.generate_missing_corners()
+			GENERATE_MISSING_CORNERS(T)
 		corners |= T.lighting_corner_NE
 		corners |= T.lighting_corner_SE
 		corners |= T.lighting_corner_SW
@@ -188,6 +204,10 @@ Sunlight System
 	if(outdoor_effect)
 		outdoor_effect.state = TempState
 		outdoor_effect.weatherproof = roofStat["WEATHERPROOF"]
+		UnregisterSignal(SSdcs, COMSIG_GLOB_WEATHER_EFFECT)
+		if(!outdoor_effect.weatherproof)
+			turf_flags |= TURF_WEATHER
+			//RegisterSignal(SSdcs, COMSIG_GLOB_WEATHER_EFFECT, PROC_REF(apply_weather_effect))
 
 /* runs up the Z stack for this turf, returns a assoc (SKYVISIBLE, WEATHERPROOF)*/
 /* pass recursion_started=TRUE when we are checking our ceiling's stats */
@@ -231,6 +251,13 @@ Sunlight System
 	if((!isspaceturf(src) && !istype(src, /turf/open/floor/plating/ocean) && !above_turf && !SSmapping.level_trait(src.z, ZTRAIT_UP) && !turf_area.outdoors && !turf_area.false_outdoors) || (!SSmapping.level_trait(src.z, ZTRAIT_DAYCYCLE) && !SSmapping.level_trait(src.z, ZTRAIT_STARLIGHT)))
 		.["SKYVISIBLE"]   =  FALSE
 		.["WEATHERPROOF"] =  TRUE
+
+/turf/proc/apply_weather_effect(datum/source, datum/weather_effect/effect)
+	SIGNAL_HANDLER
+	if(!weather_affectable || !prob(effect.probability))
+		return
+
+	effect.effect_affect(src)
 
 /* moved this out of reconsider lights so we can call it in multiz refresh  */
 /turf/proc/reconsider_sunlight()
@@ -372,3 +399,4 @@ Sunlight System
 
 #undef SUN_FALLOFF
 #undef hardSun
+#undef GENERATE_MISSING_CORNERS

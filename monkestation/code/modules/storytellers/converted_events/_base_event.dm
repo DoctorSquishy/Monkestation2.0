@@ -53,8 +53,8 @@
 	. =..()
 
 	var/antag_amt = get_antag_amount()
-	var/list/candidates = get_candidates()
-	if(candidates.len < antag_amt)
+	var/list/candidates = get_candidates() //we should optimize this
+	if(length(candidates) < antag_amt)
 		if(.)
 			. += ", "
 		. += "Not Enough Candidates!"
@@ -83,19 +83,31 @@
 /datum/round_event_control/antagonist/proc/trim_candidates(list/candidates)
 	return candidates
 
-/datum/round_event_control/proc/check_enemies()
+/// Check if our enemy_roles requirement is met, if return_players is set then we will return the list of enemy players instead
+/datum/round_event_control/proc/check_enemies(return_players = FALSE)
 	if(!length(enemy_roles))
-		return TRUE
+		return return_players ? list() : TRUE
+
 	var/job_check = 0
-	for (var/mob/M in GLOB.alive_player_list)
-		if (M.stat == DEAD)
-			continue // Dead players cannot count as opponents
-		if (M.mind && (M.mind.assigned_role.title in enemy_roles))
-			job_check++ // Checking for "enemies" (such as sec officers). To be counters, they must either not be candidates to that rule, or have a job that restricts them from it
+	var/list/enemy_players = list()
+	if(roundstart)
+		for(var/enemy in enemy_roles)
+			var/datum/job/enemy_job = SSjob.GetJob(enemy)
+			if(enemy_job && SSjob.assigned_players_by_job[enemy_job.type])
+				job_check += length(SSjob.assigned_players_by_job[enemy_job.type])
+				enemy_players += SSjob.assigned_players_by_job[enemy_job.type]
+
+	else
+		for(var/mob/M in GLOB.alive_player_list)
+			if (M.stat == DEAD)
+				continue // Dead players cannot count as opponents
+			if (M.mind && (M.mind.assigned_role.title in enemy_roles))
+				job_check++ // Checking for "enemies" (such as sec officers). To be counters, they must either not be candidates to that
+				enemy_players += M
 
 	if(job_check >= required_enemies)
-		return TRUE
-	return FALSE
+		return return_players ? enemy_players : TRUE
+	return return_players ? enemy_players : FALSE
 
 /datum/round_event_control/antagonist/New()
 	. = ..()
@@ -124,6 +136,9 @@
 	var/antag_datum
 	/// Prompt players for consent to turn them into antags before doing so. Dont allow this for roundstart.
 	var/prompted_picking = FALSE
+	/// A list of extra events to force whenever this one is chosen by the storyteller.
+	/// Can either be normal list or a weighted list.
+	var/list/extra_spawned_events
 
 /datum/round_event_control/antagonist/solo/from_ghosts/get_candidates()
 	var/round_started = SSticker.HasRoundStarted()
@@ -139,7 +154,7 @@
 		return
 	var/antag_amt = get_antag_amount()
 	var/list/candidates = get_candidates()
-	if(candidates.len < antag_amt)
+	if(length(candidates) < antag_amt)
 		return FALSE
 
 /datum/round_event_control/antagonist/solo/proc/get_antag_amount()
@@ -153,7 +168,8 @@
 	var/living_players_arg = round_started ? TRUE : FALSE
 	var/midround_antag_pref_arg = round_started ? FALSE : TRUE
 
-	var/list/candidates = SSgamemode.get_candidates(antag_flag, antag_flag, ready_newplayers = new_players_arg, living_players = living_players_arg, midround_antag_pref = midround_antag_pref_arg, restricted_roles = restricted_roles, required_roles = exclusive_roles)
+	var/list/candidates = SSgamemode.get_candidates(antag_flag, antag_flag, FALSE, new_players_arg, living_players_arg, midround_antag_pref = midround_antag_pref_arg, \
+													restricted_roles = restricted_roles, required_roles = exclusive_roles)
 	candidates = trim_candidates(candidates)
 	return candidates
 
@@ -170,7 +186,7 @@
 
 /datum/round_event/antagonist
 	fakeable = FALSE
-	end_when = 60 //This is so prompted picking events have time to run //TODO: refactor events so they can be the masters of themselves, instead of relying on some weirdly timed vars
+	end_when = 6000 //This is so prompted picking events have time to run //TODO: refactor events so they can be the masters of themselves, instead of relying on some weirdly timed vars
 
 /datum/round_event/antagonist/solo
 	// ALL of those variables are internal. Check the control event to change them
@@ -186,6 +202,15 @@
 	var/list/setup_minds = list()
 	/// Whether we prompt the players before picking them.
 	var/prompted_picking = FALSE //TODO: Implement this
+	/// DO NOT SET THIS MANUALLY, THIS IS INHERITED FROM THE EVENT CONTROLLER ON NEW
+	var/list/extra_spawned_events
+
+/datum/round_event/antagonist/solo/New(my_processing, datum/round_event_control/event_controller)
+	. = ..()
+	if(istype(event_controller, /datum/round_event_control/antagonist/solo))
+		var/datum/round_event_control/antagonist/solo/antag_event_controller = event_controller
+		if(antag_event_controller?.extra_spawned_events)
+			extra_spawned_events = fill_with_ones(antag_event_controller.extra_spawned_events)
 
 /datum/round_event/antagonist/solo/setup()
 	var/datum/round_event_control/antagonist/solo/cast_control = control
@@ -194,22 +219,114 @@
 	antag_datum = cast_control.antag_datum
 	restricted_roles = cast_control.restricted_roles
 	prompted_picking = cast_control.prompted_picking
-	var/list/candidates = cast_control.get_candidates()
-	if(prompted_picking)
-		candidates = poll_candidates("Would you like to be a [cast_control.name]", antag_flag, antag_flag, 20 SECONDS, FALSE, FALSE, candidates)
+	var/list/possible_candidates = cast_control.get_candidates()
+	var/list/candidates = list()
+	if(cast_control == SSgamemode.current_roundstart_event && length(SSgamemode.roundstart_antag_minds))
+		log_storyteller("Running roundstart antagonist assignment, event: [src], roundstart_antag_minds: [english_list(SSgamemode.roundstart_antag_minds)]")
+		for(var/datum/mind/antag_mind in SSgamemode.roundstart_antag_minds)
+			if(!antag_mind.current)
+				log_storyteller("Roundstart antagonist setup error: antag_mind([antag_mind]) in roundstart_antag_minds without a set mob")
+				continue
+			candidates += antag_mind.current
+			SSgamemode.roundstart_antag_minds -= antag_mind
+			log_storyteller("Roundstart antag_mind, [antag_mind]")
+
+	//guh
+	var/list/cliented_list = list()
+	for(var/mob/living/mob as anything in possible_candidates)
+		cliented_list += mob.client
+	if(length(cliented_list))
+		mass_adjust_antag_rep(cliented_list, 1)
+
+	var/list/weighted_candidates = return_antag_rep_weight(possible_candidates)
+
+	while(length(weighted_candidates) && length(candidates) < antag_count) //both of these pick_n_take from weighted_candidates so this should be fine
+		if(prompted_picking)
+			var/picked_ckey = pick_n_take_weighted(weighted_candidates)
+			var/client/picked_client = GLOB.directory[picked_ckey]
+			if(QDELETED(picked_client))
+				continue
+			var/mob/picked_mob = picked_client.mob
+			log_storyteller("Prompted antag event mob: [picked_mob], special role: [picked_mob.mind?.special_role ? picked_mob.mind.special_role : "none"]")
+			if(picked_mob)
+				candidates |= SSpolling.poll_candidates(
+					question = "Would you like to be a [cast_control.name]?",
+					check_jobban = antag_flag,
+					role = antag_flag,
+					poll_time = 20 SECONDS,
+					group = list(picked_mob),
+					alert_pic = antag_datum,
+					role_name_text = lowertext(cast_control.name),
+					chat_text_border_icon = antag_datum,
+					show_candidate_amount = FALSE,
+				)
+		else
+			var/picked_ckey = pick_n_take_weighted(weighted_candidates)
+			var/client/picked_client = GLOB.directory[picked_ckey]
+			if(QDELETED(picked_client))
+				continue
+			var/mob/picked_mob = picked_client.mob
+			log_storyteller("Picked antag event mob: [picked_mob], special role: [picked_mob.mind?.special_role ? picked_mob.mind.special_role : "none"]")
+			candidates |= picked_mob
+
 
 	for(var/i in 1 to antag_count)
-		if(!candidates.len)
+		if(!length(candidates))
+			message_admins("A roleset event got fewer antags then its antag_count and may not function correctly.")
 			break
+
 		var/mob/candidate = pick_n_take(candidates)
+		log_storyteller("Antag event spawned mob: [candidate], special role: [candidate.mind?.special_role ? candidate.mind.special_role : "none"]")
+
+		candidate.client?.prefs.reset_antag_rep()
+
 		if(!candidate.mind)
 			candidate.mind = new /datum/mind(candidate.key)
 
 		setup_minds += candidate.mind
 		candidate.mind.special_role = antag_flag
 		candidate.mind.restricted_roles = restricted_roles
-	setup = TRUE
 
+	setup = TRUE
+	if(LAZYLEN(extra_spawned_events))
+		var/event_type = pick_weight(extra_spawned_events)
+		if(!event_type)
+			return
+		var/datum/round_event_control/triggered_event = locate(event_type) in SSgamemode.control
+		//wait a second to avoid any potential omnitraitor bs
+		addtimer(CALLBACK(triggered_event, TYPE_PROC_REF(/datum/round_event_control, run_event), FALSE, null, FALSE, "storyteller"), 1 SECONDS)
+
+/datum/round_event/antagonist/solo/start()
+	for(var/datum/mind/antag_mind as anything in setup_minds)
+		add_datum_to_mind(antag_mind, antag_mind.current)
+
+/datum/round_event/antagonist/solo/proc/add_datum_to_mind(datum/mind/antag_mind)
+	antag_mind.add_antag_datum(antag_datum)
+
+/datum/round_event/antagonist/solo/proc/spawn_extra_events()
+	if(!LAZYLEN(extra_spawned_events))
+		return
+	var/datum/round_event_control/event = pick_weight(extra_spawned_events)
+	event?.run_event(random = FALSE, event_cause = "storyteller")
+
+/datum/round_event/antagonist/solo/proc/create_human_mob_copy(turf/create_at, mob/living/carbon/human/old_mob, qdel_old_mob = TRUE)
+	if(!old_mob?.client)
+		return
+
+	var/mob/living/carbon/human/new_character = new(create_at)
+	if(!create_at)
+		SSjob.SendToLateJoin(new_character)
+
+	old_mob.client.prefs.safe_transfer_prefs_to(new_character)
+	new_character.dna.update_dna_identity()
+	old_mob.mind.transfer_to(new_character)
+	if(qdel_old_mob)
+		qdel(old_mob)
+	return new_character
+
+/datum/round_event/antagonist/solo/ghost/start()
+	for(var/datum/mind/antag_mind as anything in setup_minds)
+		add_datum_to_mind(antag_mind)
 
 /datum/round_event/antagonist/solo/ghost/setup()
 	var/datum/round_event_control/antagonist/solo/cast_control = control
@@ -219,32 +336,42 @@
 	restricted_roles = cast_control.restricted_roles
 	prompted_picking = cast_control.prompted_picking
 	var/list/candidates = cast_control.get_candidates()
-	if(prompted_picking)
-		candidates = poll_candidates("Would you like to be a [cast_control.name]", antag_flag, antag_flag, 20 SECONDS, FALSE, FALSE, candidates)
 
-	for(var/i in 1 to antag_count)
-		if(!candidates.len)
-			break
-		var/mob/candidate = pick_n_take(candidates)
+	//guh
+	var/list/cliented_list = list()
+	for(var/mob/living/mob as anything in candidates)
+		cliented_list += mob.client
+	if(length(cliented_list))
+		mass_adjust_antag_rep(cliented_list, 1)
+
+	if(prompted_picking)
+		candidates = SSpolling.poll_candidates(
+			question = "Would you like to be a [cast_control.name]?",
+			check_jobban = antag_flag,
+			role = antag_flag,
+			poll_time = 20 SECONDS,
+			group = candidates,
+			alert_pic = antag_datum,
+			role_name_text = lowertext(cast_control.name),
+			chat_text_border_icon = antag_datum,
+		)
+
+	var/list/weighted_candidates = return_antag_rep_weight(candidates)
+	var/selected_count = 0
+	while(length(weighted_candidates) && selected_count < antag_count)
+		var/candidate_ckey = pick_n_take_weighted(weighted_candidates)
+		var/client/candidate_client = GLOB.directory[candidate_ckey]
+		if(QDELETED(candidate_client) || QDELETED(candidate_client.mob))
+			continue
+		var/mob/candidate = candidate_client.mob
+
+		candidate_client.prefs?.reset_antag_rep()
+
 		if(!candidate.mind)
 			candidate.mind = new /datum/mind(candidate.key)
-
-		setup_minds += candidate.mind
 		var/mob/living/carbon/human/new_human = make_body(candidate)
-		candidate.mind.set_current(new_human)
-		candidate.mind.special_role = antag_flag
-		candidate.mind.restricted_roles = restricted_roles
+		new_human.mind.special_role = antag_flag
+		new_human.mind.restricted_roles = restricted_roles
+		setup_minds += new_human.mind
+		selected_count++
 	setup = TRUE
-
-
-/datum/round_event/antagonist/solo/start()
-	for(var/datum/mind/antag_mind as anything in setup_minds)
-		add_datum_to_mind(antag_mind, antag_mind.current)
-
-/datum/round_event/antagonist/solo/proc/add_datum_to_mind(datum/mind/antag_mind)
-	antag_mind.add_antag_datum(antag_datum)
-
-/datum/round_event/antagonist/solo/ghost/start()
-	for(var/datum/mind/antag_mind as anything in setup_minds)
-		add_datum_to_mind(antag_mind)
-

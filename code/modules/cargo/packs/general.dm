@@ -213,7 +213,7 @@
 		cargo bay. Contains two bottles of holywater, bibles, chaplain robes, and burial garmets."
 	cost = CARGO_CRATE_VALUE * 6 // it costs so much because the Space Church needs funding to build a cathedral
 	contains = list(/obj/item/reagent_containers/cup/glass/bottle/holywater = 2,
-					/obj/item/storage/book/bible/booze = 2,
+					/obj/item/book/bible/booze = 2,
 					/obj/item/clothing/suit/hooded/chaplain_hoodie = 2,
 					/obj/item/clothing/under/misc/burial = 2,
 				)
@@ -281,13 +281,6 @@
 /datum/supply_pack/misc/syndicate/custom_value/proc/setup_contents(value, uplink)
 	crate_value = value
 	contents_uplink_type = uplink
-
-/datum/supply_pack/misc/fishing_portal
-	name = "Fishing Portal Generator Crate"
-	desc = "Not enough fish near your location? Fishing portal has your back."
-	cost = CARGO_CRATE_VALUE * 4
-	contains = list(/obj/machinery/fishing_portal_generator)
-	crate_name = "fishing portal crate"
 
 /datum/supply_pack/misc/papercutter
 	name = "Paper Cutters Crate"

@@ -66,3 +66,47 @@
 	default_name = "German Shepherd"
 	donator_pet = 	/mob/living/basic/pet/dog/germanshepherd
 
+/obj/item/choice_beacon/pet/donator/void_butterfly
+	name = "Void Butterfly"
+	default_name = "Void Butterfly"
+	donator_pet = 	/mob/living/basic/butterfly/void/spacial
+
+/obj/item/choice_beacon/pet/donator/plantcrab
+	name = "Plant Crab"
+	default_name = "Plant Crab"
+	donator_pet = 	/mob/living/basic/crab/plant
+
+/obj/item/choice_beacon/pet/donator/quilava
+	name = "Quil Maid"
+	default_name = "Quil Maid"
+	donator_pet = 	/mob/living/basic/pet/quilmaid
+
+/obj/item/choice_beacon/pet/donator/gumball_goblin
+	name = "Gumball Goblin"
+	default_name = "Gumball Goblin"
+	donator_pet = 	/mob/living/basic/pet/gumball_goblin
+
+/obj/item/choice_beacon/pet/donator/orangutan
+	name = "Orangutan"
+	default_name = "Orangutan"
+	donator_pet = 	/mob/living/basic/pet/orangutan
+
+/obj/item/choice_beacon/pet/donator/fluffykobold
+	name = "fluffy kobold"
+	default_name = "fluffy kobold"
+	donator_pet = 	/mob/living/basic/pet/fluffykobold
+
+/obj/item/choice_beacon/pet/donator/darkscug
+	name = "night slugcat"
+	default_name = "night slugcat"
+	donator_pet = 	/mob/living/basic/pet/darkscug
+
+/obj/item/choice_beacon/pet/donator/hypnotoad
+	name = "hypnotoad"
+	default_name = "hypnotoad"
+	donator_pet = 	/mob/living/basic/frog/hypnotoad
+
+/obj/item/choice_beacon/pet/donator/ghastly_evil_demon
+	name = "ghastly evil demon"
+	default_name = "ghastly evil demon"
+	donator_pet = 	/mob/living/basic/pet/ghastly_evil_demon

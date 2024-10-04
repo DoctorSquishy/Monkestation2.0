@@ -73,13 +73,6 @@
 	if(replaced_by == /datum/surgery)
 		return FALSE
 
-	// True surgeons (like abductor scientists) need no instructions
-	if(HAS_TRAIT(user, TRAIT_SURGEON) || (!isnull(user.mind) && HAS_TRAIT(user.mind, TRAIT_SURGEON)))
-		if(replaced_by) // only show top-level surgeries
-			return FALSE
-		else
-			return TRUE
-
 	if(!requires_tech && !replaced_by)
 		return TRUE
 
@@ -91,6 +84,13 @@
 		return TRUE
 	if(surgery_signal & COMPONENT_CANCEL_SURGERY)
 		return FALSE
+
+	// True surgeons (like abductor scientists) need no instructions
+	if(HAS_TRAIT(user, TRAIT_ALL_SURGERIES) || (!isnull(user.mind) && HAS_TRAIT(user.mind, TRAIT_ALL_SURGERIES))) // monke edit: TRAIT_ALL_SURGERIES
+		if(replaced_by) // only show top-level surgeries
+			return FALSE
+		else
+			return TRUE
 
 	var/turf/patient_turf = get_turf(patient)
 
@@ -138,7 +138,7 @@
 	return null
 
 /datum/surgery/proc/complete(mob/surgeon)
-	SSblackbox.record_feedback("tally", "surgeries_completed", 1, type)
+	SSblackbox.record_feedback("tally", "surgeries_completed", 1, name)
 	surgeon.add_mob_memory(/datum/memory/surgery, deuteragonist = surgeon, surgery_type = name)
 	qdel(src)
 
@@ -169,14 +169,14 @@
 	name = "Surgery Procedure Disk"
 	desc = "A disk that contains advanced surgery procedures, must be loaded into an Operating Console."
 	icon_state = "datadisk1"
-	custom_materials = list(/datum/material/iron=300, /datum/material/glass=100)
+	custom_materials = list(/datum/material/iron=SMALL_MATERIAL_AMOUNT * 3, /datum/material/glass=SMALL_MATERIAL_AMOUNT)
 	var/list/surgeries
 
 /obj/item/disk/surgery/debug
 	name = "Debug Surgery Disk"
 	desc = "A disk that contains all existing surgery procedures."
 	icon_state = "datadisk1"
-	custom_materials = list(/datum/material/iron=300, /datum/material/glass=100)
+	custom_materials = list(/datum/material/iron=SMALL_MATERIAL_AMOUNT * 3, /datum/material/glass=SMALL_MATERIAL_AMOUNT)
 
 /obj/item/disk/surgery/debug/Initialize(mapload)
 	. = ..()

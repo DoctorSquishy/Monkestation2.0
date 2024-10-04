@@ -20,7 +20,12 @@
 /datum/atom_hud/data/human/medical
 	hud_icons = list(STATUS_HUD, HEALTH_HUD, NANITE_HUD)
 
-/datum/atom_hud/data/human/medical/basic
+/datum/atom_hud/data/human/medical/basic/add_atom_to_single_mob_hud(mob/M, mob/living/carbon/H)
+	if(check_sensors(H))
+		..()
+
+/datum/atom_hud/data/human/medical/basic/proc/update_suit_sensors(mob/living/carbon/H)
+	check_sensors(H) ? add_atom_to_hud(H) : remove_atom_from_hud(H)
 
 /datum/atom_hud/data/human/medical/basic/proc/check_sensors(mob/living/carbon/human/H)
 	if(!istype(H))
@@ -32,11 +37,12 @@
 		return FALSE
 	return TRUE
 
-/datum/atom_hud/data/human/medical/basic/add_atom_to_single_mob_hud(mob/M, mob/living/carbon/H)
-	if(check_sensors(H))
-		..()
+/datum/atom_hud/data/human/medical/advanced
 
-/datum/atom_hud/data/human/medical/basic/proc/update_suit_sensors(mob/living/carbon/H)
+/datum/atom_hud/data/human/medical/basic/sensors
+	hud_icons = list(SENSOR_HUD)
+
+/datum/atom_hud/data/human/medical/basic/sensors/update_suit_sensors(mob/living/carbon/H)
 	check_sensors(H) ? add_atom_to_hud(H) : remove_atom_from_hud(H)
 
 /datum/atom_hud/data/human/medical/advanced
@@ -47,7 +53,7 @@
 	hud_icons = list(ID_HUD)
 
 /datum/atom_hud/data/human/security/advanced
-	hud_icons = list(ID_HUD, IMPTRACK_HUD, IMPLOYAL_HUD, IMPCHEM_HUD, WANTED_HUD, NANITE_HUD, PERMIT_HUD)
+	hud_icons = list(ID_HUD, IMPTRACK_HUD, IMPLOYAL_HUD, IMPCHEM_HUD, WANTED_HUD, NANITE_HUD, PERMIT_HUD) //monkestation edit: adds NANITE_HUD and PERMIT_HUD
 
 /datum/atom_hud/data/human/fan_hud
 	hud_icons = list(FAN_HUD)
@@ -55,10 +61,10 @@
 /datum/atom_hud/data/diagnostic
 
 /datum/atom_hud/data/diagnostic/basic
-	hud_icons = list(DIAG_HUD, DIAG_STAT_HUD, DIAG_BATT_HUD, DIAG_MECH_HUD, DIAG_BOT_HUD, DIAG_TRACK_HUD, DIAG_CAMERA_HUD, DIAG_AIRLOCK_HUD, DIAG_LAUNCHPAD_HUD, NANITE_HUD)
+	hud_icons = list(DIAG_HUD, DIAG_STAT_HUD, DIAG_BATT_HUD, DIAG_MECH_HUD, DIAG_BOT_HUD, DIAG_TRACK_HUD, DIAG_CAMERA_HUD, DIAG_AIRLOCK_HUD, DIAG_LAUNCHPAD_HUD, NANITE_HUD, DIAG_NANITE_FULL_HUD)
 
 /datum/atom_hud/data/diagnostic/advanced
-	hud_icons = list(DIAG_HUD, DIAG_STAT_HUD, DIAG_BATT_HUD, DIAG_MECH_HUD, DIAG_BOT_HUD, DIAG_TRACK_HUD, DIAG_CAMERA_HUD, DIAG_AIRLOCK_HUD, DIAG_LAUNCHPAD_HUD, DIAG_PATH_HUD, NANITE_HUD)
+	hud_icons = list(DIAG_HUD, DIAG_STAT_HUD, DIAG_BATT_HUD, DIAG_MECH_HUD, DIAG_BOT_HUD, DIAG_TRACK_HUD, DIAG_CAMERA_HUD, DIAG_AIRLOCK_HUD, DIAG_LAUNCHPAD_HUD, DIAG_PATH_HUD, NANITE_HUD, DIAG_NANITE_FULL_HUD)
 
 /datum/atom_hud/data/bot_path
 	// This hud exists so the bot can see itself, that's all
@@ -84,6 +90,10 @@
 	for(var/mob/camera/ai_eye/eye as anything in GLOB.aiEyes)
 		eye.update_ai_detect_hud()
 
+//MONKESTATION ADDITION
+/datum/atom_hud/mood
+	hud_icons = list(MOOD_HUD)
+
 /* MED/SEC/DIAG HUD HOOKS */
 
 /*
@@ -106,11 +116,21 @@ Medical HUD! Basic mode needs suit sensors on.
 
 	for(var/thing in diseases)
 		var/datum/disease/D = thing
-		if(!(D.visibility_flags & HIDDEN_SCANNER))
+		if(!(D.visibility_flags & HIDDEN_SCANNER) && !(D.disease_flags & DISEASE_DORMANT))
 			if(!threat || get_disease_severity_value(D.severity) > threat) //a buffing virus gets an icon
 				threat = get_disease_severity_value(D.severity)
 				severity = D.severity
 	return severity
+
+
+/mob/living/carbon/proc/check_virus_new()
+	var/total_threat = 0
+	for(var/thing in diseases)
+		var/datum/disease/D = thing
+		if(!(D.visibility_flags & HIDDEN_SCANNER) && !(D.disease_flags & DISEASE_DORMANT))
+			for(var/datum/symptom/symptom as anything in D.symptoms)
+				total_threat += text2num(symptom.badness)
+	return total_threat
 
 //helper for getting the appropriate health status
 /proc/RoundHealth(mob/living/M)
@@ -167,7 +187,9 @@ Medical HUD! Basic mode needs suit sensors on.
 //called when a human changes suit sensors
 /mob/living/carbon/proc/update_suit_sensors()
 	var/datum/atom_hud/data/human/medical/basic/B = GLOB.huds[DATA_HUD_MEDICAL_BASIC]
+	var/datum/atom_hud/data/human/medical/basic/sensors/S = GLOB.huds[DATA_HUD_SENSORS]
 	B.update_suit_sensors(src)
+	S.update_suit_sensors(src)
 
 //called when a living mob changes health
 /mob/living/proc/med_hud_set_health()
@@ -186,14 +208,20 @@ Medical HUD! Basic mode needs suit sensors on.
 //called when a carbon changes stat, virus or XENO_HOST
 /mob/living/proc/med_hud_set_status()
 	var/image/holder = hud_list?[STATUS_HUD]
+	var/image/sensors = hud_list?[SENSOR_HUD]
 	if (isnull(holder))
 		return
 
 	var/icon/I = icon(icon, icon_state, dir)
 	holder.pixel_y = I.Height() - world.icon_size
 	if(stat == DEAD || (HAS_TRAIT(src, TRAIT_FAKEDEATH)))
+		if(sensors)
+			SET_PLANE_EXPLICIT(sensors, ABOVE_LIGHTING_PLANE, src)
+			sensors.icon_state = "sensors"
+
 		holder.icon_state = "huddead"
 	else
+		sensors?.icon_state = null
 		holder.icon_state = "hudhealthy"
 
 /mob/living/carbon/med_hud_set_status()
@@ -239,19 +267,24 @@ FAN HUDs! For identifying other fans on-sight.
 
 /mob/living/carbon/human/proc/fan_hud_set_fandom()
 	var/image/holder = hud_list[FAN_HUD]
-	var/icon/I = icon(icon, icon_state, dir)
-	holder.pixel_y = I.Height() - world.icon_size
+	var/icon/hud_icon = icon(icon, icon_state, dir)
+	holder.pixel_y = hud_icon.Height() - world.icon_size
 	holder.icon_state = "hudfan_no"
-	var/obj/item/clothing/under/U = get_item_by_slot(ITEM_SLOT_ICLOTHING)
-	if(!U)
+
+	var/obj/item/clothing/under/undershirt = w_uniform
+	if(!istype(undershirt))
 		set_hud_image_inactive(FAN_HUD)
 		return
 
-	if(istype(U.attached_accessory, /obj/item/clothing/accessory/mime_fan_pin))
-		holder.icon_state = "mime_fan_pin"
+	for(var/accessory in undershirt.attached_accessories)
+		if(istype(accessory, /obj/item/clothing/accessory/mime_fan_pin))
+			holder.icon_state = "mime_fan_pin"
+			break
 
-	else if(istype(U.attached_accessory, /obj/item/clothing/accessory/clown_enjoyer_pin))
-		holder.icon_state = "clown_enjoyer_pin"
+		if(istype(accessory, /obj/item/clothing/accessory/clown_enjoyer_pin))
+			holder.icon_state = "clown_enjoyer_pin"
+			break
+
 	set_hud_image_active(FAN_HUD)
 	return
 
@@ -272,13 +305,14 @@ Security HUDs! Basic mode shows only the job.
 		sechud_icon_state = "hudno_id"
 	holder.icon_state = sechud_icon_state
 	sec_hud_set_security_status()
-
+//monkestation edit start
 	var/image/permit_holder = hud_list[PERMIT_HUD]
 	permit_holder.pixel_y = I.Height() - world.icon_size
 	var/permit_icon_state = wear_id?.get_gun_permit_iconstate()
 	if(!permit_icon_state)
 		permit_icon_state = "hudfan_no"
 	permit_holder.icon_state = permit_icon_state
+//monkestation edit end
 
 /mob/living/proc/sec_hud_set_implants()
 	var/image/holder
@@ -536,7 +570,6 @@ Diagnostic HUDs!
 		holder.icon_state = "hudbatt[RoundDiagBar(chargelvl)]"
 	else
 		holder.icon_state = "hudnobatt"
-
 /*~~~~~~~~~~~~
 	Airlocks!
 ~~~~~~~~~~~~~*/

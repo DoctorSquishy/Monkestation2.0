@@ -21,7 +21,9 @@
 	max_ammo = 6
 	caliber = CALIBER_38
 	multiple_sprites = AMMO_BOX_PER_BULLET
-	custom_materials = list(/datum/material/iron = 20000)
+	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT*10)
+//	ammo_band_icon = "+38_ammo_band" //monkestation temp removal, needs a PR
+//	ammo_band_color = null //temp
 
 /obj/item/ammo_box/c38/trac
 	name = "speed loader (.38 TRAC)"
@@ -52,6 +54,20 @@
 	name = "speed loader (.38 Iceblox)"
 	desc = "Designed to quickly reload revolvers. Iceblox bullets contain a cryogenic payload."
 	ammo_type = /obj/item/ammo_casing/c38/iceblox
+
+/obj/item/ammo_box/g45l
+	name = "ammo box (.45 Long Lethal)"
+	desc = "This box contains .45 Long lethal cartridges."
+	ammo_type = /obj/item/ammo_casing/g45l
+	icon_state = "45box"
+	max_ammo = 24
+
+/obj/item/ammo_box/g45l/rubber
+	name = "ammo box (.45 Long Rubber)"
+	desc = "Brought to you at great expense,this box contains .45 Long rubber cartridges."
+	icon_state = "45box"
+	ammo_type = /obj/item/ammo_casing/g45l/rubber
+	max_ammo = 24
 
 /obj/item/ammo_box/c9mm
 	name = "ammo box (9mm)"
@@ -103,9 +119,9 @@
 	icon_state = "foambox"
 	ammo_type = /obj/item/ammo_casing/caseless/foam_dart
 	max_ammo = 40
-	custom_materials = list(/datum/material/iron = 500)
+	custom_materials = list(/datum/material/iron = SMALL_MATERIAL_AMOUNT*5)
 
 /obj/item/ammo_box/foambox/riot
 	icon_state = "foambox_riot"
 	ammo_type = /obj/item/ammo_casing/caseless/foam_dart/riot
-	custom_materials = list(/datum/material/iron = 50000)
+	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT*25)

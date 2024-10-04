@@ -57,7 +57,7 @@
 	return if_no_id
 
 //repurposed proc. Now it combines get_id_name() and get_face_name() to determine a mob's name variable. Made into a separate proc as it'll be useful elsewhere
-/mob/living/carbon/human/get_visible_name()
+/mob/living/carbon/human/get_visible_name(add_id_name = TRUE)
 	var/face_name = get_face_name("")
 	var/id_name = get_id_name("")
 	if(HAS_TRAIT(src, TRAIT_UNKNOWN))
@@ -171,13 +171,15 @@
 	if(LAZYLEN(scar_data) != SCAR_SAVE_LENGTH)
 		return // invalid, should delete
 	var/version = text2num(scar_data[SCAR_SAVE_VERS])
-	if(!version || version < SCAR_CURRENT_VERSION) // get rid of old scars
+	if(!version || version != SCAR_CURRENT_VERSION) // get rid of scars using a incompatable version
 		return
 	if(specified_char_index && (mind?.original_character_slot_index != specified_char_index))
 		return
+	if (isnull(text2num(scar_data[SCAR_SAVE_BIOLOGY])))
+		return
 	var/obj/item/bodypart/the_part = get_bodypart("[scar_data[SCAR_SAVE_ZONE]]")
 	var/datum/scar/scaries = new
-	return scaries.load(the_part, scar_data[SCAR_SAVE_VERS], scar_data[SCAR_SAVE_DESC], scar_data[SCAR_SAVE_PRECISE_LOCATION], text2num(scar_data[SCAR_SAVE_SEVERITY]), text2num(scar_data[SCAR_SAVE_BIOLOGY]), text2num(scar_data[SCAR_SAVE_CHAR_SLOT]))
+	return scaries.load(the_part, scar_data[SCAR_SAVE_VERS], scar_data[SCAR_SAVE_DESC], scar_data[SCAR_SAVE_PRECISE_LOCATION], text2num(scar_data[SCAR_SAVE_SEVERITY]), text2num(scar_data[SCAR_SAVE_BIOLOGY]), text2num(scar_data[SCAR_SAVE_CHAR_SLOT]), text2num(scar_data[SCAR_SAVE_CHECK_ANY_BIO]))
 
 /// Read all the scars we have for the designated character/scar slots, verify they're good/dump them if they're old/wrong format, create them on the user, and write the scars that passed muster back to the file
 /mob/living/carbon/human/proc/load_persistent_scars()
@@ -245,6 +247,7 @@
 	destination.underwear_color = underwear_color
 	destination.undershirt = undershirt
 	destination.socks = socks
+	destination.socks_color = socks_color //MONKESTATION EDIT
 	destination.jumpsuit_style = jumpsuit_style
 
 
@@ -274,6 +277,8 @@
 
 	mob_height = new_height
 	regenerate_icons()
+	if(isdummy(src))
+		apply_height_filters(src, TRUE)
 	return TRUE
 
 /**

@@ -23,6 +23,8 @@
 	COOLDOWN_DECLARE(bloodsucker_spam_sol_burn)
 	///Timer between alerts for Healing messages
 	COOLDOWN_DECLARE(bloodsucker_spam_healing)
+	/// Cooldown for bloodsuckers going into Frenzy.
+	COOLDOWN_DECLARE(bloodsucker_frenzy_cooldown)
 
 	///Used for assigning your name
 	var/bloodsucker_name
@@ -41,6 +43,8 @@
 	var/frenzy_threshold = FRENZY_THRESHOLD_ENTER
 	///If we are currently in a Frenzy
 	var/frenzied = FALSE
+	/// Whether the death handling code is active or not.
+	var/handling_death = FALSE
 
 	///ALL Powers currently owned
 	var/list/datum/action/cooldown/bloodsucker/powers = list()
@@ -87,6 +91,7 @@
 		TRAIT_RADIMMUNE,
 		TRAIT_GENELESS,
 		TRAIT_STABLEHEART,
+		TRAIT_STABLELIVER,
 		TRAIT_NOSOFTCRIT,
 		TRAIT_NOHARDCRIT,
 		TRAIT_AGEUSIA,
@@ -94,7 +99,23 @@
 		TRAIT_VIRUSIMMUNE,
 		TRAIT_TOXIMMUNE,
 		TRAIT_HARDLY_WOUNDED,
+		TRAIT_NO_MIRROR_REFLECTION,
+		TRAIT_ETHEREAL_NO_OVERCHARGE,
+		TRAIT_OOZELING_NO_CANNIBALIZE,
 	)
+	/// Traits applied during Torpor.
+	var/static/list/torpor_traits = list(
+		TRAIT_DEATHCOMA,
+		TRAIT_FAKEDEATH,
+		TRAIT_NODEATH,
+		TRAIT_RESISTHIGHPRESSURE,
+		TRAIT_RESISTLOWPRESSURE,
+	)
+	/// A typecache of organs we'll expel during Torpor.
+	var/static/list/yucky_organ_typecache = typecacheof(list(
+		/obj/item/organ/internal/body_egg,
+		/obj/item/organ/internal/zombie_infection,
+	))
 
 /**
  * Apply innate effects is everything given to the mob
@@ -104,11 +125,12 @@
 /datum/antagonist/bloodsucker/apply_innate_effects(mob/living/mob_override)
 	. = ..()
 	var/mob/living/current_mob = mob_override || owner.current
-	RegisterSignal(current_mob, COMSIG_PARENT_EXAMINE, PROC_REF(on_examine))
+	RegisterSignal(current_mob, COMSIG_ATOM_EXAMINE, PROC_REF(on_examine))
 	RegisterSignal(current_mob, COMSIG_LIVING_LIFE, PROC_REF(LifeTick))
 	RegisterSignal(current_mob, COMSIG_LIVING_DEATH, PROC_REF(on_death))
 	handle_clown_mutation(current_mob, mob_override ? null : "As a vampiric clown, you are no longer a danger to yourself. Your clownish nature has been subdued by your thirst for blood.")
 	add_team_hud(current_mob)
+	current_mob.clear_mood_event("vampcandle")
 
 	if(current_mob.hud_used)
 		on_hud_created()
@@ -128,7 +150,7 @@
 /datum/antagonist/bloodsucker/remove_innate_effects(mob/living/mob_override)
 	. = ..()
 	var/mob/living/current_mob = mob_override || owner.current
-	UnregisterSignal(current_mob, list(COMSIG_LIVING_LIFE, COMSIG_PARENT_EXAMINE, COMSIG_LIVING_DEATH))
+	UnregisterSignal(current_mob, list(COMSIG_LIVING_LIFE, COMSIG_ATOM_EXAMINE, COMSIG_LIVING_DEATH))
 	handle_clown_mutation(current_mob, removing = FALSE)
 
 	if(current_mob.hud_used)
@@ -340,7 +362,7 @@
 
 	// Default Report
 	var/objectives_complete = TRUE
-	if(objectives.len)
+	if(length(objectives))
 		report += printobjectives(objectives)
 		for(var/datum/objective/objective in objectives)
 			if(objective.objective_name == "Optional Objective")
@@ -350,10 +372,10 @@
 				break
 
 	// Now list their vassals
-	if(vassals.len)
-		report += "<span class='header'>Their Vassals were...</span>"
+	if(length(vassals))
+		report +=  span_header("Their Vassals were...")
 		for(var/datum/antagonist/vassal/all_vassals as anything in vassals)
-			if(!all_vassals.owner)
+			if(QDELETED(all_vassals?.owner))
 				continue
 			var/list/vassal_report = list()
 			vassal_report += "<b>[all_vassals.owner.name]</b>"
@@ -366,7 +388,7 @@
 				vassal_report += " and was the <b>Revenge Vassal</b>"
 			report += vassal_report.Join()
 
-	if(objectives.len == 0 || objectives_complete)
+	if(!length(objectives) || objectives_complete)
 		report += "<span class='greentext big'>The [name] was successful!</span>"
 	else
 		report += "<span class='redtext big'>The [name] has failed!</span>"
@@ -486,12 +508,3 @@
 			gourmand_objective.owner = owner
 			gourmand_objective.objective_name = "Optional Objective"
 			objectives += gourmand_objective
-
-/datum/antagonist/bloodsucker/antag_token(datum/mind/hosts_mind, mob/spender)
-	. = ..()
-	if(isobserver(spender))
-		var/mob/living/carbon/human/newmob = spender.change_mob_type( /mob/living/carbon/human , null, null, TRUE )
-		newmob.equipOutfit(/datum/outfit/job/assistant)
-		newmob.mind.make_bloodsucker(hosts_mind)
-	else
-		hosts_mind.make_bloodsucker(hosts_mind)

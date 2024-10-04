@@ -1,6 +1,7 @@
 /datum/ai_controller/basic_controller/bee
 	blackboard = list(
-		BB_TARGETTING_DATUM = new /datum/targetting_datum/basic/bee,
+		BB_TARGETING_STRATEGY = /datum/targeting_strategy/basic/bee,
+		BB_PET_TARGETING_STRATEGY = /datum/targeting_strategy/basic/not_friends,
 	)
 
 	ai_traits = STOP_MOVING_WHEN_PULLED
@@ -17,7 +18,7 @@
 
 /datum/ai_controller/basic_controller/queen_bee
 	blackboard = list(
-		BB_TARGETTING_DATUM = new /datum/targetting_datum/basic/bee,
+		BB_TARGETING_STRATEGY = /datum/targeting_strategy/basic/bee,
 	)
 
 	ai_traits = STOP_MOVING_WHEN_PULLED
@@ -80,6 +81,6 @@
 	target_key = BB_TARGET_HYDRO
 	hunting_behavior = /datum/ai_behavior/hunt_target/pollinate
 	finding_behavior = /datum/ai_behavior/find_hunt_target/pollinate
-	hunt_targets = list(/obj/machinery/hydroponics)
+	hunt_targets = list(/obj/machinery/growing)
 	hunt_range = 10
 	hunt_chance = 85

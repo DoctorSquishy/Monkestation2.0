@@ -7,6 +7,7 @@
 	show_in_antagpanel = FALSE //should only show subtypes
 	show_to_ghosts = TRUE
 	suicide_cry = "FOR THE MOTHERSHIP!!" // They can't even talk but y'know
+	antag_flags = parent_type::antag_flags | FLAG_ANTAG_CAP_TEAM // monkestation addition
 	var/datum/team/abductor_team/team
 	var/sub_role
 	var/outfit
@@ -106,11 +107,11 @@
 			break
 
 /datum/antagonist/abductor/scientist/on_gain()
-	owner.add_traits(list(TRAIT_ABDUCTOR_SCIENTIST_TRAINING, TRAIT_SURGEON), ABDUCTOR_ANTAGONIST)
+	owner.add_traits(list(TRAIT_ABDUCTOR_SCIENTIST_TRAINING, TRAIT_ALL_SURGERIES), ABDUCTOR_ANTAGONIST) // monke edit: TRAIT_ALL_SURGERIES
 	return ..()
 
 /datum/antagonist/abductor/scientist/on_removal()
-	owner.remove_traits(list(TRAIT_ABDUCTOR_SCIENTIST_TRAINING, TRAIT_SURGEON), ABDUCTOR_ANTAGONIST)
+	owner.remove_traits(list(TRAIT_ABDUCTOR_SCIENTIST_TRAINING, TRAIT_ALL_SURGERIES), ABDUCTOR_ANTAGONIST) // monke edit: TRAIT_ALL_SURGERIES
 	return ..()
 
 /datum/antagonist/abductor/admin_add(datum/mind/new_owner,mob/admin)

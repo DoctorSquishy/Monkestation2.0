@@ -1,15 +1,11 @@
-
-
 /datum/round_event_control/shuttle_insurance
 	name = "Shuttle Insurance"
 	typepath = /datum/round_event/shuttle_insurance
 	max_occurrences = 1
 	category = EVENT_CATEGORY_BUREAUCRATIC
 	description = "A sketchy but legit insurance offer."
-	track = EVENT_TRACK_MODERATE
-	tags = list(TAG_COMMUNAL)
 
-/datum/round_event_control/shuttle_insurance/can_spawn_event(players, allow_magic = FALSE, fake_check = FALSE)
+/datum/round_event_control/shuttle_insurance/can_spawn_event(players, allow_magic = FALSE, fake_check = FALSE) //MONKESTATION ADDITION: fake_check = FALSE
 	. = ..()
 	if(!.)
 		return .
@@ -41,7 +37,7 @@
 			break
 	if(!insurance_evaluation)
 		insurance_evaluation = 5000 //gee i dunno
-	setup = TRUE
+	setup = TRUE //MONKESTATION ADDITION
 
 /datum/round_event/shuttle_insurance/start()
 	insurance_message = new("Shuttle Insurance", "Hey, pal, this is the [ship_name]. Can't help but notice you're rocking a wild and crazy shuttle there with NO INSURANCE! Crazy. What if something happened to it, huh?! We've done a quick evaluation on your rates in this sector and we're offering [insurance_evaluation] to cover for your shuttle in case of any disaster.", list("Purchase Insurance.","Reject Offer."))
@@ -50,12 +46,12 @@
 
 /datum/round_event/shuttle_insurance/proc/answered()
 	if(EMERGENCY_AT_LEAST_DOCKED)
-		priority_announce("You are definitely too late to purchase insurance, my friends. Our agents don't work on site.",sender_override = ship_name)
+		priority_announce("You are definitely too late to purchase insurance, my friends. Our agents don't work on site.",sender_override = ship_name, color_override = "red")
 		return
 	if(insurance_message && insurance_message.answered == 1)
 		var/datum/bank_account/station_balance = SSeconomy.get_dep_account(ACCOUNT_CAR)
 		if(!station_balance?.adjust_money(-insurance_evaluation))
-			priority_announce("You didn't send us enough money for shuttle insurance. This, in the space layman's terms, is considered scamming. We're keeping your money, scammers!",sender_override = ship_name)
+			priority_announce("You didn't send us enough money for shuttle insurance. This, in the space layman's terms, is considered scamming. We're keeping your money, scammers!", sender_override = ship_name, color_override = "red")
 			return
-		priority_announce("Thank you for purchasing shuttle insurance!",sender_override = ship_name)
+		priority_announce("Thank you for purchasing shuttle insurance!", sender_override = ship_name, color_override = "red")
 		SSshuttle.shuttle_insurance = TRUE

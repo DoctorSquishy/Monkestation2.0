@@ -9,8 +9,8 @@
 	righthand_file = 'icons/mob/inhands/equipment/security_righthand.dmi'
 	throwforce = 0
 	w_class = WEIGHT_CLASS_TINY
-	custom_materials = list(/datum/material/iron = 300, /datum/material/glass = 300)
-	light_system = MOVABLE_LIGHT //Used as a flash here.
+	custom_materials = list(/datum/material/iron = SMALL_MATERIAL_AMOUNT*3, /datum/material/glass = SMALL_MATERIAL_AMOUNT*3)
+	light_system = OVERLAY_LIGHT //Used as a flash here.
 	light_outer_range = FLASH_LIGHT_RANGE
 	light_color = COLOR_WHITE
 	light_power = FLASH_LIGHT_POWER
@@ -164,6 +164,9 @@
 	if(deviation == DEVIATION_FULL)
 		return
 
+	if(CAN_BYPASS_INNATE_FLASH_RESISTANCE(user)) // MONKESTATION EDIT: Make IPCs not resistant to bb and rev conversions.
+		ADD_TRAIT(flashed, TRAIT_CONVERSION_FLASHED, TRAIT_GENERIC)
+
 	if(targeted)
 		if(flashed.flash_act(1, 1))
 			flashed.set_confusion_if_lower(confusion_duration * CONFUSION_STACK_MAX_MULTIPLIER)
@@ -184,6 +187,8 @@
 	else
 		if(flashed.flash_act())
 			flashed.set_confusion_if_lower(confusion_duration * CONFUSION_STACK_MAX_MULTIPLIER)
+
+	REMOVE_TRAIT(flashed, TRAIT_CONVERSION_FLASHED, TRAIT_GENERIC) // MONKESTATION EDIT: Make IPCs not resistant to bb and rev conversions.
 
 /**
  * Handles the directionality of the attack
@@ -311,7 +316,7 @@
 	var/datum/weakref/arm
 
 /obj/item/assembly/flash/armimplant/burn_out()
-	var/obj/item/organ/internal/cyberimp/arm/flash/real_arm = arm.resolve()
+	var/obj/item/organ/internal/cyberimp/arm/item_set/flash/real_arm = arm.resolve()
 	if(real_arm?.owner)
 		to_chat(real_arm.owner, span_warning("Your photon projector implant overheats and deactivates!"))
 		real_arm.Retract()
@@ -320,7 +325,7 @@
 
 /obj/item/assembly/flash/armimplant/try_use_flash(mob/user = null)
 	if(overheat)
-		var/obj/item/organ/internal/cyberimp/arm/flash/real_arm = arm.resolve()
+		var/obj/item/organ/internal/cyberimp/arm/item_set/flash/real_arm = arm.resolve()
 		if(real_arm?.owner)
 			to_chat(real_arm.owner, span_warning("Your photon projector is running too hot to be used again so quickly!"))
 		return FALSE

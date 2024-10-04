@@ -32,11 +32,10 @@ Burning extracts:
 	effect_desc = "Creates a hungry and speedy slime that will love you forever."
 
 /obj/item/slimecross/burning/grey/do_effect(mob/user)
-	var/mob/living/simple_animal/slime/S = new(get_turf(user),"grey")
+	var/mob/living/basic/slime/S = new(get_turf(user))
 	S.visible_message(span_danger("A baby slime emerges from [src], and it nuzzles [user] before burbling hungrily!"))
-	S.set_friendship(user, 20) //Gas, gas, gas
+	SEND_SIGNAL(S, COMSIG_FRIENDSHIP_CHANGE, user, 110)
 	S.bodytemperature = T0C + 400 //We gonna step on the gas.
-	S.set_nutrition(S.get_hunger_nutrition()) //Tonight, we fight!
 	..()
 
 /obj/item/slimecross/burning/orange
@@ -81,7 +80,13 @@ Burning extracts:
 	effect_desc = "Instantly destroys walls around you."
 
 /obj/item/slimecross/burning/metal/do_effect(mob/user)
-	for(var/turf/closed/wall/W in range(1,get_turf(user)))
+//monkestation edit start
+	var/turf/our_turf = get_turf(src)
+	if(GLOB.clock_ark && on_reebe(our_turf) && get_dist(our_turf, GLOB.clock_ark) <= ARK_TURF_DESTRUCTION_BLOCK_RANGE)
+		balloon_alert(user, "a near by energy source is stopping \the [src] from activating!")
+		return FALSE
+//monkestation edit end
+	for(var/turf/closed/wall/W in range(1, our_turf)) //monkestation edit: replaces get_turf(src) with our_turf
 		W.dismantle_wall(1)
 		playsound(W, 'sound/effects/break_stone.ogg', 50, TRUE)
 	user.visible_message(span_danger("[src] pulses violently, and shatters the walls around it!"))
@@ -183,12 +188,13 @@ Burning extracts:
 	effect_desc = "Shatters all lights in the current room."
 
 /obj/item/slimecross/burning/pyrite/do_effect(mob/user)
+	var/area/user_area = get_area(user)
+	if(isnull(user_area.apc))
+		user.visible_message(span_danger("[src] releases a colorful wave of energy, but nothing seems to happen."))
+		return
+
+	user_area.apc.break_lights()
 	user.visible_message(span_danger("[src] releases a colorful wave of energy, which shatters the lights!"))
-	var/area/A = get_area(user.loc)
-	for(var/obj/machinery/light/L in A) //Shamelessly copied from the APC effect.
-		L.on = TRUE
-		L.break_light_tube()
-		stoplag()
 	..()
 
 /obj/item/slimecross/burning/red
@@ -197,14 +203,16 @@ Burning extracts:
 
 /obj/item/slimecross/burning/red/do_effect(mob/user)
 	user.visible_message(span_danger("[src] pulses a hazy red aura for a moment, which wraps around [user]!"))
-	for(var/mob/living/simple_animal/slime/S in view(7, get_turf(user)))
+	for(var/mob/living/basic/slime/S in view(7, get_turf(user)))
+		/*
 		if(user in S.Friends)
 			var/friendliness = S.Friends[user]
 			S.clear_friends()
 			S.set_friendship(user, friendliness)
 		else
 			S.clear_friends()
-		S.rabid = 1
+		*/
+		ADD_TRAIT(S, TRAIT_SLIME_RABID, "burning-red")
 		S.visible_message(span_danger("The [S] is driven into a dangerous frenzy!"))
 	..()
 
@@ -273,16 +281,16 @@ Burning extracts:
 
 /obj/item/slimecross/burning/black
 	colour = "black"
-	effect_desc = "Transforms the user into a slime. They can transform back at will and do not lose any items."
+	effect_desc = "Gives the user a one-time use slime transformation ability. They can transform back at will and do not lose any items." // monkestation edit: same here
 
 /obj/item/slimecross/burning/black/do_effect(mob/user)
 	if(!isliving(user))
 		return
-	user.visible_message(span_danger("[src] absorbs [user], transforming [user.p_them()] into a slime!"))
+	user.visible_message(span_danger("[user] absorbs \the [src]!")) // monkestation edit: slight change to reflect the cast removal
 	var/datum/action/cooldown/spell/shapeshift/slime_form/transform = new(user.mind || user)
 	transform.remove_on_restore = TRUE
 	transform.Grant(user)
-	transform.cast(user)
+	//transform.cast(user) // monkestation removal: embrace the choice (it was broken anyway for whatever reason)
 	return ..()
 
 /obj/item/slimecross/burning/lightpink

@@ -226,12 +226,12 @@
 	enable_text = span_cult("You prepare to horrify a target...")
 	disable_text = span_cult("You dispel the magic...")
 
-/datum/action/innate/cult/blood_spell/horror/InterceptClickOn(mob/living/caller, params, atom/clicked_on)
-	var/turf/caller_turf = get_turf(caller)
+/datum/action/innate/cult/blood_spell/horror/InterceptClickOn(mob/living/user, params, atom/clicked_on)
+	var/turf/caller_turf = get_turf(user)
 	if(!isturf(caller_turf))
 		return FALSE
 
-	if(!ishuman(clicked_on) || get_dist(caller, clicked_on) > 7)
+	if(!ishuman(clicked_on) || get_dist(user, clicked_on) > 7)
 		return FALSE
 
 	var/mob/living/carbon/human/human_clicked = clicked_on
@@ -240,23 +240,23 @@
 
 	return ..()
 
-/datum/action/innate/cult/blood_spell/horror/do_ability(mob/living/caller, mob/living/carbon/human/clicked_on)
+/datum/action/innate/cult/blood_spell/horror/do_ability(mob/living/user, mob/living/carbon/human/clicked_on)
 
 	clicked_on.set_hallucinations_if_lower(240 SECONDS)
-	SEND_SOUND(caller, sound('sound/effects/ghost.ogg', FALSE, TRUE, 50))
+	SEND_SOUND(user, sound('sound/effects/ghost.ogg', FALSE, TRUE, 50))
 
 	var/image/sparkle_image = image('icons/effects/cult/effects.dmi', clicked_on, "bloodsparkles", ABOVE_MOB_LAYER)
 	clicked_on.add_alt_appearance(/datum/atom_hud/alternate_appearance/basic/cult, "cult_apoc", sparkle_image, NONE)
 
 	addtimer(CALLBACK(clicked_on, TYPE_PROC_REF(/atom/, remove_alt_appearance), "cult_apoc", TRUE), 4 MINUTES, TIMER_OVERRIDE|TIMER_UNIQUE)
-	to_chat(caller, span_cultbold("[clicked_on] has been cursed with living nightmares!"))
+	to_chat(user, span_cultbold("[clicked_on] has been cursed with living nightmares!"))
 
 	charges--
 	desc = base_desc
 	desc += "<br><b><u>Has [charges] use\s remaining</u></b>."
 	build_all_button_icons()
 	if(charges <= 0)
-		to_chat(caller, span_cult("You have exhausted the spell's power!"))
+		to_chat(user, span_cult("You have exhausted the spell's power!"))
 		qdel(src)
 
 	return TRUE
@@ -332,7 +332,7 @@
 	righthand_file = 'icons/mob/inhands/items/touchspell_righthand.dmi'
 	icon_state = "disintegrate"
 	inhand_icon_state = "disintegrate"
-	item_flags = NEEDS_PERMIT | ABSTRACT | DROPDEL
+	item_flags = NEEDS_PERMIT | ABSTRACT | DROPDEL | HAND_ITEM // monkestation edit: add HAND_ITEM
 
 	w_class = WEIGHT_CLASS_HUGE
 	throwforce = 0
@@ -399,6 +399,7 @@
 	color = RUNE_COLOR_RED
 	invocation = "Fuu ma'jin!"
 
+/* overriden in monkestation/code/modules/antagonists/cult/blood_magic.dm
 /obj/item/melee/blood_magic/stun/afterattack(mob/living/target, mob/living/carbon/user, proximity)
 	if(!isliving(target) || !proximity)
 		return
@@ -407,25 +408,21 @@
 	if(IS_CULTIST(user))
 		user.visible_message(span_warning("[user] holds up [user.p_their()] hand, which explodes in a flash of red light!"), \
 							span_cultitalic("You attempt to stun [target] with the spell!"))
-
-		user.mob_light(_range = 3, _color = LIGHT_COLOR_BLOOD_MAGIC, _duration = 0.2 SECONDS)
-
+		user.mob_light(range = 3, color = LIGHT_COLOR_BLOOD_MAGIC, duration = 0.2 SECONDS)
 		if(IS_HERETIC(target))
 			to_chat(user, span_warning("Some force greater than you intervenes! [target] is protected by the Forgotten Gods!"))
-			to_chat(target, span_warning("You are protected by your faith to the Forgotten Gods."))
+			to_chat(target, span_warning("You are protected by your faith to the Forgotten Gods!"))
 			var/old_color = target.color
 			target.color = rgb(0, 128, 0)
 			animate(target, color = old_color, time = 1 SECONDS, easing = EASE_IN)
-
 		// MONKESTATION EDIT START
-		if(IS_CLOCK(target))
+		else if(IS_CLOCK(target))
 			to_chat(user, span_warning("Some force greater than you intervenes! [target] is protected by the heretic Ratvar!"))
 			to_chat(target, span_warning("You are protected by your faith to Ratvar!"))
 			var/old_color = target.color
 			target.color = rgb(190, 135, 0)
 			animate(target, color = old_color, time = 1 SECONDS, easing = EASE_IN)
 		// MONKESTATION EDIT END
-
 		else if(target.can_block_magic())
 			to_chat(user, span_warning("The spell had no effect!"))
 		else
@@ -443,6 +440,7 @@
 				carbon_target.set_jitter_if_lower(30 SECONDS)
 		uses--
 	..()
+*/
 
 //Teleportation
 /obj/item/melee/blood_magic/teleport
@@ -607,7 +605,6 @@
 					user.visible_message(span_danger("The dark cloud recedes from what was formerly [candidate], revealing a\n [construct_class]!"))
 					make_new_construct_from_class(construct_class, THEME_CULT, candidate, user, FALSE, T)
 					uses--
-					candidate.mmi = null
 					qdel(candidate)
 					channeling = FALSE
 				else

@@ -12,7 +12,7 @@
 		// Command
 		JOB_CAPTAIN, JOB_HEAD_OF_PERSONNEL, JOB_HEAD_OF_SECURITY, JOB_RESEARCH_DIRECTOR, JOB_CHIEF_ENGINEER, JOB_CHIEF_MEDICAL_OFFICER,
 		// Security
-		JOB_WARDEN, JOB_SECURITY_OFFICER, JOB_DETECTIVE,
+		JOB_WARDEN, JOB_SECURITY_OFFICER, JOB_DETECTIVE, JOB_SECURITY_ASSISTANT,
 		// Curator
 		JOB_CURATOR,
 	)
@@ -30,7 +30,7 @@
 	var/num_bloodsuckers = get_antag_cap(population) * (scaled_times + 1)
 
 	for(var/i = 1 to num_bloodsuckers)
-		if(candidates.len <= 0)
+		if(length(candidates) <= 0)
 			break
 		var/mob/selected_mobs = pick_n_take(candidates)
 		assigned += selected_mobs.mind
@@ -63,7 +63,7 @@
 	protected_roles = list(
 		JOB_CAPTAIN, JOB_HEAD_OF_PERSONNEL, JOB_HEAD_OF_SECURITY,
 		JOB_WARDEN, JOB_SECURITY_OFFICER, JOB_DETECTIVE,
-		JOB_CURATOR,
+		JOB_CURATOR, JOB_SECURITY_ASSISTANT,
 	)
 	restricted_roles = list(JOB_AI, JOB_CYBORG, "Positronic Brain")
 	required_candidates = 1
@@ -83,7 +83,7 @@
 			candidates.Remove(player)
 
 /datum/dynamic_ruleset/midround/bloodsucker/execute()
-	if(!candidates || !candidates.len)
+	if(!candidates || !length(candidates))
 		return FALSE
 	var/mob/selected_mobs = pick_n_take(candidates)
 	assigned += selected_mobs.mind
@@ -112,7 +112,7 @@
 	protected_roles = list(
 		JOB_CAPTAIN, JOB_HEAD_OF_PERSONNEL, JOB_HEAD_OF_SECURITY,
 		JOB_WARDEN, JOB_SECURITY_OFFICER, JOB_DETECTIVE,
-		JOB_CURATOR,
+		JOB_CURATOR, JOB_SECURITY_ASSISTANT,
 	)
 	restricted_roles = list(JOB_AI, JOB_CYBORG)
 	required_candidates = 1

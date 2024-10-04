@@ -1,6 +1,12 @@
+/obj/item/food/spaghetti/raw/Initialize(mapload)
+	. = ..()
+	var random_names = list("spagti", "spagooter", "spaghetti", "spaget", "sgetti", "spagotti", "spugetti", "spacegetti", "bisgetti")
+	name = pick(random_names)
+
+
 /obj/item/food/spaghetti/security
 	name = "Robust pasta"
-	desc = "Only the truly robust can eat this safelly"
+	desc = "Only the truly robust can eat this safely."
 	icon_state = "spesslaw"
 	bite_consumption = 5
 	food_reagents = list(

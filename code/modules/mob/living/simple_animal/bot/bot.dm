@@ -24,7 +24,7 @@
 	bubble_icon = "machine"
 	speech_span = SPAN_ROBOT
 	faction = list(FACTION_NEUTRAL, FACTION_SILICON, FACTION_TURRET)
-	light_system = MOVABLE_LIGHT
+	light_system = OVERLAY_LIGHT
 	light_outer_range = 3
 	light_power = 0.9
 
@@ -45,8 +45,8 @@
 	///All initial access this bot started with.
 	var/list/prev_access = list()
 
-	///Bot-related mode flags on the Bot indicating how they will act. BOT_MODE_ON | BOT_MODE_AUTOPATROL | BOT_MODE_REMOTE_ENABLED | BOT_MODE_GHOST_CONTROLLABLE
-	var/bot_mode_flags = BOT_MODE_ON | BOT_MODE_REMOTE_ENABLED | BOT_MODE_GHOST_CONTROLLABLE
+	///Bot-related mode flags on the Bot indicating how they will act. BOT_MODE_ON | BOT_MODE_AUTOPATROL | BOT_MODE_REMOTE_ENABLED | BOT_MODE_GHOST_CONTROLLABLE | BOT_MODE_ROUNDSTART_POSSESSION
+	var/bot_mode_flags = BOT_MODE_ON | BOT_MODE_REMOTE_ENABLED | BOT_MODE_GHOST_CONTROLLABLE | BOT_MODE_ROUNDSTART_POSSESSION
 
 	///Bot-related cover flags on the Bot to deal with what has been done to their cover, including emagging. BOT_COVER_OPEN | BOT_COVER_LOCKED | BOT_COVER_EMAGGED | BOT_COVER_HACKED
 	var/bot_cover_flags = BOT_COVER_LOCKED
@@ -187,10 +187,10 @@
 		path_hud.add_atom_to_hud(src)
 		path_hud.show_to(src)
 
-	if(HAS_TRAIT(SSstation, STATION_TRAIT_BOTS_GLITCHED))
+	if(HAS_TRAIT(SSstation, STATION_TRAIT_BOTS_GLITCHED) && !SSticker.HasRoundStarted()) // monkestation edit: only glitch roundstart bots
 		randomize_language_if_on_station()
 
-	if(mapload && is_station_level(z) && (bot_mode_flags & BOT_MODE_GHOST_CONTROLLABLE))
+	if(mapload && is_station_level(z) && bot_mode_flags & BOT_MODE_GHOST_CONTROLLABLE && bot_mode_flags & BOT_MODE_ROUNDSTART_POSSESSION)
 		enable_possession(mapload)
 
 /mob/living/simple_animal/bot/Destroy()
@@ -244,13 +244,16 @@
 
 /// Allows renaming the bot to something else
 /mob/living/simple_animal/bot/proc/rename(mob/user)
-	var/new_name = sanitize_name(reject_bad_text(tgui_input_text(
-		user = user,
-		message = "This machine is designated [real_name]. Would you like to update its registration?",
-		title = "Name change",
-		default = real_name,
-		max_length = MAX_NAME_LEN,
-	)))
+	var/new_name = sanitize_name(
+		reject_bad_text(tgui_input_text(
+			user = user,
+			message = "This machine is designated [real_name]. Would you like to update its registration?",
+			title = "Name change",
+			default = real_name,
+			max_length = MAX_NAME_LEN,
+		)),
+		allow_numbers = TRUE
+	)
 	if (isnull(new_name) || QDELETED(src))
 		return
 	if (key && user != src)
@@ -303,8 +306,8 @@
 	. = ..()
 	if(bot_cover_flags & BOT_COVER_LOCKED) //First emag application unlocks the bot's interface. Apply a screwdriver to use the emag again.
 		bot_cover_flags &= ~BOT_COVER_LOCKED
-		to_chat(user, span_notice("You bypass [src]'s [hackables]."))
-		return
+		balloon_alert(user, "cover unlocked")
+		return TRUE
 	if(!(bot_cover_flags & BOT_COVER_LOCKED) && bot_cover_flags & BOT_COVER_OPEN) //Bot panel is unlocked by ID or emag, and the panel is screwed open. Ready for emagging.
 		bot_cover_flags |= BOT_COVER_EMAGGED
 		bot_cover_flags &= ~BOT_COVER_LOCKED //Manually emagging the bot locks out the panel.
@@ -314,9 +317,10 @@
 		to_chat(src, span_userdanger("(#$*#$^^( OVERRIDE DETECTED"))
 		if(user)
 			log_combat(user, src, "emagged")
-		return
+		return TRUE
 	else //Bot is unlocked, but the maint panel has not been opened with a screwdriver (or through the UI) yet.
-		to_chat(user, span_warning("You need to open maintenance panel first!"))
+		balloon_alert(user, "open maintenance panel first!")
+		return FALSE
 
 /mob/living/simple_animal/bot/examine(mob/user)
 	. = ..()
@@ -461,11 +465,15 @@
 		return
 	do_sparks(5, TRUE, src)
 
-/mob/living/simple_animal/bot/bullet_act(obj/projectile/Proj, def_zone, piercing_hit = FALSE)
-	if(Proj && (Proj.damage_type == BRUTE || Proj.damage_type == BURN))
-		if(prob(75) && Proj.damage > 0)
-			do_sparks(5, TRUE, src)
-	return ..()
+/mob/living/simple_animal/bot/bullet_act(obj/projectile/hitting_projectile, def_zone, piercing_hit = FALSE)
+	. = ..()
+	if(prob(25) || . != BULLET_ACT_HIT)
+		return
+	if(hitting_projectile.damage_type != BRUTE && hitting_projectile.damage_type != BURN)
+		return
+	if(!hitting_projectile.is_hostile_projectile() || hitting_projectile.damage <= 0)
+		return
+	do_sparks(5, TRUE, src)
 
 /mob/living/simple_animal/bot/emp_act(severity)
 	. = ..()
@@ -653,14 +661,17 @@ Pass a positive integer as an argument to override a bot's default speed.
 	if(mode != BOT_SUMMON && mode != BOT_RESPONDING)
 		access_card.set_access(prev_access)
 
-/mob/living/simple_animal/bot/proc/call_bot(caller, turf/waypoint, message = TRUE)
+/mob/living/simple_animal/bot/proc/call_bot(user, turf/waypoint, message = TRUE)
+	if(isAI(user) && calling_ai && calling_ai != src) //Prevents an override if another AI is controlling this bot.
+		return FALSE
+
 	bot_reset() //Reset a bot before setting it to call mode.
 
 	//For giving the bot temporary all-access. This method is bad and makes me feel bad. Refactoring access to a component is for another PR.
-	var/obj/item/card/id/all_access = new /obj/item/card/id/advanced/gold/captains_spare()
-	set_path(get_path_to(src, waypoint, max_distance=200, id = all_access))
-	qdel(all_access)
-	calling_ai = caller //Link the AI to the bot!
+	//Easier then building the list ourselves. I'm sorry.
+	var/static/obj/item/card/id/all_access = new /obj/item/card/id/advanced/gold/captains_spare()
+	set_path(get_path_to(src, waypoint, max_distance=200, access = all_access.GetAccess()))
+	calling_ai = user //Link the AI to the bot!
 	ai_waypoint = waypoint
 
 	if(path?.len) //Ensures that a valid path is calculated!
@@ -670,7 +681,7 @@ Pass a positive integer as an argument to override a bot's default speed.
 		access_card.set_access(REGION_ACCESS_ALL_STATION) //Give the bot all-access while under the AI's command.
 		if(client)
 			reset_access_timer_id = addtimer(CALLBACK (src, PROC_REF(bot_reset)), 60 SECONDS, TIMER_UNIQUE|TIMER_OVERRIDE|TIMER_STOPPABLE) //if the bot is player controlled, they get the extra access for a limited time
-			to_chat(src, span_notice("[span_big("Priority waypoint set by [icon2html(calling_ai, src)] <b>[caller]</b>. Proceed to <b>[end_area]</b>.")]<br>[path.len-1] meters to destination. You have been granted additional door access for 60 seconds."))
+			to_chat(src, span_notice("[span_big("Priority waypoint set by [icon2html(calling_ai, src)] <b>[user]</b>. Proceed to <b>[end_area]</b>.")]<br>[path.len-1] meters to destination. You have been granted additional door access for 60 seconds."))
 		if(message)
 			to_chat(calling_ai, span_notice("[icon2html(src, calling_ai)] [name] called to [end_area]. [path.len-1] meters to destination."))
 		pathset = TRUE
@@ -681,6 +692,8 @@ Pass a positive integer as an argument to override a bot's default speed.
 			to_chat(calling_ai, span_danger("Failed to calculate a valid route. Ensure destination is clear of obstructions and within range."))
 		calling_ai = null
 		set_path(null)
+
+	return TRUE
 
 /mob/living/simple_animal/bot/proc/call_mode() //Handles preparing a bot for a call, as well as calling the move proc.
 //Handles the bot's movement during a call.
@@ -701,6 +714,8 @@ Pass a positive integer as an argument to override a bot's default speed.
 	set_path(null)
 	summon_target = null
 	pathset = FALSE
+	if(QDELETED(access_card))
+		access_card = new /obj/item/card/id/advanced/simple_bot(src)
 	access_card.set_access(prev_access)
 	tries = 0
 	mode = BOT_IDLE
@@ -871,12 +886,12 @@ Pass a positive integer as an argument to override a bot's default speed.
 // given an optional turf to avoid
 /mob/living/simple_animal/bot/proc/calc_path(turf/avoid)
 	check_bot_access()
-	set_path(get_path_to(src, patrol_target, max_distance=120, id=access_card, exclude=avoid))
+	set_path(get_path_to(src, patrol_target, max_distance=120, access=access_card.GetAccess(), exclude=avoid, diagonal_handling=DIAGONAL_REMOVE_ALL))
 
 /mob/living/simple_animal/bot/proc/calc_summon_path(turf/avoid)
 	check_bot_access()
 	var/datum/callback/path_complete = CALLBACK(src, PROC_REF(on_summon_path_finish))
-	SSpathfinder.pathfind(src, summon_target, max_distance=150, id=access_card, exclude=avoid, on_finish = path_complete)
+	SSpathfinder.pathfind(src, summon_target, max_distance=150, access=access_card.GetAccess(), exclude=avoid, diagonal_handling=DIAGONAL_REMOVE_ALL, on_finish=list(path_complete))
 
 /mob/living/simple_animal/bot/proc/on_summon_path_finish(list/path)
 	set_path(path)
@@ -1032,7 +1047,7 @@ Pass a positive integer as an argument to override a bot's default speed.
 		hud.remove_atom_from_hud(src)
 
 	var/list/path_images = active_hud_list[DIAG_PATH_HUD]
-	QDEL_LIST(path_images)
+	LAZYCLEARLIST(path_images)
 	if(length(newpath))
 		var/mutable_appearance/path_image = new /mutable_appearance()
 		path_image.icon = path_image_icon

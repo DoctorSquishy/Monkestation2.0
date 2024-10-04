@@ -48,8 +48,9 @@
 	/// What the game tells ghosts when you make one
 	var/ghost_notification_message = "IT'S LOOSE"
 
+	pass_flags = PASSTABLE | PASSGLASS | PASSGRILLE | PASSCLOSEDTURF | PASSMACHINE | PASSSTRUCTURE | PASSDOORS
 	flags_1 = SUPERMATTER_IGNORES_1
-	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF | FREEZE_PROOF
+	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF | FREEZE_PROOF | SHUTTLE_CRUSH_PROOF
 	obj_flags = CAN_BE_HIT | DANGEROUS_POSSESSION
 
 /obj/singularity/Initialize(mapload, starting_energy = 50)
@@ -79,10 +80,10 @@
 			ghost_notification_message,
 			source = src,
 			action = NOTIFY_ORBIT,
-			flashwindow = FALSE,
+			notify_flags = NOTIFY_CATEGORY_DEFAULT,
 			ghost_sound = 'sound/machines/warning-buzzer.ogg',
 			header = ghost_notification_message,
-			notify_volume = 75
+			notify_volume = 75,
 		)
 
 
@@ -167,7 +168,7 @@
 	dissipate(seconds_per_tick)
 	radiation_pulse(src, 4, intensity = min(5000, (energy * 4.5) + 1000), should_rad_act = FALSE)
 	for(var/obj/collector in range(5, src))
-		if(!istype(collector, /obj/machinery/power/rad_collector))
+		if(!istype(collector, /obj/machinery/power/rad_collector) && !isartifact(collector))
 			continue
 		collector.rad_act(intensity = min(2500, (energy * 2) + 500))
 	check_energy()
@@ -340,7 +341,7 @@
 			if(STAGE_ONE)
 				steps = 1
 			if(STAGE_TWO)
-				steps = 3//Yes this is right
+				steps = 2//Now THIS is right
 			if(STAGE_THREE)
 				steps = 3
 			if(STAGE_FOUR)
@@ -386,16 +387,8 @@
 /obj/singularity/proc/can_move(turf/considered_turf)
 	if(!considered_turf)
 		return FALSE
-	if((locate(/obj/machinery/field/containment) in considered_turf) || (locate(/obj/machinery/shieldwall) in considered_turf))
+	if (HAS_TRAIT(considered_turf, TRAIT_CONTAINMENT_FIELD))
 		return FALSE
-	else if(locate(/obj/machinery/field/generator) in considered_turf)
-		var/obj/machinery/field/generator/check_generator = locate(/obj/machinery/field/generator) in considered_turf
-		if(check_generator?.active)
-			return FALSE
-	else if(locate(/obj/machinery/power/shieldwallgen) in considered_turf)
-		var/obj/machinery/power/shieldwallgen/check_shield = locate(/obj/machinery/power/shieldwallgen) in considered_turf
-		if(check_shield?.active)
-			return FALSE
 	return TRUE
 
 /obj/singularity/proc/event()
@@ -478,3 +471,7 @@
 /obj/singularity/deadchat_controlled/Initialize(mapload, starting_energy)
 	. = ..()
 	deadchat_plays(mode = DEMOCRACY_MODE)
+
+/// Special singularity that spawns for shuttle events only
+/obj/singularity/shuttle_event
+	anchored = FALSE

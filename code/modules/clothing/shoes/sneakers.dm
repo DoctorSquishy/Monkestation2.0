@@ -7,9 +7,15 @@
 	greyscale_colors = "#2d2d33#ffffff"
 	greyscale_config = /datum/greyscale_config/sneakers
 	greyscale_config_worn = /datum/greyscale_config/sneakers_worn
+	greyscale_config_worn_digitigrade = /datum/greyscale_config/sneakers_worn/digitigrade
 	greyscale_config_inhand_left = /datum/greyscale_config/sneakers_inhand_left
 	greyscale_config_inhand_right = /datum/greyscale_config/sneakers_inhand_right
 	flags_1 = IS_PLAYER_COLORABLE_1
+
+/obj/item/clothing/shoes/sneakers/random/Initialize(mapload)
+	. = ..()
+	greyscale_colors = "#" + random_color() + "#" + random_color()
+	update_greyscale()
 
 /obj/item/clothing/shoes/sneakers/black
 	name = "black shoes"
@@ -81,6 +87,7 @@
 	greyscale_colors = "#d15b1b#ffffff"
 	greyscale_config = /datum/greyscale_config/sneakers_orange
 	greyscale_config_worn = /datum/greyscale_config/sneakers_orange_worn
+	greyscale_config_worn_digitigrade = /datum/greyscale_config/sneakers_orange_worn/digitigrade
 	greyscale_config_inhand_left = /datum/greyscale_config/sneakers_orange_inhand_left
 	greyscale_config_inhand_right = /datum/greyscale_config/sneakers_orange_inhand_right
 	flags_1 = NONE

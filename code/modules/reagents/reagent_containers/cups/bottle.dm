@@ -7,8 +7,8 @@
 	fill_icon_state = "bottle"
 	inhand_icon_state = "atoxinbottle"
 	worn_icon_state = "bottle"
-	possible_transfer_amounts = list(5, 10, 15, 25, 30)
-	volume = 30
+	possible_transfer_amounts = list(5, 10, 15, 25, 50)
+	volume = 50
 	fill_icon_thresholds = list(0, 1, 20, 40, 60, 80, 100)
 
 /obj/item/reagent_containers/cup/bottle/Initialize(mapload)
@@ -41,7 +41,7 @@
 	name = "morphine bottle"
 	desc = "A small bottle of morphine."
 	icon = 'icons/obj/medical/chemical.dmi'
-	list_reagents = list(/datum/reagent/medicine/morphine = 30)
+	list_reagents = list(/datum/reagent/medicine/painkiller/morphine = 30)
 
 /obj/item/reagent_containers/cup/bottle/chloralhydrate
 	name = "chloral hydrate bottle"
@@ -62,7 +62,6 @@
 /obj/item/reagent_containers/cup/bottle/phlogiston
 	name = "Phlogiston bottle"
 	desc = "A small bottle of Phlogiston, that will set you on fire if used."
-	volume = 50
 	list_reagents = list(/datum/reagent/phlogiston = 30)
 
 /obj/item/reagent_containers/cup/bottle/ammoniated_mercury
@@ -251,11 +250,6 @@
 	desc = "A small bottle. Contains an untested viral culture in synthblood medium."
 	spawned_disease = /datum/disease/advance/random
 
-/obj/item/reagent_containers/cup/bottle/pierrot_throat
-	name = "Pierrot's Throat culture bottle"
-	desc = "A small bottle. Contains H0NI<42 virion culture in synthblood medium."
-	spawned_disease = /datum/disease/pierrot_throat
-
 /obj/item/reagent_containers/cup/bottle/cold
 	name = "Rhinovirus culture bottle"
 	desc = "A small bottle. Contains XY-rhinovirus culture in synthblood medium."
@@ -265,12 +259,6 @@
 	name = "Flu virion culture bottle"
 	desc = "A small bottle. Contains H13N1 flu virion culture in synthblood medium."
 	spawned_disease = /datum/disease/advance/flu
-
-/obj/item/reagent_containers/cup/bottle/retrovirus
-	name = "Retrovirus culture bottle"
-	desc = "A small bottle. Contains a retrovirus culture in a synthblood medium."
-	spawned_disease = /datum/disease/dna_retrovirus
-
 /obj/item/reagent_containers/cup/bottle/gbs
 	name = "GBS culture bottle"
 	desc = "A small bottle. Contains Gravitokinetic Bipotential SADS+ culture in synthblood medium."//Or simply - General BullShit
@@ -287,26 +275,6 @@
 	desc = "A small bottle. Contains Cryptococcus Cosmosis culture in synthblood medium."
 	icon_state = "bottle3"
 	spawned_disease = /datum/disease/brainrot
-
-/obj/item/reagent_containers/cup/bottle/magnitis
-	name = "Magnitis culture bottle"
-	desc = "A small bottle. Contains a small dosage of Fukkos Miracos."
-	spawned_disease = /datum/disease/magnitis
-
-/obj/item/reagent_containers/cup/bottle/wizarditis
-	name = "Wizarditis culture bottle"
-	desc = "A small bottle. Contains a sample of Rincewindus Vulgaris."
-	spawned_disease = /datum/disease/wizarditis
-
-/obj/item/reagent_containers/cup/bottle/anxiety
-	name = "Severe Anxiety culture bottle"
-	desc = "A small bottle. Contains a sample of Lepidopticides."
-	spawned_disease = /datum/disease/anxiety
-
-/obj/item/reagent_containers/cup/bottle/beesease
-	name = "Beesease culture bottle"
-	desc = "A small bottle. Contains a sample of invasive Apidae."
-	spawned_disease = /datum/disease/beesease
 
 /obj/item/reagent_containers/cup/bottle/fluspanish
 	name = "Spanish flu culture bottle"
@@ -473,7 +441,6 @@
 	fill_icon_state = "syrup"
 	fill_icon_thresholds = list(0, 20, 40, 60, 80, 100)
 	possible_transfer_amounts = list(5, 10)
-	volume = 50
 	amount_per_transfer_from_this = 5
 	spillable = FALSE
 	///variable to tell if the bottle can be refilled

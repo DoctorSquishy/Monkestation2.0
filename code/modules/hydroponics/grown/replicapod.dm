@@ -12,7 +12,7 @@
 	endurance = 25
 	maturation = 30
 	production = 5
-	yield = 4
+	yield = 40
 	growthstages = 1
 	growing_icon = 'icons/obj/hydroponics/growing_vegetables.dmi'
 	genes = list(/datum/plant_gene/trait/repeated_harvest)
@@ -41,7 +41,7 @@
 	endurance = 8
 	maturation = 10
 	production = 1
-	yield = 1 //seeds if there isn't a dna inside
+	yield = 10
 	potency = 30
 	var/volume = 5
 	var/ckey
@@ -65,12 +65,12 @@
 	. = ..()
 	RegisterSignals(reagents, list(COMSIG_REAGENTS_ADD_REAGENT, COMSIG_REAGENTS_NEW_REAGENT), PROC_REF(on_reagent_add))
 	RegisterSignal(reagents, COMSIG_REAGENTS_DEL_REAGENT, PROC_REF(on_reagent_del))
-	RegisterSignal(reagents, COMSIG_PARENT_QDELETING, PROC_REF(on_reagents_del))
+	RegisterSignal(reagents, COMSIG_QDELETING, PROC_REF(on_reagents_del))
 
 /// Handles the seeds' reagents datum getting deleted.
 /obj/item/seeds/replicapod/proc/on_reagents_del(datum/reagents/reagents)
 	SIGNAL_HANDLER
-	UnregisterSignal(reagents, list(COMSIG_REAGENTS_ADD_REAGENT, COMSIG_REAGENTS_NEW_REAGENT, COMSIG_REAGENTS_DEL_REAGENT, COMSIG_PARENT_QDELETING))
+	UnregisterSignal(reagents, list(COMSIG_REAGENTS_ADD_REAGENT, COMSIG_REAGENTS_NEW_REAGENT, COMSIG_REAGENTS_DEL_REAGENT, COMSIG_QDELETING))
 	return NONE
 
 /// Handles reagents getting added to this seed.
@@ -121,7 +121,7 @@
 		return null
 
 /obj/item/seeds/replicapod/harvest(mob/user) //now that one is fun -- Urist
-	var/obj/machinery/hydroponics/parent = loc
+	var/atom/movable/parent = loc
 	var/make_podman = FALSE
 	var/ckey_holder = null
 	var/list/result = list()
@@ -175,7 +175,6 @@
 			var/obj/item/seeds/replicapod/harvestseeds = src.Copy()
 			result.Add(harvestseeds)
 			harvestseeds.forceMove(output_loc)
-		parent.update_tray(user, seed_count)
 		return result
 
 	// Congratulations! %Do you want to build a pod man?%
@@ -211,5 +210,4 @@
 
 	podman.dna.species.exotic_blood = most_plentiful_reagent[1]
 	investigate_log("[key_name(mind)] cloned as a podman via [src] in [parent]", INVESTIGATE_BOTANY)
-	parent.update_tray(user, 1)
 	return result

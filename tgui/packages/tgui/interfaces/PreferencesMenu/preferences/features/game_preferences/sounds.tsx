@@ -1,4 +1,10 @@
-import { CheckboxInput, FeatureToggle } from '../base';
+import { multiline } from 'common/string';
+import {
+  CheckboxInput,
+  FeatureChoiced,
+  FeatureDropdownInput,
+  FeatureToggle,
+} from '../base';
 
 export const sound_ambience: FeatureToggle = {
   name: 'Enable ambience',
@@ -59,3 +65,23 @@ export const sound_ship_ambience: FeatureToggle = {
   category: 'SOUND',
   component: CheckboxInput,
 };
+
+export const sound_achievement: FeatureChoiced = {
+  name: 'Achievement unlock sound',
+  category: 'SOUND',
+  description: multiline`
+    The sound that's played when unlocking an achievement.
+    If disabled, no sound will be played.
+  `,
+  component: FeatureDropdownInput,
+};
+
+// monke edit start - AI vox announcement toggle
+export const sound_vox: FeatureToggle = {
+  name: 'Enable AI VOX announcements',
+  category: 'SOUND',
+  subcategory: 'IC',
+  description: 'When enabled, hear AI VOX (text-to-speech) announcements.',
+  component: CheckboxInput,
+};
+// monke edit end

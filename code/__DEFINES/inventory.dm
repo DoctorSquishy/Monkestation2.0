@@ -137,6 +137,8 @@
 #define CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON (1<<2)
 ///has a sprite for monkeys
 #define CLOTHING_MONKEY_VARIATION (1<<3)
+///Has a sprite for snouted heads specifically.
+#define CLOTHING_SNOUTED_VARIATION (1<<4)
 
 //flags for covering body parts
 #define GLASSESCOVERSEYES (1<<0)
@@ -170,6 +172,7 @@ GLOBAL_LIST_INIT(detective_vest_allowed, list(
 	/obj/item/flashlight,
 	/obj/item/gun/ballistic,
 	/obj/item/gun/energy,
+	/obj/item/gun/microfusion, //monkestation edit
 	/obj/item/lighter,
 	/obj/item/melee/baton,
 	/obj/item/reagent_containers/spray/pepper,
@@ -189,6 +192,7 @@ GLOBAL_LIST_INIT(security_vest_allowed, list(
 	/obj/item/flashlight,
 	/obj/item/gun/ballistic,
 	/obj/item/gun/energy,
+	/obj/item/gun/microfusion, //monkestation edit
 	/obj/item/knife/combat,
 	/obj/item/melee/baton,
 	/obj/item/reagent_containers/spray/pepper,
@@ -206,6 +210,7 @@ GLOBAL_LIST_INIT(security_wintercoat_allowed, list(
 	/obj/item/ammo_casing,
 	/obj/item/gun/ballistic,
 	/obj/item/gun/energy,
+	/obj/item/gun/microfusion, //monkestation edit
 	/obj/item/melee/baton,
 	/obj/item/reagent_containers/spray/pepper,
 	/obj/item/restraints/handcuffs,

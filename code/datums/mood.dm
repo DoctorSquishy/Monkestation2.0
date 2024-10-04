@@ -50,7 +50,7 @@
 	RegisterSignal(mob_to_make_moody, COMSIG_ENTER_AREA, PROC_REF(check_area_mood))
 	RegisterSignal(mob_to_make_moody, COMSIG_LIVING_REVIVE, PROC_REF(on_revive))
 	RegisterSignal(mob_to_make_moody, COMSIG_MOB_STATCHANGE, PROC_REF(handle_mob_death))
-	RegisterSignal(mob_to_make_moody, COMSIG_PARENT_QDELETING, PROC_REF(clear_parent_ref))
+	RegisterSignal(mob_to_make_moody, COMSIG_QDELETING, PROC_REF(clear_parent_ref))
 
 	mob_to_make_moody.become_area_sensitive(MOOD_DATUM_TRAIT)
 	if(mob_to_make_moody.hud_used)
@@ -58,16 +58,26 @@
 		var/datum/hud/hud = mob_to_make_moody.hud_used
 		hud.show_hud(hud.hud_version)
 
+//MONKESTATION ADDITION START
+	var/datum/atom_hud/mood/hud = GLOB.huds[DATA_HUD_MOOD]
+	hud.add_atom_to_hud(mob_to_make_moody)
+//MONKESTATION ADDITION END
+
 /datum/mood/proc/clear_parent_ref()
 	SIGNAL_HANDLER
 
 	unmodify_hud()
 	mob_parent.lose_area_sensitivity(MOOD_DATUM_TRAIT)
-	UnregisterSignal(mob_parent, list(COMSIG_MOB_HUD_CREATED, COMSIG_ENTER_AREA, COMSIG_LIVING_REVIVE, COMSIG_MOB_STATCHANGE, COMSIG_PARENT_QDELETING))
+	UnregisterSignal(mob_parent, list(COMSIG_MOB_HUD_CREATED, COMSIG_ENTER_AREA, COMSIG_LIVING_REVIVE, COMSIG_MOB_STATCHANGE, COMSIG_QDELETING))
+
+//MONKESTATION ADDITION START
+	var/datum/atom_hud/mood/hud = GLOB.huds[DATA_HUD_MOOD]
+	hud.remove_atom_from_hud(mob_parent)
+//MONKESTATION ADDITION END
 
 	mob_parent = null
 
-/datum/mood/Destroy(force, ...)
+/datum/mood/Destroy(force)
 	STOP_PROCESSING(SSmood, src)
 	QDEL_LIST_ASSOC_VAL(mood_events)
 	return ..()
@@ -164,6 +174,7 @@
 
 	mood_events[category] = the_event
 	the_event.category = category
+	update_mood_hud(type) //monkestation addition
 	update_mood()
 
 	if (the_event.timeout)
@@ -280,8 +291,8 @@
 	mood_screen_object = new
 	mood_screen_object.color = "#4b96c4"
 	hud.infodisplay += mood_screen_object
-	RegisterSignal(hud, COMSIG_PARENT_QDELETING, PROC_REF(unmodify_hud))
-	RegisterSignal(mood_screen_object, COMSIG_CLICK, PROC_REF(hud_click))
+	RegisterSignal(hud, COMSIG_QDELETING, PROC_REF(unmodify_hud))
+	RegisterSignal(mood_screen_object, COMSIG_SCREEN_ELEMENT_CLICK, PROC_REF(hud_click))
 
 /// Removes the mood HUD object
 /datum/mood/proc/unmodify_hud(datum/source)
@@ -491,6 +502,26 @@
 		if (moodlet.category == category)
 			return TRUE
 	return FALSE
+
+//MONKESTATION ADDITION START
+/// Update the mood change indicator based on the mood_change of the mood_event
+/datum/mood/proc/update_mood_hud(datum/mood_event/type)
+	if (!ispath(type))
+		CRASH("A non path ([type]), was used to change a mood hud. This shouldn't be happening.")
+	if(QDELETED(mob_parent) || !istype(mob_parent.hud_list))
+		return
+	if(initial(type.hidden) || !initial(type.mood_change))
+		return
+	var/image/holder = mob_parent.hud_list[MOOD_HUD]
+	var/icon/I = icon(mob_parent.icon, mob_parent.icon_state, mob_parent.dir)
+	holder.pixel_y = I.Height() - world.icon_size + 12
+	holder.layer = LOW_MOB_LAYER
+	holder.icon_state = null
+	if(initial(type.mood_change) > 0)
+		flick("hud_good_mood", holder)
+	else
+		flick("hud_bad_mood", holder)
+//MONKESTATION ADDITION END
 
 #undef MINOR_INSANITY_PEN
 #undef MAJOR_INSANITY_PEN

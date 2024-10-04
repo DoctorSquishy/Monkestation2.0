@@ -15,6 +15,15 @@
 	var/max_mod_capacity = 100
 	var/list/modkits = list()
 	gun_flags = NOT_A_REAL_GUN
+	var/disablemodification = FALSE //monkeedit - stops removal and addition of mods
+
+/obj/item/gun/energy/recharge/kinetic_accelerator/apply_fantasy_bonuses(bonus)
+	. = ..()
+	max_mod_capacity = modify_fantasy_variable("max_mod_capacity", max_mod_capacity, bonus * 10)
+
+/obj/item/gun/energy/recharge/kinetic_accelerator/remove_fantasy_bonuses(bonus)
+	max_mod_capacity = reset_fantasy_variable("max_mod_capacity", max_mod_capacity)
+	return ..()
 
 /obj/item/gun/energy/recharge/kinetic_accelerator/Initialize(mapload)
 	. = ..()
@@ -53,7 +62,7 @@
 
 /obj/item/gun/energy/recharge/kinetic_accelerator/crowbar_act(mob/living/user, obj/item/I)
 	. = TRUE
-	if(modkits.len)
+	if(modkits.len && !disablemodification) //monkeedit
 		to_chat(user, span_notice("You pry all the modifications out."))
 		I.play_tool_sound(src, 100)
 		for(var/a in modkits)
@@ -109,7 +118,7 @@
 	return ..()
 
 /obj/item/gun/energy/recharge/kinetic_accelerator/attackby(obj/item/I, mob/user)
-	if(istype(I, /obj/item/borg/upgrade/modkit))
+	if(istype(I, /obj/item/borg/upgrade/modkit) && !disablemodification) //monkeedit
 		var/obj/item/borg/upgrade/modkit/MK = I
 		MK.install(src, user)
 	else
@@ -188,7 +197,7 @@
 	strike_thing()
 	..()
 
-/obj/projectile/kinetic/on_hit(atom/target)
+/obj/projectile/kinetic/on_hit(atom/target, blocked = 0, pierce_hit)
 	strike_thing(target)
 	. = ..()
 
@@ -255,10 +264,10 @@
 /obj/item/borg/upgrade/modkit/proc/install(obj/item/gun/energy/recharge/kinetic_accelerator/KA, mob/user, transfer_to_loc = TRUE)
 	. = TRUE
 	if(minebot_upgrade)
-		if(minebot_exclusive && !istype(KA.loc, /mob/living/simple_animal/hostile/mining_drone))
+		if(minebot_exclusive && !istype(KA.loc, /mob/living/basic/mining_drone))
 			to_chat(user, span_notice("The modkit you're trying to install is only rated for minebot use."))
 			return FALSE
-	else if(istype(KA.loc, /mob/living/simple_animal/hostile/mining_drone))
+	else if(istype(KA.loc, /mob/living/basic/mining_drone))
 		to_chat(user, span_notice("The modkit you're trying to install is not rated for minebot use."))
 		return FALSE
 	if(denied_type)
@@ -547,6 +556,17 @@
 	var/chassis_name = "super-kinetic accelerator"
 
 /obj/item/borg/upgrade/modkit/chassis_mod/install(obj/item/gun/energy/recharge/kinetic_accelerator/KA, mob/user)
+//monkestation edit start
+	if(is_type_in_list(KA, list(/obj/item/gun/energy/recharge/kinetic_accelerator/glock,
+								/obj/item/gun/energy/recharge/kinetic_accelerator/m79,
+								/obj/item/gun/energy/recharge/kinetic_accelerator/meme,
+								/obj/item/gun/energy/recharge/kinetic_accelerator/railgun,
+								/obj/item/gun/energy/recharge/kinetic_accelerator/repeater,
+								/obj/item/gun/energy/recharge/kinetic_accelerator/shockwave,
+								/obj/item/gun/energy/recharge/kinetic_accelerator/shotgun)))
+		to_chat(user, span_warning("[src] is not compatible with [KA]."))
+		return FALSE
+//monkestation edit end
 	. = ..()
 	if(.)
 		KA.icon_state = chassis_icon
@@ -586,5 +606,12 @@
 	name = "adjustable tracer bolts"
 	desc = "Causes kinetic accelerator bolts to have an adjustable-colored tracer trail and explosion. Use in-hand to change color."
 
-/obj/item/borg/upgrade/modkit/tracer/adjustable/attack_self(mob/user)
-	bolt_color = input(user,"","Choose Color",bolt_color) as color|null
+/obj/item/borg/upgrade/modkit/tracer/adjustable/interact(mob/user)
+	..()
+	choose_bolt_color(user)
+
+/obj/item/borg/upgrade/modkit/tracer/adjustable/proc/choose_bolt_color(mob/user)
+	set waitfor = FALSE
+
+	var/new_color = tgui_color_picker(user, "", "Choose Color", bolt_color)
+	bolt_color = new_color || bolt_color

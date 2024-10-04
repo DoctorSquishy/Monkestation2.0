@@ -20,7 +20,8 @@
 	righthand_file = 'icons/mob/inhands/weapons/melee_righthand.dmi'
 	flags_1 = CONDUCT_1
 	slot_flags = ITEM_SLOT_BELT
-	force = 10
+	force = 1
+	pain_damage = 12
 	throwforce = 7
 	demolition_mod = 0.25
 	wound_bonus = 15
@@ -29,7 +30,7 @@
 	attack_verb_continuous = list("flogs", "whips", "lashes", "disciplines")
 	attack_verb_simple = list("flog", "whip", "lash", "discipline")
 	hitsound = 'sound/weapons/chainhit.ogg'
-	custom_materials = list(/datum/material/iron = 1000)
+	custom_materials = list(/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT)
 
 /obj/item/melee/chainofcommand/suicide_act(mob/living/user)
 	user.visible_message(span_suicide("[user] is strangling [user.p_them()]self with [src]! It looks like [user.p_theyre()] trying to commit suicide!"))
@@ -78,8 +79,9 @@
 	sharpness = SHARP_EDGED
 	attack_verb_continuous = list("slashes", "cuts")
 	attack_verb_simple = list("slash", "cut")
+	block_sound = 'sound/weapons/parry.ogg'
 	hitsound = 'sound/weapons/rapierhit.ogg'
-	custom_materials = list(/datum/material/iron = 1000)
+	custom_materials = list(/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT)
 	wound_bonus = 10
 	bare_wound_bonus = 25
 
@@ -170,6 +172,7 @@
 	attack_verb_continuous = list("slashes", "stings", "prickles", "pokes")
 	attack_verb_simple = list("slash", "sting", "prickle", "poke")
 	hitsound = 'sound/weapons/rapierhit.ogg'
+	block_sound = 'sound/weapons/parry.ogg'
 
 /obj/item/melee/beesword/afterattack(atom/target, mob/user, proximity)
 	. = ..()
@@ -208,6 +211,7 @@
 	shard.countdown = null
 	START_PROCESSING(SSobj, src)
 	visible_message(span_warning("[src] appears, balanced ever so perfectly on its hilt. This isn't ominous at all."))
+	RegisterSignal(src, COMSIG_ATOM_PRE_BULLET_ACT, PROC_REF(eat_bullets))
 
 /obj/item/melee/supermatter_sword/process()
 	if(balanced || throwing || ismob(src.loc) || isnull(src.loc))
@@ -254,11 +258,16 @@
 	consume_everything()
 	return TRUE
 
-/obj/item/melee/supermatter_sword/bullet_act(obj/projectile/projectile)
-	visible_message(span_danger("[projectile] smacks into [src] and rapidly flashes to ash."),\
-	span_hear("You hear a loud crack as you are washed with a wave of heat."))
-	consume_everything(projectile)
-	return BULLET_ACT_HIT
+/obj/item/melee/supermatter_sword/proc/eat_bullets(datum/source, obj/projectile/hitting_projectile)
+	SIGNAL_HANDLER
+
+	visible_message(
+		span_danger("[hitting_projectile] smacks into [source] and rapidly flashes to ash."),
+		null,
+		span_hear("You hear a loud crack as you are washed with a wave of heat."),
+	)
+	consume_everything(hitting_projectile)
+	return COMPONENT_BULLET_BLOCKED
 
 /obj/item/melee/supermatter_sword/suicide_act(mob/living/user)
 	user.visible_message(span_suicide("[user] touches [src]'s blade. It looks like [user.p_theyre()] tired of waiting for the radiation to kill [user.p_them()]!"))
@@ -445,12 +454,13 @@
 	greyscale_colors = "#FFFFFF"
 
 	material_flags = MATERIAL_EFFECTS | MATERIAL_ADD_PREFIX | MATERIAL_GREYSCALE | MATERIAL_AFFECT_STATISTICS //Material type changes the prefix as well as the color.
-	custom_materials = list(/datum/material/iron = 12000)  //Defaults to an Iron Mace.
+	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT*6)  //Defaults to an Iron Mace.
 	slot_flags = ITEM_SLOT_BELT
 	force = 14
 	w_class = WEIGHT_CLASS_BULKY
 	throwforce = 8
 	block_chance = 10
+	block_sound = 'sound/weapons/genhit.ogg'
 	armour_penetration = 50
 	attack_verb_continuous = list("smacks", "strikes", "cracks", "beats")
 	attack_verb_simple = list("smack", "strike", "crack", "beat")

@@ -66,7 +66,7 @@
 	var/datum/weakref/enslaved_to
 
 	var/datum/language_holder/language_holder
-	var/unconvertable = FALSE
+	/* var/unconvertable = FALSE */ // monkestation edit: replace with mind trait
 	var/late_joiner = FALSE
 	/// has this mind ever been an AI
 	var/has_ever_been_ai = FALSE
@@ -122,6 +122,25 @@
 	set_current(null)
 	return ..()
 
+/datum/mind/serialize_list(list/options, list/semvers)
+	. = ..()
+
+	.["key"] = key
+	.["name"] = name
+	.["ghostname"] = ghostname
+	.["memories"] = memories
+	.["martial_art"] = martial_art
+	.["antag_datums"] = antag_datums
+	.["holy_role"] = holy_role
+	.["special_role"] = special_role
+	.["assigned_role"] = assigned_role.title
+	.["current"] = current
+
+	var/mob/enslaved_to = src.enslaved_to?.resolve()
+	.["enslaved_to"] = enslaved_to
+
+	SET_SERIALIZATION_SEMVER(semvers, "1.0.0")
+	return .
 
 /datum/mind/vv_edit_var(var_name, var_value)
 	switch(var_name)
@@ -138,10 +157,10 @@
 	if(new_current && QDELETED(new_current))
 		CRASH("Tried to set a mind's current var to a qdeleted mob, what the fuck")
 	if(current)
-		UnregisterSignal(src, COMSIG_PARENT_QDELETING)
+		UnregisterSignal(src, COMSIG_QDELETING)
 	current = new_current
 	if(current)
-		RegisterSignal(src, COMSIG_PARENT_QDELETING, PROC_REF(clear_current))
+		RegisterSignal(src, COMSIG_QDELETING, PROC_REF(clear_current))
 
 /datum/mind/proc/clear_current(datum/source)
 	SIGNAL_HANDLER
@@ -332,6 +351,41 @@
 			return
 		objective.completed = !objective.completed
 		log_admin("[key_name(usr)] toggled the win state for [current]'s objective: [objective.explanation_text]")
+
+	else if(href_list["obj_prompt_custom"])
+		var/datum/antagonist/target_antag
+		if(href_list["target_antag"])
+			var/datum/antagonist/found_datum = locate(href_list["target_antag"]) in antag_datums
+			if(found_datum)
+				target_antag = found_datum
+		if(isnull(target_antag))
+			switch(length(antag_datums))
+				if(0)
+					target_antag = add_antag_datum(/datum/antagonist/custom)
+				if(1)
+					target_antag = antag_datums[1]
+				else
+					var/datum/antagonist/target = input("Which antagonist gets the objective:", "Antagonist", "(new custom antag)") as null|anything in sort_list(antag_datums) + "(new custom antag)"
+					if (QDELETED(target))
+						return
+					else if(target == "(new custom antag)")
+						target_antag = add_antag_datum(/datum/antagonist/custom)
+					else
+						target_antag = target
+		var/replace_existing = input("Replace existing objectives?","Replace objectives?") in list("Yes", "No")
+		if (isnull(replace_existing))
+			return
+		replace_existing = replace_existing == "Yes"
+		var/replace_escape
+		if (!replace_existing)
+			replace_escape = FALSE
+		else
+			replace_escape = input("Replace survive/escape/martyr objectives?","Replace objectives?") in list("Yes", "No")
+			if (isnull(replace_escape))
+				return
+			replace_escape = replace_escape == "Yes"
+		target_antag.submit_player_objective(retain_existing = !replace_existing, retain_escape = !replace_escape, force = TRUE)
+		log_admin("[key_name(usr)] prompted [current] to enter their own objectives for [target_antag].")
 
 	else if (href_list["silicon"])
 		switch(href_list["silicon"])

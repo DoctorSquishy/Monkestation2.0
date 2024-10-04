@@ -24,7 +24,7 @@
 	RegisterSignal(src, COMSIG_COMPONENT_CLEAN_FACE_ACT, PROC_REF(clean_face))
 	AddComponent(/datum/component/personal_crafting)
 	AddElement(/datum/element/footstep, FOOTSTEP_MOB_HUMAN, 1, -6)
-	AddComponent(/datum/component/bloodysoles/feet)
+	AddComponent(/datum/component/bloodysoles/feet, FOOTPRINT_SPRITE_SHOES)
 	AddElement(/datum/element/ridable, /datum/component/riding/creature/human)
 	AddElement(/datum/element/strippable, GLOB.strippable_human_items, TYPE_PROC_REF(/mob/living/carbon/human/, should_strip))
 	var/static/list/loc_connections = list(
@@ -199,7 +199,7 @@
 				return
 
 			if(href_list["quirk"])
-				var/quirkstring = get_quirk_string(TRUE, CAT_QUIRK_ALL)
+				var/quirkstring = get_quirk_string(TRUE, CAT_QUIRK_ALL, from_scan = TRUE)
 				if(quirkstring)
 					to_chat(human_user,  "<span class='notice ml-1'>Detected physiological traits:</span>\n<span class='notice ml-2'>[quirkstring]</span>")
 				else
@@ -281,7 +281,7 @@
 				var/datum/crime/citation/new_citation = new(name = citation_name, author = allowed_access, fine = fine)
 
 				target_record.citations += new_citation
-				new_citation.alert_owner(target_record.name, "You have been fined [fine] credits for '[citation_name]'. Fines may be paid at security.")
+				new_citation.alert_owner(usr, src, target_record.name, "You have been fined [fine] credits for '[citation_name]'. Fines may be paid at security.")
 				investigate_log("New Citation: <strong>[citation_name]</strong> Fine: [fine] | Added to [target_record.name] by [key_name(human_user)]", INVESTIGATE_RECORDS)
 				SSblackbox.ReportCitation(REF(new_citation), human_user.ckey, human_user.real_name, target_record.name, citation_name, fine)
 
@@ -332,7 +332,7 @@
 	var/obj/item/bodypart/the_part = isbodypart(target_zone) ? target_zone : get_bodypart(check_zone(target_zone)) //keep these synced
 	// Loop through the clothing covering this bodypart and see if there's any thiccmaterials
 	if(!(injection_flags & INJECT_CHECK_PENETRATE_THICK))
-		for(var/obj/item/clothing/iter_clothing in clothingonpart(the_part))
+		for(var/obj/item/clothing/iter_clothing in get_clothing_on_part(the_part))
 			if(iter_clothing.clothing_flags & THICKMATERIAL)
 				. = FALSE
 				break
@@ -344,6 +344,12 @@
 			target_zone = get_bodypart(check_zone(user.zone_selected))
 		var/obj/item/bodypart/the_part = isbodypart(target_zone) ? target_zone : get_bodypart(check_zone(target_zone)) //keep these synced
 		to_chat(user, span_alert("There is no exposed flesh or thin material on [p_their()] [the_part.name]."))
+
+/mob/living/carbon/human/get_footprint_sprite()
+	var/obj/item/bodypart/leg/L = get_bodypart(BODY_ZONE_R_LEG) || get_bodypart(BODY_ZONE_L_LEG)
+	return shoes?.footprint_sprite || L?.footprint_sprite
+
+#define CHECK_PERMIT(item) (item && item.item_flags & NEEDS_PERMIT)
 
 /mob/living/carbon/human/assess_threat(judgement_criteria, lasercolor = "", datum/callback/weaponcheck=null)
 	if(judgement_criteria & JUDGE_EMAGGED)
@@ -911,7 +917,7 @@
 	if(diff < 0) //Taking damage, not healing
 		return diff * physiology.stamina_mod
 	return diff
-	
+
 /mob/living/carbon/human/adjust_nutrition(change) //Honestly FUCK the oldcoders for putting nutrition on /mob someone else can move it up because holy hell I'd have to fix SO many typechecks
 	if(HAS_TRAIT(src, TRAIT_NOHUNGER))
 		return FALSE

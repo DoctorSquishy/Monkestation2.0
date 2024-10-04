@@ -17,7 +17,7 @@
 	open = round(rand(0, 1))
 	update_appearance()
 	if(mapload && SSmapping.level_trait(z, ZTRAIT_STATION))
-		AddElement(/datum/element/lazy_fishing_spot, FISHING_SPOT_PRESET_TOILET)
+		AddElement(/datum/element/lazy_fishing_spot, /datum/fish_source/toilet)
 
 /obj/structure/toilet/attack_hand(mob/living/user, list/modifiers)
 	. = ..()
@@ -92,7 +92,7 @@
 		else
 			for(var/i in custom_materials)
 				var/datum/material/M = i
-				new M.sheet_type(loc, FLOOR(custom_materials[M] / MINERAL_MATERIAL_AMOUNT, 1))
+				new M.sheet_type(loc, FLOOR(custom_materials[M] / SHEET_MATERIAL_AMOUNT, 1))
 	..()
 
 /obj/structure/toilet/attackby(obj/item/I, mob/living/user, params)
@@ -259,7 +259,7 @@ MAPPING_DIRECTIONAL_HELPERS(/obj/structure/urinal, 32)
 /obj/item/bikehorn/rubberducky/plasticducky
 	name = "plastic ducky"
 	desc = "It's a cheap plastic knockoff of a loveable bathtime toy."
-	custom_materials = list(/datum/material/plastic = 1000)
+	custom_materials = list(/datum/material/plastic =HALF_SHEET_MATERIAL_AMOUNT)
 
 /obj/item/bikehorn/rubberducky
 	name = "rubber ducky"
@@ -359,7 +359,7 @@ MAPPING_DIRECTIONAL_HELPERS(/obj/structure/sink, (-14))
 		return
 
 	busy = FALSE
-	reagents.remove_any(5)
+	reagents.remove_all(5)
 	reagents.expose(user, TOUCH, 5 / max(reagents.total_volume, 5))
 	begin_reclamation()
 	if(washing_face)
@@ -512,7 +512,7 @@ MAPPING_DIRECTIONAL_HELPERS(/obj/structure/sink, (-14))
 	else
 		for(var/i in custom_materials)
 			var/datum/material/M = i
-			new M.sheet_type(loc, FLOOR(custom_materials[M] / MINERAL_MATERIAL_AMOUNT, 1))
+			new M.sheet_type(loc, FLOOR(custom_materials[M] / SHEET_MATERIAL_AMOUNT, 1))
 
 /obj/structure/sink/proc/begin_reclamation()
 	START_PROCESSING(SSplumbing, src)
@@ -575,7 +575,7 @@ MAPPING_DIRECTIONAL_HELPERS(/obj/structure/sink/kitchen, (-16))
 
 /obj/structure/sinkframe/proc/drop_materials()
 	for(var/datum/material/material as anything in custom_materials)
-		new material.sheet_type(loc, FLOOR(custom_materials[material] / MINERAL_MATERIAL_AMOUNT, 1))
+		new material.sheet_type(loc, FLOOR(custom_materials[material] / SHEET_MATERIAL_AMOUNT, 1))
 	return
 
 //Water source, use the type water_source for unlimited water sources like classic sinks.
@@ -763,7 +763,7 @@ MAPPING_DIRECTIONAL_HELPERS(/obj/structure/sink/kitchen, (-16))
 
 /obj/structure/curtain/attackby(obj/item/W, mob/user)
 	if (istype(W, /obj/item/toy/crayon))
-		color = input(user,"","Choose Color",color) as color
+		color = tgui_color_picker(user, "", "Choose Color", color)
 	else
 		return ..()
 
@@ -815,6 +815,14 @@ MAPPING_DIRECTIONAL_HELPERS(/obj/structure/sink/kitchen, (-16))
 	color = null
 	alpha = 255
 	opaque_closed = TRUE
+
+/obj/structure/curtain/bounty/start_closed
+	icon_state = "bounty-closed"
+
+/obj/structure/curtain/bounty/start_closed/Initialize(mapload)
+	. = ..()
+	if(open)
+		toggle()
 
 /obj/structure/curtain/cloth
 	color = null

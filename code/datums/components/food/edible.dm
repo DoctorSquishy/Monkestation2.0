@@ -45,6 +45,8 @@ Behavior that's still missing from this component that original food items had t
 	///how many bites we can get
 	var/total_bites = 0
 	var/current_mask
+	///required trait
+	var/required_trait // MONKESTATION EDIT
 
 /datum/component/edible/Initialize(
 	list/initial_reagents,
@@ -60,6 +62,7 @@ Behavior that's still missing from this component that original food items had t
 	datum/callback/after_eat,
 	datum/callback/on_consume,
 	datum/callback/check_liked,
+	required_trait,
 )
 	if(!isatom(parent))
 		return COMPONENT_INCOMPATIBLE
@@ -76,17 +79,19 @@ Behavior that's still missing from this component that original food items had t
 	src.on_consume = on_consume
 	src.tastes = string_assoc_list(tastes)
 	src.check_liked = check_liked
+	src.required_trait = required_trait // MONKESTATION EDIT
 
 
 	setup_initial_reagents(initial_reagents)
 
 /datum/component/edible/RegisterWithParent()
-	RegisterSignal(parent, COMSIG_PARENT_EXAMINE, PROC_REF(examine))
+	RegisterSignal(parent, COMSIG_ATOM_EXAMINE, PROC_REF(examine))
 	RegisterSignals(parent, COMSIG_ATOM_ATTACK_ANIMAL, PROC_REF(UseByAnimal))
 	RegisterSignal(parent, COMSIG_ATOM_CHECKPARTS, PROC_REF(OnCraft))
 	RegisterSignal(parent, COMSIG_ATOM_CREATEDBY_PROCESSING, PROC_REF(OnProcessed))
 	RegisterSignal(parent, COMSIG_FOOD_INGREDIENT_ADDED, PROC_REF(edible_ingredient_added))
 	RegisterSignal(parent, COMSIG_OOZE_EAT_ATOM, PROC_REF(on_ooze_eat))
+	RegisterSignal(parent, COMSIG_TRY_EAT_TRAIT, PROC_REF(try_eat_trait))
 
 	if(isturf(parent))
 		RegisterSignal(parent, COMSIG_ATOM_ENTERED, PROC_REF(on_entered))
@@ -116,7 +121,8 @@ Behavior that's still missing from this component that original food items had t
 		COMSIG_ITEM_ATTACK,
 		COMSIG_ITEM_USED_AS_INGREDIENT,
 		COMSIG_OOZE_EAT_ATOM,
-		COMSIG_PARENT_EXAMINE,
+		COMSIG_ATOM_EXAMINE,
+		COMSIG_TRY_EAT_TRAIT,
 	))
 
 	qdel(GetComponent(/datum/component/connect_loc_behalf))
@@ -197,10 +203,10 @@ Behavior that's still missing from this component that original food items had t
 	// add newly passed in reagents
 	setup_initial_reagents(initial_reagents)
 
-/datum/component/edible/Destroy(force, silent)
-	QDEL_NULL(after_eat)
-	QDEL_NULL(on_consume)
-	QDEL_NULL(check_liked)
+/datum/component/edible/Destroy(force)
+	after_eat = null
+	on_consume = null
+	check_liked = null
 	return ..()
 
 /// Sets up the initial reagents of the food.
@@ -234,7 +240,7 @@ Behavior that's still missing from this component that original food items had t
 	if(!(food_flags & FOOD_IN_CONTAINER))
 		switch(bitecount)
 			if(0)
-				// pass
+				pass()
 			if(1)
 				examine_list += span_notice("[parent] was bitten by someone!")
 			if(2, 3)
@@ -252,6 +258,11 @@ Behavior that's still missing from this component that original food items had t
 
 	if (!in_range(source, user))
 		return
+	return TryToEat(user, user)
+
+/datum/component/edible/proc/try_eat_trait(datum/source, mob/user)
+	if(!required_trait || !HAS_TRAIT(user, required_trait))
+		return FALSE
 	return TryToEat(user, user)
 
 ///Called when food is created through processing (Usually this means it was sliced). We use this to pass the OG items reagents.
@@ -292,7 +303,7 @@ Behavior that's still missing from this component that original food items had t
 
 	this_food.reagents.maximum_volume = ROUND_UP(this_food.reagents.maximum_volume) // Just because I like whole numbers for this.
 
-	BLACKBOX_LOG_FOOD_MADE(this_food.type)
+	BLACKBOX_LOG_FOOD_MADE(this_food)
 
 ///Makes sure the thing hasn't been destroyed or fully eaten to prevent eating phantom edibles
 /datum/component/edible/proc/IsFoodGone(atom/owner, mob/living/feeder)
@@ -322,6 +333,9 @@ Behavior that's still missing from this component that original food items had t
 		foodstuff = owner
 
 	if((feeder.istate & ISTATE_HARM) && !(foodstuff?.force_feed_on_aggression)) //monkestation edit - add loafing
+		return
+
+	if(required_trait && !HAS_TRAIT(eater, required_trait))
 		return
 
 	. = COMPONENT_CANCEL_ATTACK_CHAIN //Point of no return I suppose

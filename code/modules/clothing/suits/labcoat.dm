@@ -7,6 +7,7 @@
 	inhand_icon_state = "labcoat"
 	blood_overlay_type = "coat"
 	body_parts_covered = CHEST|ARMS
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON
 	allowed = list(
 		/obj/item/analyzer,
 		/obj/item/biopsy_tool,
@@ -17,6 +18,7 @@
 		/obj/item/reagent_containers/dropper,
 		/obj/item/reagent_containers/cup/beaker,
 		/obj/item/reagent_containers/cup/bottle,
+		/obj/item/reagent_containers/cup/tube,
 		/obj/item/reagent_containers/hypospray,
 		/obj/item/reagent_containers/pill,
 		/obj/item/reagent_containers/syringe,

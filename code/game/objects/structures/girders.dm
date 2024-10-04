@@ -214,7 +214,7 @@
 					else
 						var/obj/structure/tramwall/material/mat_tram_wall = new(loc)
 						var/list/material_list = list()
-						material_list[GET_MATERIAL_REF(sheets.material_type)] = MINERAL_MATERIAL_AMOUNT * 2
+						material_list[GET_MATERIAL_REF(sheets.material_type)] = SHEET_MATERIAL_AMOUNT * 2
 						if(material_list)
 							mat_tram_wall.set_custom_materials(material_list)
 						tram_wall = mat_tram_wall
@@ -237,7 +237,7 @@
 					else
 						var/obj/structure/falsewall/material/mat_falsewall = new(loc)
 						var/list/material_list = list()
-						material_list[GET_MATERIAL_REF(sheets.material_type)] = MINERAL_MATERIAL_AMOUNT * 2
+						material_list[GET_MATERIAL_REF(sheets.material_type)] = SHEET_MATERIAL_AMOUNT * 2
 						if(material_list)
 							mat_falsewall.set_custom_materials(material_list)
 						falsewall = mat_falsewall
@@ -259,7 +259,7 @@
 					else
 						var/turf/newturf = T.PlaceOnTop(/turf/closed/wall/material)
 						var/list/material_list = list()
-						material_list[GET_MATERIAL_REF(sheets.material_type)] = MINERAL_MATERIAL_AMOUNT * 2
+						material_list[GET_MATERIAL_REF(sheets.material_type)] = SHEET_MATERIAL_AMOUNT * 2
 						if(material_list)
 							newturf.set_custom_materials(material_list)
 
@@ -361,14 +361,19 @@
 	if((mover.pass_flags & PASSGRILLE) || isprojectile(mover))
 		return prob(girderpasschance)
 
-/obj/structure/girder/CanAStarPass(obj/item/card/id/ID, to_dir, atom/movable/caller, no_id = FALSE)
-	. = !density
-	if(caller)
-		. = . || (caller.pass_flags & PASSGRILLE)
+/obj/structure/girder/CanAStarPass(to_dir, datum/can_pass_info/pass_info)
+	if(!density)
+		return TRUE
+	if(pass_info.pass_flags & PASSGRILLE)
+		return TRUE
+	return FALSE
 
 /obj/structure/girder/deconstruct(disassembled = TRUE)
 	if(!(flags_1 & NODECONSTRUCT_1))
 		var/remains = pick(/obj/item/stack/rods, /obj/item/stack/sheet/iron)
+		var/area/shipbreak/A = get_area(src)
+		if(istype(A)) //shipbreaking
+			remains = /obj/item/stack/scrap/framing
 		new remains(loc)
 	qdel(src)
 
@@ -450,7 +455,7 @@
 				get_turf(src), RCD_MEMORY_WALL,
 			)
 		if(RCD_DECONSTRUCT)
-			return list("mode" = RCD_DECONSTRUCT, "delay" = 20, "cost" = 13)
+			return list("mode" = RCD_DECONSTRUCT, "delay" = 2 SECONDS, "cost" = 13)
 	return FALSE
 
 /obj/structure/girder/rcd_act(mob/user, obj/item/construction/rcd/the_rcd, passed_mode)

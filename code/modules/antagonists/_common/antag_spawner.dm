@@ -55,16 +55,15 @@
 /obj/item/antag_spawner/contract/proc/poll_for_student(mob/living/carbon/human/teacher, apprentice_school)
 	balloon_alert(teacher, "contacting apprentice...")
 	polling = TRUE
-	var/list/candidates = poll_candidates_for_mob("Do you want to play as a wizard's [apprentice_school] apprentice?", ROLE_WIZARD, ROLE_WIZARD, 15 SECONDS, src)
+	var/mob/chosen_one = SSpolling.poll_ghosts_for_target("Do you want to play as [span_danger("[teacher]'s")] [span_notice("[apprentice_school] apprentice")]?", check_jobban = ROLE_WIZARD, role = ROLE_WIZARD, poll_time = 15 SECONDS, checked_target = src, alert_pic = /obj/item/clothing/head/wizard/red, jump_target = src, role_name_text = "wizard apprentice", chat_text_border_icon = /obj/item/clothing/head/wizard/red)
 	polling = FALSE
-	if(!LAZYLEN(candidates))
+	if(isnull(chosen_one))
 		to_chat(teacher, span_warning("Unable to reach your apprentice! You can either attack the spellbook with the contract to refund your points, or wait and try again later."))
 		return
 	if(QDELETED(src) || used)
 		return
 	used = TRUE
-	var/mob/dead/observer/student = pick(candidates)
-	spawn_antag(student.client, get_turf(src), apprentice_school, teacher.mind)
+	spawn_antag(chosen_one.client, get_turf(src), apprentice_school, teacher.mind)
 
 /obj/item/antag_spawner/contract/spawn_antag(client/C, turf/T, kind, datum/mind/user)
 	new /obj/effect/particle_effect/fluid/smoke(T)
@@ -134,13 +133,12 @@
 		return
 
 	to_chat(user, span_notice("You activate [src] and wait for confirmation."))
-	var/list/nuke_candidates = poll_ghost_candidates("Do you want to play as a syndicate [borg_to_spawn ? "[lowertext(borg_to_spawn)] cyborg":"operative"]?", ROLE_OPERATIVE, ROLE_OPERATIVE, 150, POLL_IGNORE_SYNDICATE)
-	if(LAZYLEN(nuke_candidates))
+	var/mob/chosen_one = SSpolling.poll_ghost_candidates("Do you want to play as a reinforcement [special_role_name]?", check_jobban = ROLE_OPERATIVE, role = ROLE_OPERATIVE, poll_time = 15 SECONDS, ignore_category = POLL_IGNORE_SYNDICATE, alert_pic = src, role_name_text = special_role_name, amount_to_pick = 1)
+	if(chosen_one)
 		if(QDELETED(src) || !check_usability(user))
 			return
 		used = TRUE
-		var/mob/dead/observer/G = pick(nuke_candidates)
-		spawn_antag(G.client, get_turf(src), "nukeop", user.mind)
+		spawn_antag(chosen_one.client, get_turf(src), "nukeop", user.mind)
 		do_sparks(4, TRUE, src)
 		qdel(src)
 	else
@@ -224,6 +222,7 @@
 	borg.mmi.brainmob.real_name = brainopsname
 	borg.mmi.brainmob.name = brainopsname
 	borg.real_name = borg.name
+	borg.update_name_tag() // monkestation edit: name tags
 
 	borg.key = C.key
 
@@ -252,21 +251,19 @@
 		return
 	if(used)
 		return
-	var/list/candidates = poll_candidates_for_mob("Do you want to play as a [initial(demon_type.name)]?", ROLE_ALIEN, ROLE_ALIEN, 5 SECONDS, src)
-	if(LAZYLEN(candidates))
+	var/mob/chosen_one = SSpolling.poll_ghosts_for_target(check_jobban = ROLE_ALIEN, role = ROLE_ALIEN, poll_time = 5 SECONDS, checked_target = src, alert_pic = demon_type, jump_target = src, role_name_text = initial(demon_type.name))
+	if(chosen_one)
 		if(used || QDELETED(src))
 			return
 		used = TRUE
-		var/mob/dead/observer/summoned = pick(candidates)
-		user.log_message("has summoned forth the [initial(demon_type.name)] (played by [key_name(summoned)]) using a [name].", LOG_GAME) // has to be here before we create antag otherwise we can't get the ckey of the demon
-		spawn_antag(summoned.client, get_turf(src), initial(demon_type.name), user.mind)
+		user.log_message("has summoned forth the [initial(demon_type.name)] (played by [key_name(chosen_one)]) using a [name].", LOG_GAME) // has to be here before we create antag otherwise we can't get the ckey of the demon
+		spawn_antag(chosen_one.client, get_turf(src), initial(demon_type.name), user.mind)
 		to_chat(user, shatter_msg)
 		to_chat(user, veil_msg)
 		playsound(user.loc, 'sound/effects/glassbr1.ogg', 100, TRUE)
 		qdel(src)
 	else
-		to_chat(user, span_warning("You can't seem to work up the nerve to shatter the bottle! Perhaps you should try again later."))
-
+		to_chat(user, span_warning("The bottle's contents usually pop and boil constantly, but right now they're eerily still and calm. Perhaps you should try again later."))
 
 /obj/item/antag_spawner/slaughter_demon/spawn_antag(client/C, turf/T, kind = "", datum/mind/user)
 	var/mob/living/basic/demon/spawned = new demon_type(T)

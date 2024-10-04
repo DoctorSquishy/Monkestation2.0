@@ -101,6 +101,12 @@
 	mood_change = -3
 	timeout = 3 MINUTES
 
+/datum/mood_event/table_limbsmash/New(mob/M, ...)
+	if(HAS_TRAIT(M, TRAIT_ANALGESIA))
+		qdel(src)
+		return
+	return ..()
+
 /datum/mood_event/table_limbsmash/add_effects(obj/item/bodypart/banged_limb)
 	if(banged_limb)
 		description = "My fucking [banged_limb.plaintext_zone], man that hurts..."
@@ -143,6 +149,9 @@
 	mood_change = -4
 	timeout = 2 MINUTES
 
+/datum/mood_event/healsbadman/long_term
+	timeout = 10 MINUTES
+
 /datum/mood_event/jittery
 	description = "I'm nervous and on edge and I can't stand still!!"
 	mood_change = -2
@@ -165,6 +174,12 @@
 	description = "Medicine may be good for me but right now it stings like hell."
 	mood_change = -5
 	timeout = 60 SECONDS
+
+/datum/mood_event/painful_medicine/New(mob/M, ...)
+	if(HAS_TRAIT(M, TRAIT_ANALGESIA))
+		qdel(src)
+		return
+	return ..()
 
 /datum/mood_event/spooked
 	description = "The rattling of those bones... It still haunts me."
@@ -202,6 +217,12 @@
 /datum/mood_event/back_pain
 	description = "Bags never sit right on my back, this hurts like hell!"
 	mood_change = -15
+
+/datum/mood_event/back_pain/New(mob/M, ...)
+	if(HAS_TRAIT(M, TRAIT_ANALGESIA))
+		qdel(src)
+		return
+	return ..()
 
 /datum/mood_event/sad_empath
 	description = "Someone seems upset..."
@@ -409,6 +430,16 @@
 /datum/mood_event/unsatisfied_nomad
 	description = "I've been here too long! I want to go out and explore space!"
 	mood_change = -3
+
+/datum/mood_event/moon_insanity
+	description = "THE MOON JUDGES AND FINDS ME WANTING!!!"
+	mood_change = -3
+	timeout = 5 MINUTES
+
+/datum/mood_event/amulette_insanity
+	description = "I sEe THe LiGHt, It mUsT BE stOPPed"
+	mood_change = -6
+	timeout = 5 MINUTES
 
 ///Wizard cheesy grand finale - what everyone but the wizard gets
 /datum/mood_event/madness_despair

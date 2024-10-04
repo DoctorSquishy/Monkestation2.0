@@ -16,6 +16,9 @@
 	overlay_state_inactive = "module_armorbooster_off"
 	overlay_state_active = "module_armorbooster_on"
 	use_mod_colors = TRUE
+	suit_supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION | CLOTHING_SNOUTED_VARIATION
+	has_head_sprite = TRUE
+	head_only_when_active = TRUE
 	/// Whether or not this module removes pressure protection.
 	var/remove_pressure_protection = TRUE
 	/// Speed added to the control unit.
@@ -80,6 +83,8 @@
 /obj/item/mod/module/armor_booster/generate_worn_overlay(mutable_appearance/standing)
 	overlay_state_inactive = "[initial(overlay_state_inactive)]-[mod.skin]"
 	overlay_state_active = "[initial(overlay_state_active)]-[mod.skin]"
+	if((mod.wearer?.dna.species.bodytype & BODYTYPE_SNOUTED) && (suit_supports_variations_flags & CLOTHING_SNOUTED_VARIATION))
+		overlay_icon_file = 'monkestation/icons/mob/mod.dmi' //if the user has a snout, and the module supports a snout, we'll shift to the digi/snout icon file instead
 	return ..()
 
 ///Energy Shield - Gives you a rechargeable energy shield that nullifies attacks.
@@ -143,9 +148,9 @@
 	icon_state = "battlemage_shield"
 	idle_power_cost = DEFAULT_CHARGE_DRAIN * 0 //magic
 	use_power_cost = DEFAULT_CHARGE_DRAIN * 0 //magic too
-	max_charges = 15
-	recharge_start_delay = 0 SECONDS
-	charge_recovery = 12 //monkestation edit: from 8 to 12
+	max_charges = 25 //monkestation edit: from 15 to 25
+	recharge_start_delay = 1 MINUTES //monkestation edit: from 0 SECONDS to 1 MINUTES
+	charge_recovery = 25 //monkestation edit: from 8 to 25
 	shield_icon_file = 'icons/effects/magic.dmi'
 	shield_icon = "mageshield"
 	recharge_path = /obj/item/wizard_armour_charge
@@ -349,6 +354,7 @@
 		return
 	mod.wearer.do_attack_animation(target, ATTACK_EFFECT_SMASH)
 
+/* monkestation removal: overwritten in [monkestation\code\modules\mod\modules\modules_antag.dm], to fix bugs
 ///Chameleon - lets the suit disguise as any item that would fit on that slot.
 /obj/item/mod/module/chameleon
 	name = "MOD chameleon module"
@@ -379,9 +385,6 @@
 	possible_disguises = null
 
 /obj/item/mod/module/chameleon/on_use()
-	if(mod.active || mod.activating)
-		balloon_alert(mod.wearer, "suit active!")
-		return
 	. = ..()
 	if(!.)
 		return
@@ -423,6 +426,7 @@
 	mod.wearer.update_clothing(mod.slot_flags)
 	current_disguise = null
 	UnregisterSignal(mod, COMSIG_MOD_ACTIVATE)
+monkestation end */
 
 ///Plate Compression - Compresses the suit to normal size
 /obj/item/mod/module/plate_compression

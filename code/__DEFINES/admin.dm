@@ -45,6 +45,7 @@
 
 #define ADMIN_QUE(user) "(<a href='?_src_=holder;[HrefToken(forceGlobal = TRUE)];adminmoreinfo=[REF(user)]'>?</a>)"
 #define ADMIN_FLW(user) "(<a href='?_src_=holder;[HrefToken(forceGlobal = TRUE)];adminplayerobservefollow=[REF(user)]'>FLW</a>)"
+#define ADMIN_DEMO(user) "(<a href='?_src_=holder;[HrefToken(forceGlobal = TRUE)];adminopendemo=[REF(user)]'>REPLAY</a>)" //Monkestation Edit: REPLAYS
 #define ADMIN_PP(user) "(<a href='?_src_=holder;[HrefToken(forceGlobal = TRUE)];adminplayeropts=[REF(user)]'>PP</a>)"
 #define ADMIN_VV(atom) "(<a href='?_src_=vars;[HrefToken(forceGlobal = TRUE)];Vars=[REF(atom)]'>VV</a>)"
 #define ADMIN_SM(user) "(<a href='?_src_=holder;[HrefToken(forceGlobal = TRUE)];subtlemessage=[REF(user)]'>SM</a>)"
@@ -73,9 +74,6 @@
 #define ADMIN_SHOW_PAPER(atom) "(<A href='?_src_=holder;[HrefToken(forceGlobal = TRUE)];show_paper=[REF(atom)]'>SHOW</a>)"
 /// Displays "(PLAY)" in the chat, when clicked it tries to play internet sounds from the request.
 #define ADMIN_PLAY_INTERNET(text) "(<A href='?_src_=holder;[HrefToken(forceGlobal = TRUE)];play_internet=[url_encode(text)]'>PLAY</a>)"
-#define ADMIN_APPROVE_TOKEN(user) "(<A href='?_src_=holder;[HrefToken(forceGlobal = TRUE)];approve_token=[REF(user)]'>Yes</a>)"
-#define ADMIN_REJECT_TOKEN(user) "(<A href='?_src_=holder;[HrefToken(forceGlobal = TRUE)];reject_token=[REF(user)]'>No</a>)"
-#define ADMIN_OPEN_REVIEW(id) "(<A href='?_src_=holder;[HrefToken(forceGlobal = TRUE)];open_music_review=[id]'>Open Review</a>)"
 
 /atom/proc/Admin_Coordinates_Readable(area_name, admin_jump_ref)
 	var/turf/T = Safe_COORD_Location()

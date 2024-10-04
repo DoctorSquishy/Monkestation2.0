@@ -23,6 +23,14 @@
 	pass_flags_self = PASSTABLE | LETPASSTHROW
 	layer = TABLE_LAYER
 	obj_flags = CAN_BE_HIT | IGNORE_DENSITY
+	custom_materials = list(/datum/material/iron =SHEET_MATERIAL_AMOUNT)
+	max_integrity = 100
+	integrity_failure = 0.33
+	smoothing_flags = SMOOTH_BITMASK
+	smoothing_groups = SMOOTH_GROUP_TABLES
+	canSmoothWith = SMOOTH_GROUP_TABLES
+	///TRUE if the table can be climbed on and have living mobs placed on it normally, FALSE otherwise
+	var/climbable = TRUE
 	var/frame = /obj/structure/table_frame
 	var/framestack = /obj/item/stack/rods
 	var/glass_shard_type = /obj/item/shard
@@ -30,25 +38,24 @@
 	var/busy = FALSE
 	var/buildstackamount = 1
 	var/framestackamount = 2
-	var/deconstruction_ready = 1
-	custom_materials = list(/datum/material/iron = 2000)
-	max_integrity = 100
-	integrity_failure = 0.33
-	smoothing_flags = SMOOTH_BITMASK
-	smoothing_groups = SMOOTH_GROUP_TABLES
-	canSmoothWith = SMOOTH_GROUP_TABLES
+	var/deconstruction_ready = TRUE
 
 /obj/structure/table/Initialize(mapload, _buildstack)
 	. = ..()
 	if(_buildstack)
 		buildstack = _buildstack
-	AddElement(/datum/element/climbable)
+	AddElement(/datum/element/footstep_override, priority = STEP_SOUND_TABLE_PRIORITY)
+	AddElement(/datum/element/elevation, pixel_shift = 12)
+	if(climbable)
+		AddElement(/datum/element/climbable)
 
 	var/static/list/loc_connections = list(
 		COMSIG_CARBON_DISARM_COLLIDE = PROC_REF(table_carbon),
 	)
 
 	AddElement(/datum/element/connect_loc, loc_connections)
+	var/static/list/give_turf_traits = list(TRAIT_TURF_IGNORE_SLOWDOWN, TRAIT_TURF_IGNORE_SLIPPERY)
+	AddElement(/datum/element/give_turf_traits, give_turf_traits)
 	register_context()
 
 /obj/structure/table/add_context(atom/source, list/context, obj/item/held_item, mob/living/user)
@@ -100,6 +107,9 @@
 		if(isliving(user.pulling))
 			var/mob/living/pushed_mob = user.pulling
 			if(pushed_mob.buckled)
+				if(pushed_mob.buckled == src)
+					//Already buckled to the table, you probably meant to unbuckle them
+					return ..()
 				to_chat(user, span_warning("[pushed_mob] is buckled to [pushed_mob.buckled]!"))
 				return
 			if((user.istate & ISTATE_HARM))
@@ -139,10 +149,12 @@
 	if(locate(/obj/structure/table) in get_turf(mover))
 		return TRUE
 
-/obj/structure/table/CanAStarPass(obj/item/card/id/ID, to_dir, atom/movable/caller, no_id = FALSE)
-	. = !density
-	if(caller)
-		. = . || (caller.pass_flags & PASSTABLE)
+/obj/structure/table/CanAStarPass(to_dir, datum/can_pass_info/pass_info)
+	if(!density)
+		return TRUE
+	if(pass_info.pass_flags & PASSTABLE)
+		return TRUE
+	return FALSE
 
 /obj/structure/table/proc/tableplace(mob/living/user, mob/living/pushed_mob)
 	pushed_mob.forceMove(loc)
@@ -294,7 +306,7 @@
 		else
 			for(var/i in custom_materials)
 				var/datum/material/M = i
-				new M.sheet_type(T, FLOOR(custom_materials[M] / MINERAL_MATERIAL_AMOUNT, 1))
+				new M.sheet_type(T, FLOOR(custom_materials[M] / SHEET_MATERIAL_AMOUNT, 1))
 		if(!wrench_disassembly)
 			new frame(T)
 		else
@@ -304,7 +316,7 @@
 /obj/structure/table/rcd_vals(mob/user, obj/item/construction/rcd/the_rcd)
 	switch(the_rcd.mode)
 		if(RCD_DECONSTRUCT)
-			return list("mode" = RCD_DECONSTRUCT, "delay" = 24, "cost" = 16)
+			return list("mode" = RCD_DECONSTRUCT, "delay" = 2.4 SECONDS, "cost" = 16)
 	return FALSE
 
 /obj/structure/table/rcd_act(mob/user, obj/item/construction/rcd/the_rcd, passed_mode)
@@ -376,7 +388,7 @@
 	for(var/atom/movable/attached_movable as anything in attached_items)
 		if(!attached_movable.Move(loc))
 			RemoveItemFromTable(attached_movable, attached_movable.loc)
-			
+
 /obj/structure/table/rolling/Moved(atom/old_loc, movement_dir, forced, list/old_locs, momentum_change = TRUE)
 	. = ..()
 	if(has_gravity())
@@ -390,7 +402,7 @@
 	icon = 'icons/obj/smooth_structures/glass_table.dmi'
 	icon_state = "glass_table-0"
 	base_icon_state = "glass_table"
-	custom_materials = list(/datum/material/glass = 2000)
+	custom_materials = list(/datum/material/glass =SHEET_MATERIAL_AMOUNT)
 	buildstack = /obj/item/stack/sheet/glass
 	smoothing_groups = SMOOTH_GROUP_GLASS_TABLES
 	canSmoothWith = SMOOTH_GROUP_GLASS_TABLES
@@ -426,7 +438,7 @@
 		check_break(M)
 
 /obj/structure/table/glass/proc/check_break(mob/living/M)
-	if(M.has_gravity() && M.mob_size > MOB_SIZE_SMALL && !(M.movement_type & FLYING))
+	if(M.has_gravity() && M.mob_size > MOB_SIZE_SMALL && !(M.movement_type & FLYING) && !HAS_TRAIT(M, TRAIT_LIGHTWEIGHT))
 		table_shatter(M)
 
 /obj/structure/table/glass/proc/table_shatter(mob/living/victim)
@@ -466,7 +478,7 @@
 	icon = 'icons/obj/smooth_structures/plasmaglass_table.dmi'
 	icon_state = "plasmaglass_table-0"
 	base_icon_state = "plasmaglass_table"
-	custom_materials = list(/datum/material/alloy/plasmaglass = 2000)
+	custom_materials = list(/datum/material/alloy/plasmaglass =SHEET_MATERIAL_AMOUNT)
 	buildstack = /obj/item/stack/sheet/plasmaglass
 	glass_shard_type = /obj/item/shard/plasma
 	max_integrity = 100
@@ -588,7 +600,7 @@
 	icon = 'icons/obj/smooth_structures/reinforced_table.dmi'
 	icon_state = "reinforced_table-0"
 	base_icon_state = "reinforced_table"
-	deconstruction_ready = 0
+	deconstruction_ready = FALSE
 	buildstack = /obj/item/stack/sheet/plasteel
 	max_integrity = 200
 	integrity_failure = 0.25
@@ -660,7 +672,7 @@
 	icon = 'icons/obj/smooth_structures/rglass_table.dmi'
 	icon_state = "rglass_table-0"
 	base_icon_state = "rglass_table"
-	custom_materials = list(/datum/material/glass = 2000, /datum/material/iron = 2000)
+	custom_materials = list(/datum/material/glass =SHEET_MATERIAL_AMOUNT, /datum/material/iron =SHEET_MATERIAL_AMOUNT)
 	buildstack = /obj/item/stack/sheet/rglass
 	max_integrity = 150
 
@@ -670,7 +682,7 @@
 	icon = 'icons/obj/smooth_structures/rplasmaglass_table.dmi'
 	icon_state = "rplasmaglass_table-0"
 	base_icon_state = "rplasmaglass_table"
-	custom_materials = list(/datum/material/alloy/plasmaglass = 2000, /datum/material/iron = 2000)
+	custom_materials = list(/datum/material/alloy/plasmaglass =SHEET_MATERIAL_AMOUNT, /datum/material/iron =SHEET_MATERIAL_AMOUNT)
 	buildstack = /obj/item/stack/sheet/plasmarglass
 
 /obj/structure/table/reinforced/titaniumglass
@@ -679,7 +691,7 @@
 	icon = 'icons/obj/smooth_structures/titaniumglass_table.dmi'
 	icon_state = "titaniumglass_table-0"
 	base_icon_state = "titaniumglass_table"
-	custom_materials = list(/datum/material/alloy/titaniumglass = 2000)
+	custom_materials = list(/datum/material/alloy/titaniumglass =SHEET_MATERIAL_AMOUNT)
 	buildstack = /obj/item/stack/sheet/titaniumglass
 	max_integrity = 250
 
@@ -689,7 +701,7 @@
 	icon = 'icons/obj/smooth_structures/plastitaniumglass_table.dmi'
 	icon_state = "plastitaniumglass_table-0"
 	base_icon_state = "plastitaniumglass_table"
-	custom_materials = list(/datum/material/alloy/plastitaniumglass = 2000)
+	custom_materials = list(/datum/material/alloy/plastitaniumglass =SHEET_MATERIAL_AMOUNT)
 	buildstack = /obj/item/stack/sheet/plastitaniumglass
 	max_integrity = 300
 
@@ -707,9 +719,9 @@
 	smoothing_groups = null
 	canSmoothWith = null
 	can_buckle = 1
-	buckle_lying = NO_BUCKLE_LYING
-	buckle_requires_restraints = TRUE
-	custom_materials = list(/datum/material/silver = 2000)
+	buckle_lying = 90
+	climbable = FALSE
+	custom_materials = list(/datum/material/silver =SHEET_MATERIAL_AMOUNT)
 	var/mob/living/carbon/patient = null
 	var/obj/machinery/computer/operating/computer = null
 
@@ -720,6 +732,7 @@
 		if(computer)
 			computer.table = src
 			break
+
 	RegisterSignal(loc, COMSIG_ATOM_ENTERED, PROC_REF(mark_patient))
 	RegisterSignal(loc, COMSIG_ATOM_EXITED, PROC_REF(unmark_patient))
 
@@ -863,7 +876,7 @@
 	icon_state = "rack_parts"
 	inhand_icon_state = "rack_parts"
 	flags_1 = CONDUCT_1
-	custom_materials = list(/datum/material/iron=2000)
+	custom_materials = list(/datum/material/iron=SHEET_MATERIAL_AMOUNT)
 	var/building = FALSE
 
 /obj/item/rack_parts/attackby(obj/item/W, mob/user, params)

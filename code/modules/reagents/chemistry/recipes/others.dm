@@ -35,8 +35,8 @@
 	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_UNIQUE | REACTION_TAG_EXPLOSIVE
 
 /datum/chemical_reaction/sodiumchloride
-	results = list(/datum/reagent/consumable/salt = 3)
-	required_reagents = list(/datum/reagent/water = 1, /datum/reagent/sodium = 1, /datum/reagent/chlorine = 1)
+	results = list(/datum/reagent/consumable/salt = 2)
+	required_reagents = list(/datum/reagent/sodium = 1, /datum/reagent/chlorine = 1) // That's what I said! Sodium Chloride!
 	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_FOOD
 
 /datum/chemical_reaction/stable_plasma
@@ -392,6 +392,12 @@
 /datum/chemical_reaction/space_cleaner
 	results = list(/datum/reagent/space_cleaner = 2)
 	required_reagents = list(/datum/reagent/ammonia = 1, /datum/reagent/water = 1)
+	rate_up_lim = 40
+	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_UNIQUE
+
+/datum/chemical_reaction/piss_cleaner
+	results = list(/datum/reagent/space_cleaner = 2)
+	required_reagents = list(/datum/reagent/ammonia/urine = 2, /datum/reagent/water = 1)
 	rate_up_lim = 40
 	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_UNIQUE
 
@@ -771,14 +777,18 @@
 	required_catalysts = list(/datum/reagent/water/holywater = 1)
 	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_UNIQUE | REACTION_TAG_PLANT | REACTION_TAG_OTHER
 
+/datum/chemical_reaction/saltwater
+	results = list(/datum/reagent/water/salt = 2)
+	required_reagents = list(/datum/reagent/water = 1, /datum/reagent/consumable/salt = 1)
+	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_DRINK | REACTION_TAG_ORGAN
+
 /datum/chemical_reaction/exotic_stabilizer
 	results = list(/datum/reagent/exotic_stabilizer = 2)
 	required_reagents = list(/datum/reagent/plasma_oxide = 1,/datum/reagent/stabilizing_agent = 1)
 	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_CHEMICAL
 
 /datum/chemical_reaction/silver_solidification
-	required_reagents = list(/datum/reagent/silver = 20, /datum/reagent/carbon = 10)
-	required_temp = 630
+	required_reagents = list(/datum/reagent/consumable/frostoil = 5, /datum/reagent/silver = 20, /datum/reagent/carbon = 10)
 	mob_react = FALSE
 
 	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_CHEMICAL
@@ -799,7 +809,7 @@
 /datum/chemical_reaction/bone_gel/on_reaction(datum/reagents/holder, datum/equilibrium/reaction, created_volume)
 	var/location = get_turf(holder.my_atom)
 	for(var/i in 1 to created_volume)
-		new /obj/item/stack/medical/bone_gel(location)
+		new /obj/item/stack/medical/bone_gel/one(location)
 
 ////Ice and water
 
@@ -876,9 +886,10 @@
 /datum/chemical_reaction/eigenstate/reaction_finish(datum/reagents/holder, datum/equilibrium/reaction, react_vol)
 	. = ..()
 	var/turf/open/location = get_turf(holder.my_atom)
-	if(reaction.data["ducts_teleported"] == TRUE) //If we teleported an duct, then we reconnect it at the end
-		for(var/obj/item/stack/ducts/duct in range(location, 3))
-			duct.check_attach_turf(duct.loc)
+	if(reaction)
+		if(reaction.data["ducts_teleported"] == TRUE) //If we teleported an duct, then we reconnect it at the end
+			for(var/obj/item/stack/ducts/duct in range(location, 3))
+				duct.check_attach_turf(duct.loc)
 
 	var/datum/reagent/eigenstate/eigen = holder.has_reagent(/datum/reagent/eigenstate)
 	if(!eigen)

@@ -36,7 +36,7 @@
 	amount_per_transfer_from_this = 50
 	amount_list_position = 2
 	reagent_flags = REFILLABLE | DRAINABLE
-	custom_materials = list(/datum/material/iron = 5000)
+	custom_materials = list(/datum/material/iron =SHEET_MATERIAL_AMOUNT * 2.5)
 	w_class = WEIGHT_CLASS_BULKY
 	custom_price = PAYCHECK_LOWER * 8
 	fill_icon_thresholds = null
@@ -49,7 +49,7 @@
 /obj/item/reagent_containers/cup/soup_pot/Initialize(mapload, vol)
 	. = ..()
 	RegisterSignal(reagents, COMSIG_REAGENTS_CLEAR_REAGENTS, PROC_REF(on_reagents_cleared))
-	RegisterSignal(src, COMSIG_PARENT_REAGENT_EXAMINE, PROC_REF(reagent_special_examine))
+	RegisterSignal(src, COMSIG_ATOM_REAGENT_EXAMINE, PROC_REF(reagent_special_examine))
 	register_context()
 
 /obj/item/reagent_containers/cup/soup_pot/add_context(atom/source, list/context, obj/item/held_item, mob/user)
@@ -132,11 +132,12 @@
 		balloon_alert(user, "can't add that!")
 		return TRUE
 
-	var/atom/balloon_loc = ismachinery(loc) ? loc : src
+	// Ensures that faceatom works correctly, since we can can often be in another atom's loc (a stove)
+	var/atom/movable/balloon_loc = ismovable(loc) ? loc : src
 	balloon_loc.balloon_alert(user, "ingredient added")
 	user.face_atom(balloon_loc)
-	LAZYADD(added_ingredients, attacking_item)
 
+	LAZYADD(added_ingredients, attacking_item)
 	update_appearance(UPDATE_OVERLAYS)
 	return TRUE
 
@@ -147,7 +148,9 @@
 	var/obj/item/removed = added_ingredients[1]
 	removed.forceMove(get_turf(src))
 	user.put_in_hands(removed)
-	var/atom/balloon_loc = ismachinery(loc) ? loc : src
+
+	// Ensures that faceatom works correctly, since we can can often be in another atom's loc (a stove)
+	var/atom/movable/balloon_loc = ismovable(loc) ? loc : src
 	balloon_loc.balloon_alert(user, "ingredient removed")
 	user.face_atom(balloon_loc)
 
@@ -178,11 +181,18 @@
 		// Clearing reagents Will do this for us already, but if we have no reagents this is a failsafe
 		dump_ingredients()
 
-/obj/item/reagent_containers/cup/soup_pot/proc/dump_ingredients(atom/drop_loc = drop_location())
+/**
+ * Dumps all inside ingredients to a spot
+ *
+ * * drop_loc - Where to drop the ingredients, defaults to drop loc
+ * * x_offset - How much pixel X offset to give every ingredient, if not set will be random
+ * * y_offset - How much pixel Y offset to give every ingredient, if not set will be random
+ */
+/obj/item/reagent_containers/cup/soup_pot/proc/dump_ingredients(atom/drop_loc = drop_location(), x_offset, y_offset)
 	for(var/obj/item/ingredient as anything in added_ingredients)
 		ingredient.forceMove(drop_loc)
-		ingredient.pixel_x += rand(-4, 4)
-		ingredient.pixel_y += rand(-4, 4)
+		ingredient.pixel_x += (isnum(x_offset) ? x_offset : rand(-4, 4))
+		ingredient.pixel_y += (isnum(y_offset) ? x_offset : rand(-4, 4))
 		ingredient.SpinAnimation(loops = 1)
 	update_appearance(UPDATE_OVERLAYS)
 

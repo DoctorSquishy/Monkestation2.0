@@ -16,6 +16,8 @@
 	slot_flags = ITEM_SLOT_BELT
 	var/ignore_flags = NONE
 	var/infinite = FALSE
+	/// If TRUE, won't play a noise when injecting.
+	var/stealthy = FALSE
 
 /obj/item/reagent_containers/hypospray/attack_paw(mob/user, list/modifiers)
 	return attack_hand(user, modifiers)
@@ -41,6 +43,8 @@
 	if(reagents.total_volume && (ignore_flags || affected_mob.try_inject(user, injection_flags = INJECT_TRY_SHOW_ERROR_MESSAGE))) // Ignore flag should be checked first or there will be an error message.
 		to_chat(affected_mob, span_warning("You feel a tiny prick!"))
 		to_chat(user, span_notice("You inject [affected_mob] with [src]."))
+		if(!stealthy)
+			playsound(affected_mob, 'sound/items/hypospray.ogg', 50, TRUE)
 		var/fraction = min(amount_per_transfer_from_this/reagents.total_volume, 1)
 
 
@@ -184,7 +188,7 @@
 	icon_state = "morphen"
 	inhand_icon_state = "morphen"
 	base_icon_state = "morphen"
-	list_reagents = list(/datum/reagent/medicine/morphine = 10)
+	list_reagents = list(/datum/reagent/medicine/painkiller/morphine = 10)
 
 /obj/item/reagent_containers/hypospray/medipen/oxandrolone
 	name = "oxandrolone medipen"
@@ -241,9 +245,9 @@
 	icon_state = "stimpen"
 	inhand_icon_state = "stimpen"
 	base_icon_state = "stimpen"
-	volume = 30
-	amount_per_transfer_from_this = 30
-	list_reagents = list( /datum/reagent/medicine/epinephrine = 8, /datum/reagent/medicine/c2/aiuri = 8, /datum/reagent/medicine/c2/libital = 8, /datum/reagent/medicine/leporazine = 6)
+	volume = 35
+	amount_per_transfer_from_this = 35
+	list_reagents = list( /datum/reagent/medicine/epinephrine = 8, /datum/reagent/medicine/c2/aiuri = 8, /datum/reagent/medicine/c2/libital = 8, /datum/reagent/medicine/leporazine = 6, /datum/reagent/medicine/painkiller/hydromorphone = 5)
 
 /obj/item/reagent_containers/hypospray/medipen/survival/inject(mob/living/affected_mob, mob/user)
 	if(lavaland_equipment_pressure_check(get_turf(user)))
@@ -255,7 +259,7 @@
 		return
 
 	to_chat(user,span_notice("You start manually releasing the low-pressure gauge..."))
-	if(!do_after(user, 0.5 SECONDS, affected_mob, interaction_key = DOAFTER_SOURCE_SURVIVALPEN))
+	if(!do_after(user, 10 SECONDS, affected_mob, interaction_key = DOAFTER_SOURCE_SURVIVALPEN))
 		return
 
 	amount_per_transfer_from_this = initial(amount_per_transfer_from_this) * 0.5
@@ -268,9 +272,9 @@
 	icon_state = "luxpen"
 	inhand_icon_state = "atropen"
 	base_icon_state = "luxpen"
-	volume = 60
-	amount_per_transfer_from_this = 60
-	list_reagents = list(/datum/reagent/medicine/salbutamol = 10, /datum/reagent/medicine/c2/penthrite = 10, /datum/reagent/medicine/oxandrolone = 10, /datum/reagent/medicine/sal_acid = 10 ,/datum/reagent/medicine/omnizine = 10 ,/datum/reagent/medicine/leporazine = 10)
+	volume = 70
+	amount_per_transfer_from_this = 70
+	list_reagents = list(/datum/reagent/medicine/salbutamol = 10, /datum/reagent/medicine/c2/penthrite = 10, /datum/reagent/medicine/oxandrolone = 10, /datum/reagent/medicine/sal_acid = 10 ,/datum/reagent/medicine/omnizine = 10 ,/datum/reagent/medicine/leporazine = 10, /datum/reagent/medicine/painkiller/hydromorphone = 10)
 
 /obj/item/reagent_containers/hypospray/medipen/atropine
 	name = "atropine autoinjector"
@@ -317,7 +321,7 @@
 	base_icon_state = "firstaid"
 	volume = 15
 	amount_per_transfer_from_this = 15
-	list_reagents = list(/datum/reagent/medicine/epinephrine = 12, /datum/reagent/medicine/coagulant = 2.5, /datum/reagent/medicine/spaceacillin = 0.5)
+	list_reagents = list(/datum/reagent/medicine/epinephrine = 12, /datum/reagent/medicine/coagulant = 2.5, /datum/reagent/medicine/antipathogenic/spaceacillin = 0.5)
 
 /obj/item/reagent_containers/hypospray/medipen/blood_loss
 	name = "hypovolemic-response autoinjector"

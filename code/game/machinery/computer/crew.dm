@@ -105,12 +105,14 @@ GLOBAL_DATUM_INIT(crewmonitor, /datum/crewmonitor, new)
 		JOB_SECURITY_OFFICER_SCIENCE = 15,
 		JOB_SECURITY_OFFICER_SUPPLY = 16,
 		JOB_DETECTIVE = 17,
+		JOB_SECURITY_ASSISTANT = 18, // monkestation edit: add security assistants
+		JOB_BRIG_PHYSICIAN = 19, // monkestation edit: add brig physician
 		// 20-29: Medbay
-		JOB_CHIEF_MEDICAL_OFFICER = 20,
-		JOB_CHEMIST = 21,
-		JOB_VIROLOGIST = 22,
-		JOB_MEDICAL_DOCTOR = 23,
-		JOB_PARAMEDIC = 24,
+		JOB_CHIEF_MEDICAL_OFFICER = 21,
+		JOB_CHEMIST = 22,
+		JOB_VIROLOGIST = 23,
+		JOB_MEDICAL_DOCTOR = 24,
+		JOB_PARAMEDIC = 25,
 		// 30-39: Science
 		JOB_RESEARCH_DIRECTOR = 30,
 		JOB_SCIENTIST = 31,
@@ -153,6 +155,7 @@ GLOBAL_DATUM_INIT(crewmonitor, /datum/crewmonitor, new)
 		JOB_ERT_CHAPLAIN = 225,
 		JOB_ERT_JANITOR = 226,
 		JOB_ERT_DEATHSQUAD = 227,
+		JOB_BLUESHIELD = 231,
 
 		// ANYTHING ELSE = UNKNOWN_JOB_ID, Unknowns/custom jobs will appear after civilians, and before assistants
 		JOB_ASSISTANT = 999,
@@ -248,9 +251,9 @@ GLOBAL_DATUM_INIT(crewmonitor, /datum/crewmonitor, new)
 			if (jobs[trim_assignment] != null)
 				entry["ijob"] = jobs[trim_assignment]
 
-		// Binary living/dead status
+		// Current status
 		if (sensor_mode >= SENSOR_LIVING)
-			entry["life_status"] = (tracked_living_mob.stat != DEAD)
+			entry["life_status"] = tracked_living_mob.stat
 
 		// Damage
 		if (sensor_mode >= SENSOR_VITALS)
@@ -277,7 +280,7 @@ GLOBAL_DATUM_INIT(crewmonitor, /datum/crewmonitor, new)
 
 	return results
 
-/datum/crewmonitor/ui_act(action,params)
+/datum/crewmonitor/ui_act(action, params)
 	. = ..()
 	if(.)
 		return
@@ -286,7 +289,7 @@ GLOBAL_DATUM_INIT(crewmonitor, /datum/crewmonitor, new)
 			var/mob/living/silicon/ai/AI = usr
 			if(!istype(AI))
 				return
-			AI.ai_camera_track(params["name"])
+			AI.ai_tracking_tool.track_name(AI, params["name"])
 
 #undef SENSORS_UPDATE_PERIOD
 #undef UNKNOWN_JOB_ID

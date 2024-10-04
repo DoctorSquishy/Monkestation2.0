@@ -16,6 +16,16 @@
 	/// If set to true this style allows you to punch people despite being a pacifist (for instance Boxing, which does no damage)
 	var/pacifist_style = FALSE
 
+/datum/martial_art/serialize_list(list/options, list/semvers)
+	. = ..()
+
+	.["name"] = name
+	.["id"] = id
+	.["pacifist_style"] = pacifist_style
+
+	SET_SERIALIZATION_SEMVER(semvers, "1.0.0")
+	return .
+
 /datum/martial_art/proc/help_act(mob/living/attacker, mob/living/defender)
 	return MARTIAL_ATTACK_INVALID
 
@@ -91,7 +101,3 @@
 	if(help_verb)
 		remove_verb(holder_living, help_verb)
 	return
-
-///Gets called when a projectile hits the owner. Returning anything other than BULLET_ACT_HIT will stop the projectile from hitting the mob.
-/datum/martial_art/proc/on_projectile_hit(mob/living/attacker, obj/projectile/P, def_zone)
-	return BULLET_ACT_HIT

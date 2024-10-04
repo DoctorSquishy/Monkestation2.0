@@ -16,9 +16,10 @@
 	button_icon_state = "power_thaumaturgy"
 	power_explanation = "Thaumaturgy:\n\
 		Gives you a one shot blood bolt spell, firing it at a person deals 20 Burn damage"
-	check_flags = BP_CANT_USE_IN_TORPOR|BP_CANT_USE_IN_FRENZY|BP_CANT_USE_WHILE_UNCONSCIOUS
+	check_flags = BP_CANT_USE_IN_TORPOR | BP_CANT_USE_IN_FRENZY | BP_CANT_USE_WHILE_UNCONSCIOUS
 	bloodcost = 20
 	constant_bloodcost = 0
+	sol_multiplier = 4
 	cooldown_time = 6 SECONDS
 	prefire_message = "Click where you wish to fire."
 	///Blood shield given while this Power is active.
@@ -132,7 +133,7 @@
 	damage = 20
 	var/datum/action/cooldown/bloodsucker/targeted/tremere/thaumaturgy/bloodsucker_power
 
-/obj/projectile/magic/arcane_barrage/bloodsucker/on_hit(target)
+/obj/projectile/magic/arcane_barrage/bloodsucker/on_hit(target, blocked, pierce_hit)
 	if(istype(target, /obj/structure/closet) && bloodsucker_power.level_current >= 3)
 		var/obj/structure/closet/hit_closet = target
 		if(hit_closet)

@@ -1,3 +1,6 @@
+/turf
+	var/weather_affectable = TRUE
+
 /datum/particle_weather/snow_gentle
 	name = "Snow"
 	display_name = "Snow"
@@ -9,7 +12,7 @@
 	weather_messages = list("It's snowing!", "You feel a chill")
 
 	damage_type = BURN
-	damage_per_tick = 4
+	damage_per_tick = 0.1
 	min_severity = 1
 	max_severity = 10
 	max_severity_change = 5
@@ -19,6 +22,11 @@
 	target_trait = PARTICLEWEATHER_SNOW
 
 	weather_additional_events = list("wind" = list(5, /datum/weather_event/wind))
+
+/datum/particle_weather/snow_gentle/can_weather_effect(mob/living/mob_to_check)
+	if(HAS_TRAIT(mob_to_check, TRAIT_RESISTCOLD))
+		return FALSE
+	return ..()
 
 /datum/particle_weather/snow_storm
 	name = "Snowstorm"
@@ -31,7 +39,7 @@
 	weather_messages = list("You feel a chill", "The cold wind is freezing you to the bone", "How can a man who is warm, understand a man who is cold?")
 
 	damage_type = BURN
-	damage_per_tick = 2
+	damage_per_tick = 0.5
 	min_severity = 40
 	max_severity = 100
 	max_severity_change = 60
@@ -49,3 +57,8 @@
 	. = ..()
 	if(ishuman(L))
 		L.adjust_eye_blur(5)
+
+/datum/particle_weather/snow_storm/can_weather_effect(mob/living/mob_to_check)
+	if(HAS_TRAIT(mob_to_check, TRAIT_RESISTCOLD))
+		return FALSE
+	return ..()

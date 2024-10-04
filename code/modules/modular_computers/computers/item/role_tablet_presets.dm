@@ -235,6 +235,24 @@
  * Supply
  */
 
+//Monkestation Edits Start - QM is not a head, knocking QM's PDA down, removed status display and science programs. The redefinition of the QM's PDA will be reflected in the job.
+
+/obj/item/modular_computer/pda/quartermaster
+	name = "quartermaster PDA"
+	greyscale_config = /datum/greyscale_config/tablet/stripe_thick
+	greyscale_colors = "#D6B328#6506CA#927444"
+	inserted_item = /obj/item/pen/survival
+	stored_paper = 20
+	starting_programs = list(
+		/datum/computer_file/program/crew_manifest,
+		/datum/computer_file/program/robocontrol,
+		/datum/computer_file/program/budgetorders,
+		/datum/computer_file/program/shipping,
+		/datum/computer_file/program/robocontrol,
+	)
+
+//Monkestation Edits End
+
 /obj/item/modular_computer/pda/cargo
 	name = "cargo technician PDA"
 	greyscale_colors = "#D6B328#6506CA"
@@ -346,7 +364,7 @@
 	. = ..()
 	for(var/datum/computer_file/program/messenger/msg in stored_files)
 		msg.mime_mode = TRUE
-		msg.ringer_status = FALSE
+		msg.alert_silenced = TRUE
 
 /obj/item/modular_computer/pda/curator
 	name = "curator PDA"
@@ -361,10 +379,12 @@
 		/datum/computer_file/program/newscaster,
 	)
 
+/* monkestation removal: don't force ringer off by default
 /obj/item/modular_computer/pda/curator/Initialize(mapload)
 	. = ..()
 	for(var/datum/computer_file/program/messenger/msg in stored_files)
-		msg.ringer_status = FALSE
+		msg.alert_silenced = TRUE
+monkestation end */
 
 /**
  * No Department

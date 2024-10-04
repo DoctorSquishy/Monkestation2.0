@@ -47,7 +47,14 @@
 
 /datum/brain_trauma/special/imaginary_friend/proc/get_ghost()
 	set waitfor = FALSE
-	var/list/mob/dead/observer/candidates = poll_candidates_for_mob("Do you want to play as [owner.real_name]'s imaginary friend?", ROLE_PAI, null, 7.5 SECONDS, friend, POLL_IGNORE_IMAGINARYFRIEND)
+	var/list/mob/dead/observer/candidates = SSpolling.poll_ghost_candidates(
+		question = "Do you want to play as [owner.real_name]'s imaginary friend?",
+		check_jobban = ROLE_PAI,
+		poll_time = 10 SECONDS,
+		ignore_category = POLL_IGNORE_IMAGINARYFRIEND,
+		alert_pic = owner,
+		role_name_text = "imaginary friend"
+	)
 	if(LAZYLEN(candidates))
 		var/mob/dead/observer/C = pick(candidates)
 		friend.key = C.key
@@ -94,6 +101,11 @@
  */
 /mob/camera/imaginary_friend/Initialize(mapload, mob/living/imaginary_friend_owner, datum/preferences/appearance_from_prefs = null)
 	. = ..()
+
+	//Monkestation Edit Begin
+	if(istype(src, /mob/camera/imaginary_friend/mentor))
+		return
+	//Monkestation Edit End
 
 	owner = imaginary_friend_owner
 

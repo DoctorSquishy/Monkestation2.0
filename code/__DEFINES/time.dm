@@ -4,6 +4,9 @@
 ///displays the current time into the round, with a lot of extra code just there for ensuring it looks okay after an entire day passes
 #define ROUND_TIME(...) ( "[world.time - SSticker.round_start_time > MIDNIGHT_ROLLOVER ? "[round((world.time - SSticker.round_start_time)/MIDNIGHT_ROLLOVER)]:[worldtime2text()]" : worldtime2text()]" )
 
+///Returns the time that has passed since the game started
+#define STATION_TIME_PASSED(...) (world.time - SSticker.round_start_time)
+
 /// Define that just has the current in-universe year for use in whatever context you might want to display that in. (For example, 2022 -> 2562 given a 540 year offset)
 #define CURRENT_STATION_YEAR (GLOB.year_integer + STATION_YEAR_OFFSET)
 
@@ -33,7 +36,9 @@
 #define FESTIVE_SEASON "Festive Season"
 #define GARBAGEDAY "Garbage Day"
 #define MONKEYDAY "Monkey Day"
+#define PRIDE_WEEK "Pride Week"
 #define MOTH_WEEK "Moth Week"
+#define IAN_HOLIDAY "Ian's Birthday"
 /*
 
 Days of the week to make it easier to reference them.
@@ -57,10 +62,6 @@ When using time2text(), please use "DDD" to find the weekday. Refrain from using
 #define DECISECONDS *1 //the base unit all of these defines are scaled by, because byond uses that as a unit of measurement for some fucking reason
 
 #define SECONDS *10
-
-#define MINUTES SECONDS*60
-
-#define HOURS MINUTES*60
 
 #define TICKS *world.tick_lag
 

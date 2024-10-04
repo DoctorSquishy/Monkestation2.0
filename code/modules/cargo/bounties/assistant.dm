@@ -1,9 +1,3 @@
-/datum/bounty/item/assistant/strange_object
-	name = "Strange Object"
-	description = "Nanotrasen has taken an interest in strange objects. Find one in maintenance, and ship it off to CentCom right away."
-	reward = CARGO_CRATE_VALUE * 2.4
-	wanted_types = list(/obj/item/relic = TRUE)
-
 /datum/bounty/item/assistant/scooter
 	name = "Scooter"
 	description = "Nanotrasen has determined walking to be wasteful. Ship a scooter to CentCom to speed operations up."
@@ -135,12 +129,14 @@
 	reward = CARGO_CRATE_VALUE
 	wanted_types = list(/obj/item/storage/fancy/cigarettes/cigpack_shadyjims = TRUE)
 
+/* monkestation removal: get rid of bounties that just make take away station resources
 /datum/bounty/item/assistant/potted_plants
 	name = "Potted Plants"
 	description = "Central Command is looking to commission a new BirdBoat-class station. You've been ordered to supply the potted plants."
 	reward = CARGO_CRATE_VALUE * 4
 	required_count = 8
 	wanted_types = list(/obj/item/kirbyplants = TRUE)
+monkestation end */
 
 /datum/bounty/item/assistant/monkey_cubes
 	name = "Monkey Cubes"
@@ -169,6 +165,7 @@
 	required_count = 5
 	wanted_types = list(/obj/item/toy/figure = TRUE)
 
+/* monkestation removal: get rid of bounties that just make take away station resources
 /datum/bounty/item/assistant/paper_bin
 	name = "Paper Bins"
 	description = "Our accounting division is all out of paper. We need a new shipment immediately."
@@ -196,6 +193,7 @@
 	description = "We need more water for our hydroponics bay. Find a water tank and ship it out to us."
 	reward = CARGO_CRATE_VALUE * 5
 	wanted_types = list(/obj/structure/reagent_dispensers/watertank = TRUE)
+monkestation end*/
 
 /datum/bounty/item/assistant/pneumatic_cannon
 	name = "Pneumatic Cannon"

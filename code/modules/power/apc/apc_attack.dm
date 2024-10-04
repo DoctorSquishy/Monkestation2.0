@@ -139,12 +139,14 @@
 		if(!(machine_stat & BROKEN || opened == APC_COVER_REMOVED || atom_integrity < max_integrity)) // There is nothing to repair
 			balloon_alert(user, "no reason for repairs!")
 			return
-		if(!(machine_stat & BROKEN) && opened == APC_COVER_REMOVED) // Cover is the only thing broken, we do not need to remove elctronicks to replace cover
+		if((machine_stat & BROKEN) && opened == APC_COVER_REMOVED && has_electronics && terminal) // Cover is the only thing broken, we do not need to remove elctronicks to replace cover
 			user.visible_message(span_notice("[user.name] replaces missing APC's cover."))
 			balloon_alert(user, "replacing APC's cover...")
 			if(do_after(user, 20, target = src)) // replacing cover is quicker than replacing whole frame
 				balloon_alert(user, "cover replaced")
 				qdel(attacking_object)
+				update_integrity(30) //needs to be welded to fully repair but can work without
+				set_machine_stat(machine_stat & ~(BROKEN|MAINT))
 				opened = APC_COVER_OPENED
 				update_appearance()
 			return
@@ -206,13 +208,13 @@
 		if(cell.charge <= (cell.maxcharge / 2)) // ethereals can't drain APCs under half charge, this is so that they are forced to look to alternative power sources if the station is running low
 			addtimer(CALLBACK(src, TYPE_PROC_REF(/atom, balloon_alert), ethereal, "safeties prevent draining!"), alert_timer_duration)
 			return
-		if(stomach.crystal_charge > charge_limit)
+		if(ethereal.blood_volume > charge_limit) //Monkestation Edit
 			addtimer(CALLBACK(src, TYPE_PROC_REF(/atom, balloon_alert), ethereal, "charge is full!"), alert_timer_duration)
 			return
 		stomach.drain_time = world.time + APC_DRAIN_TIME
 		addtimer(CALLBACK(src, TYPE_PROC_REF(/atom, balloon_alert), ethereal, "draining power"), alert_timer_duration)
 		if(do_after(user, APC_DRAIN_TIME, target = src))
-			if(cell.charge <= (cell.maxcharge / 2) || (stomach.crystal_charge > charge_limit))
+			if(cell.charge <= (cell.maxcharge / 2) || (ethereal.blood_volume > charge_limit)) //Monkestation Edit
 				return
 			balloon_alert(ethereal, "received charge")
 			stomach.adjust_charge(APC_POWER_GAIN)
@@ -222,14 +224,14 @@
 	if(cell.charge >= cell.maxcharge - APC_POWER_GAIN)
 		addtimer(CALLBACK(src, TYPE_PROC_REF(/atom, balloon_alert), ethereal, "APC can't receive more power!"), alert_timer_duration)
 		return
-	if(stomach.crystal_charge < APC_POWER_GAIN)
+	if(ethereal.blood_volume < APC_POWER_GAIN) //Monkestation Edit
 		addtimer(CALLBACK(src, TYPE_PROC_REF(/atom, balloon_alert), ethereal, "charge is too low!"), alert_timer_duration)
 		return
 	stomach.drain_time = world.time + APC_DRAIN_TIME
 	addtimer(CALLBACK(src, TYPE_PROC_REF(/atom, balloon_alert), ethereal, "transfering power"), alert_timer_duration)
 	if(!do_after(user, APC_DRAIN_TIME, target = src))
 		return
-	if((cell.charge >= (cell.maxcharge - APC_POWER_GAIN)) || (stomach.crystal_charge < APC_POWER_GAIN))
+	if((cell.charge >= (cell.maxcharge - APC_POWER_GAIN)) || (ethereal.blood_volume < APC_POWER_GAIN)) //Monkestation Edit
 		balloon_alert(ethereal, "can't transfer power!")
 		return
 	if(istype(stomach))
@@ -261,7 +263,7 @@
 /obj/machinery/power/apc/blob_act(obj/structure/blob/B)
 	set_broken()
 
-/obj/machinery/power/apc/take_damage(damage_amount, damage_type = BRUTE, damage_flag = "", sound_effect = TRUE)
+/obj/machinery/power/apc/take_damage(damage_amount, damage_type = BRUTE, damage_flag = "", sound_effect = TRUE, attack_dir, armor_penetration = 0)
 	// APC being at 0 integrity doesnt delete it outright. Combined with take_damage this might cause runtimes.
 	if(machine_stat & BROKEN && atom_integrity <= 0)
 		if(sound_effect)

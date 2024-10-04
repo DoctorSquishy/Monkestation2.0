@@ -53,7 +53,7 @@
 
 /datum/ai_controller/basic_controller/paper_wizard
 	blackboard = list(
-		BB_TARGETTING_DATUM = new /datum/targetting_datum/basic,
+		BB_TARGETING_STRATEGY = /datum/targeting_strategy/basic,
 		BB_WRITING_LIST = list(
 			"I can turn the paper into gold and ink into diamonds!",
 			"Your fate is written and sealed!",
@@ -110,8 +110,7 @@
 	faction = list(FACTION_STICKMAN)
 	melee_damage_lower = 1
 	melee_damage_upper = 5
-
-	ai_controller = /datum/ai_controller/basic_controller/wizard_copy
+	ai_controller = /datum/ai_controller/basic_controller/simple_hostile
 
 /mob/living/basic/paper_wizard/copy/Initialize(mapload)
 	. = ..()
@@ -141,18 +140,6 @@
 		new /obj/effect/temp_visual/small_smoke/halfsecond(get_turf(src))
 		qdel(src) //I see through your ruse!
 
-/datum/ai_controller/basic_controller/wizard_copy
-	blackboard = list(
-		BB_TARGETTING_DATUM = new /datum/targetting_datum/basic,
-	)
-
-	ai_movement = /datum/ai_movement/basic_avoidance
-	idle_behavior = /datum/idle_behavior/idle_random_walk
-	planning_subtrees = list(
-		/datum/ai_planning_subtree/simple_find_target,
-		/datum/ai_planning_subtree/basic_melee_attack_subtree,
-	)
-
 //fancy effects
 /obj/effect/temp_visual/paper_scatter
 	name = "scattering paper"
@@ -181,7 +168,7 @@
 	visible_message(span_boldannounce("The wizard cries out in pain as a gate appears behind him, sucking him in!"))
 	playsound(get_turf(src), 'sound/magic/mandswap.ogg', 50, vary = TRUE, pressure_affected = TRUE)
 	playsound(get_turf(src), 'sound/hallucinations/wail.ogg', 50, vary = TRUE, pressure_affected = TRUE)
-	RegisterSignal(src, COMSIG_PARENT_PREQDELETED, PROC_REF(on_delete))
+	RegisterSignal(src, COMSIG_PREQDELETED, PROC_REF(on_delete))
 
 /obj/effect/temp_visual/paperwiz_dying/proc/on_delete()
 	SIGNAL_HANDLER

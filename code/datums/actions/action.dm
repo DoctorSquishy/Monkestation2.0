@@ -47,13 +47,16 @@
 	/// This is the icon state for any FOREGROUND overlay icons on the button (such as borders)
 	var/overlay_icon_state
 
+	/// full key we are bound to
+	var/full_key
+
 /datum/action/New(Target)
 	link_to(Target)
 
 /// Links the passed target to our action, registering any relevant signals
 /datum/action/proc/link_to(Target)
 	target = Target
-	RegisterSignal(target, COMSIG_PARENT_QDELETING, PROC_REF(clear_ref), override = TRUE)
+	RegisterSignal(target, COMSIG_QDELETING, PROC_REF(clear_ref), override = TRUE)
 
 	if(isatom(target))
 		RegisterSignal(target, COMSIG_ATOM_UPDATED_ICON, PROC_REF(on_target_icon_update))
@@ -79,32 +82,36 @@
 
 /// Grants the action to the passed mob, making it the owner
 /datum/action/proc/Grant(mob/grant_to)
-	if(!grant_to)
+	if(isnull(grant_to))
 		Remove(owner)
 		return
-	if(owner)
-		if(owner == grant_to)
-			return
-		Remove(owner)
-	SEND_SIGNAL(src, COMSIG_ACTION_GRANTED, grant_to)
-	SEND_SIGNAL(grant_to, COMSIG_MOB_GRANTED_ACTION, src)
+	if(grant_to == owner)
+		return // We already have it
+	var/mob/previous_owner = owner
 	owner = grant_to
-	RegisterSignal(owner, COMSIG_PARENT_QDELETING, PROC_REF(clear_ref), override = TRUE)
+	if(!isnull(previous_owner))
+		Remove(previous_owner)
+	SEND_SIGNAL(src, COMSIG_ACTION_GRANTED, owner)
+	SEND_SIGNAL(owner, COMSIG_MOB_GRANTED_ACTION, src)
+	RegisterSignal(owner, COMSIG_QDELETING, PROC_REF(clear_ref), override = TRUE)
 
 	// Register some signals based on our check_flags
 	// so that our button icon updates when relevant
 	if(check_flags & AB_CHECK_CONSCIOUS)
 		RegisterSignal(owner, COMSIG_MOB_STATCHANGE, PROC_REF(update_status_on_signal))
 	if(check_flags & AB_CHECK_INCAPACITATED)
-		RegisterSignal(owner, SIGNAL_ADDTRAIT(TRAIT_INCAPACITATED), PROC_REF(update_status_on_signal))
+		RegisterSignals(owner, list(SIGNAL_ADDTRAIT(TRAIT_INCAPACITATED), SIGNAL_REMOVETRAIT(TRAIT_INCAPACITATED)), PROC_REF(update_status_on_signal))
 	if(check_flags & AB_CHECK_IMMOBILE)
-		RegisterSignal(owner, SIGNAL_ADDTRAIT(TRAIT_IMMOBILIZED), PROC_REF(update_status_on_signal))
+		RegisterSignals(owner, list(SIGNAL_ADDTRAIT(TRAIT_IMMOBILIZED), SIGNAL_REMOVETRAIT(TRAIT_IMMOBILIZED)), PROC_REF(update_status_on_signal))
 	if(check_flags & AB_CHECK_HANDS_BLOCKED)
-		RegisterSignal(owner, SIGNAL_ADDTRAIT(TRAIT_HANDS_BLOCKED), PROC_REF(update_status_on_signal))
+		RegisterSignals(owner, list(SIGNAL_ADDTRAIT(TRAIT_HANDS_BLOCKED), SIGNAL_REMOVETRAIT(TRAIT_HANDS_BLOCKED)), PROC_REF(update_status_on_signal))
 	if(check_flags & AB_CHECK_LYING)
 		RegisterSignal(owner, COMSIG_LIVING_SET_BODY_POSITION, PROC_REF(update_status_on_signal))
+	if(check_flags & AB_CHECK_PHASED)
+		RegisterSignals(owner, list(SIGNAL_ADDTRAIT(TRAIT_MAGICALLY_PHASED), SIGNAL_REMOVETRAIT(TRAIT_MAGICALLY_PHASED)), PROC_REF(update_status_on_signal))
 
 	if(owner_has_control)
+		RegisterSignal(grant_to, COMSIG_MOB_KEYDOWN, PROC_REF(keydown), override = TRUE)
 		GiveAction(grant_to)
 
 /// Remove the passed mob from being owner of our action
@@ -115,25 +122,33 @@
 		if(!hud.mymob)
 			continue
 		HideFrom(hud.mymob)
-	LAZYREMOVE(remove_from.actions, src) // We aren't always properly inserted into the viewers list, gotta make sure that action's cleared
+	LAZYREMOVE(remove_from?.actions, src) // We aren't always properly inserted into the viewers list, gotta make sure that action's cleared
 	viewers = list()
+	UnregisterSignal(remove_from, COMSIG_MOB_KEYDOWN)
 
-	if(owner)
-		SEND_SIGNAL(src, COMSIG_ACTION_REMOVED, owner)
-		SEND_SIGNAL(owner, COMSIG_MOB_REMOVED_ACTION, src)
-		UnregisterSignal(owner, COMSIG_PARENT_QDELETING)
+	if(isnull(owner))
+		return
+	SEND_SIGNAL(src, COMSIG_ACTION_REMOVED, owner)
+	SEND_SIGNAL(owner, COMSIG_MOB_REMOVED_ACTION, src)
+	UnregisterSignal(owner, COMSIG_QDELETING)
 
-		// Clean up our check_flag signals
-		UnregisterSignal(owner, list(
-			COMSIG_LIVING_SET_BODY_POSITION,
-			COMSIG_MOB_STATCHANGE,
-			SIGNAL_ADDTRAIT(TRAIT_HANDS_BLOCKED),
-			SIGNAL_ADDTRAIT(TRAIT_IMMOBILIZED),
-			SIGNAL_ADDTRAIT(TRAIT_INCAPACITATED),
-		))
+	// Clean up our check_flag signals
+	UnregisterSignal(owner, list(
+		COMSIG_LIVING_SET_BODY_POSITION,
+		COMSIG_MOB_STATCHANGE,
+		SIGNAL_ADDTRAIT(TRAIT_HANDS_BLOCKED),
+		SIGNAL_ADDTRAIT(TRAIT_IMMOBILIZED),
+		SIGNAL_ADDTRAIT(TRAIT_INCAPACITATED),
+		SIGNAL_ADDTRAIT(TRAIT_MAGICALLY_PHASED),
+		SIGNAL_REMOVETRAIT(TRAIT_HANDS_BLOCKED),
+		SIGNAL_REMOVETRAIT(TRAIT_IMMOBILIZED),
+		SIGNAL_REMOVETRAIT(TRAIT_INCAPACITATED),
+		SIGNAL_REMOVETRAIT(TRAIT_MAGICALLY_PHASED),
+	))
 
-		if(target == owner)
-			RegisterSignal(target, COMSIG_PARENT_QDELETING, PROC_REF(clear_ref))
+	if(target == owner)
+		RegisterSignal(target, COMSIG_QDELETING, PROC_REF(clear_ref))
+	if (owner == remove_from)
 		owner = null
 
 /// Actually triggers the effects of the action.
@@ -156,7 +171,7 @@
 		if (feedback)
 			owner.balloon_alert(owner, "hands blocked!")
 		return FALSE
-	if((check_flags & AB_CHECK_IMMOBILE) && HAS_TRAIT(owner, TRAIT_IMMOBILIZED))
+	if((check_flags & AB_CHECK_IMMOBILE) && HAS_TRAIT_NOT_FROM(owner, TRAIT_IMMOBILIZED, BUCKLED_TRAIT)) // monkestation edit: don't count buckled as immobile
 		if (feedback)
 			owner.balloon_alert(owner, "can't move!")
 		return FALSE
@@ -173,6 +188,10 @@
 	if((check_flags & AB_CHECK_CONSCIOUS) && owner.stat != CONSCIOUS)
 		if (feedback)
 			owner.balloon_alert(owner, "unconscious!")
+		return FALSE
+	if((check_flags & AB_CHECK_PHASED) && HAS_TRAIT(owner, TRAIT_MAGICALLY_PHASED))
+		if (feedback)
+			owner.balloon_alert(owner, "incorporeal!")
 		return FALSE
 	return TRUE
 
@@ -194,7 +213,7 @@
  * force - whether we're forcing a full update
  */
 /datum/action/proc/build_button_icon(atom/movable/screen/movable/action_button/button, update_flags = ALL, force = FALSE)
-	if(!button)
+	if(QDELETED(button)) // monkestation edit: more elaborate check
 		return
 
 	if(update_flags & UPDATE_BUTTON_NAME)
@@ -219,9 +238,9 @@
  * force - whether an update is forced regardless of existing status
  */
 /datum/action/proc/update_button_name(atom/movable/screen/movable/action_button/button, force = FALSE)
-	button.name = name
+	button?.name = name
 	if(desc)
-		button.desc = desc
+		button?.desc = desc
 
 /**
  * Creates the background underlay for the button
@@ -230,7 +249,7 @@
  * force - whether an update is forced regardless of existing status
  */
 /datum/action/proc/apply_button_background(atom/movable/screen/movable/action_button/current_button, force = FALSE)
-	if(!background_icon || !background_icon_state || (current_button.active_underlay_icon_state == background_icon_state && !force))
+	if(QDELETED(current_button) || !background_icon || !background_icon_state || (current_button.active_underlay_icon_state == background_icon_state && !force))
 		return
 
 	// What icons we use for our background
@@ -262,7 +281,7 @@
  * force - whether an update is forced regardless of existing status
  */
 /datum/action/proc/apply_button_icon(atom/movable/screen/movable/action_button/current_button, force = FALSE)
-	if(!button_icon || !button_icon_state || (current_button.icon_state == button_icon_state && !force))
+	if(QDELETED(current_button) || !button_icon || !button_icon_state || (current_button.icon_state == button_icon_state && !force))
 		return
 
 	current_button.icon = button_icon
@@ -275,10 +294,9 @@
  * force - whether an update is forced regardless of existing status
  */
 /datum/action/proc/apply_button_overlay(atom/movable/screen/movable/action_button/current_button, force = FALSE)
-
 	SEND_SIGNAL(src, COMSIG_ACTION_OVERLAY_APPLY, current_button, force)
 
-	if(!overlay_icon || !overlay_icon_state || (current_button.active_overlay_icon_state == overlay_icon_state && !force))
+	if(QDELETED(current_button) || !overlay_icon || !overlay_icon_state || (current_button.active_overlay_icon_state == overlay_icon_state && !force))
 		return
 
 	current_button.cut_overlay(current_button.button_overlay)
@@ -294,6 +312,9 @@
  * force - whether an update is forced regardless of existing status
  */
 /datum/action/proc/update_button_status(atom/movable/screen/movable/action_button/current_button, force = FALSE)
+	if(QDELETED(current_button))
+		return
+	current_button.update_keybind_maptext(full_key)
 	if(IsAvailable())
 		current_button.color = rgb(255,255,255,255)
 	else
@@ -312,7 +333,7 @@
 /// Adds our action button to the screen of the passed viewer.
 /datum/action/proc/ShowTo(mob/viewer)
 	var/datum/hud/our_hud = viewer.hud_used
-	if(!our_hud || viewers[our_hud]) // There's no point in this if you have no hud in the first place
+	if(QDELETED(our_hud) || viewers[our_hud]) // There's no point in this if you have no hud in the first place
 		return
 
 	var/atom/movable/screen/movable/action_button/button = create_button()
@@ -347,7 +368,9 @@
 	for(var/datum/action/action in owner.actions)
 		if(action == src) // This could be us, which is dumb
 			continue
-		var/atom/movable/screen/movable/action_button/button = action.viewers[owner.hud_used]
+		var/atom/movable/screen/movable/action_button/button = action?.viewers[owner?.hud_used]
+		if(QDELETED(button)) // monkestation edit: fix runtime error
+			continue
 		if(action.name == name && button.id)
 			bitfield |= button.id
 
@@ -393,3 +416,14 @@
 /// Checks if our action is actively selected. Used for selecting icons primarily.
 /datum/action/proc/is_action_active(atom/movable/screen/movable/action_button/current_button)
 	return FALSE
+
+/datum/action/proc/keydown(mob/source, key, client/client, full_key)
+	SIGNAL_HANDLER
+	if(isnull(full_key) || full_key != src.full_key)
+		return
+	if(istype(source))
+		if(source.next_click > world.time)
+			return
+		else
+			source.next_click = world.time + CLICK_CD_RANGE
+	INVOKE_ASYNC(src, PROC_REF(Trigger))

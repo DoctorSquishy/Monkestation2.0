@@ -22,8 +22,14 @@
 #define TAG_OVERMAP "overmap"
 /// When the event requires the station to be in space (meteors, carp)
 #define TAG_SPACE "space"
-/// When the event requires the station to be on planetary.
+/// When the event requires the station to be planetary.
 #define TAG_PLANETARY "planetary"
+/// When the event is an external threat (meteors, nukies).
+#define TAG_EXTERNAL "external"
+/// When the event is an alien threat (blob, xenos)
+#define TAG_ALIEN "alien"
+/// When the event is magical in nature
+#define TAG_MAGICAL "magical"
 
 #define EVENT_TRACK_MUNDANE "Mundane"
 #define EVENT_TRACK_MODERATE "Moderate"
@@ -75,8 +81,8 @@
 #define EVENT_PANEL_TRACKS list(EVENT_TRACK_MUNDANE, EVENT_TRACK_MODERATE, EVENT_TRACK_MAJOR, EVENT_TRACK_ROLESET, EVENT_TRACK_OBJECTIVES, UNCATEGORIZED_EVENTS, ALL_EVENTS)
 
 /// Defines for the antag cap to prevent midround injections.
-#define ANTAG_CAP_FLAT 2
-#define ANTAG_CAP_DENOMINATOR 9
+#define ANTAG_CAP_FLAT 3
+#define ANTAG_CAP_DENOMINATOR 30
 
 ///Below are defines for roundstart point pool. The GAIN ones are multiplied by ready population
 #define ROUNDSTART_MUNDANE_BASE 20
@@ -89,7 +95,14 @@
 #define ROUNDSTART_MAJOR_GAIN 2
 
 #define ROUNDSTART_ROLESET_BASE 60
-#define ROUNDSTART_ROLESET_GAIN 4
+#define ROUNDSTART_ROLESET_GAIN 2
 
 #define ROUNDSTART_OBJECTIVES_BASE 40
 #define ROUNDSTART_OBJECTIVES_GAIN 2
+
+#define SHARED_HIGH_THREAT	"high threat event"
+#define SHARED_ANOMALIES	"anomalous event"
+#define SHARED_SCRUBBERS	"scrubber-related event"
+#define SHARED_METEORS		"meteor event"
+#define SHARED_BSOD			"tech malfunction event"
+#define SHARED_CHANGELING	"changelings"

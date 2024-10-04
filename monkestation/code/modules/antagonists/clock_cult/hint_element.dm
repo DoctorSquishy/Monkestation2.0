@@ -4,23 +4,26 @@
 
 	/// Text to add to the description of the parent
 	var/text_to_add = ""
+	/// Text to add if we are on reebe
+	var/reebe_desc = ""
 
-
-/datum/element/clockwork_description/Attach(datum/target, parent_text)
+/datum/element/clockwork_description/Attach(datum/target, parent_text, reebe_text)
 	. = ..()
 
 	if(!isatom(target))
 		return ELEMENT_INCOMPATIBLE
 
-	RegisterSignal(target, COMSIG_PARENT_EXAMINE, PROC_REF(add_examine))
+	RegisterSignal(target, COMSIG_ATOM_EXAMINE, PROC_REF(add_examine))
 	// Don't perform the assignment if there is nothing to assign, or if we already have something for this bespoke element
 	if(parent_text && !text_to_add)
 		text_to_add = parent_text
 
+	if(reebe_text && !reebe_desc)
+		reebe_desc = reebe_text
 
 /datum/element/clockwork_description/Detach(datum/target)
 	. = ..()
-	UnregisterSignal(target, COMSIG_PARENT_EXAMINE)
+	UnregisterSignal(target, COMSIG_ATOM_EXAMINE)
 
 /**
  *
@@ -37,3 +40,5 @@
 
 	if(IS_CLOCK(user) || isobserver(user))
 		examine_texts += span_brass(text_to_add)
+		if(reebe_desc && on_reebe(source))
+			examine_texts += span_brass(reebe_desc)

@@ -23,7 +23,7 @@
 	src.location = get_turf(location)
 	src.amount = amount
 	carry?.copy_to(chemholder, 20)
-	carry?.remove_any(amount / efficiency)
+	carry?.remove_all(amount / efficiency)
 
 /// A factory which produces clouds of smoke for the smoke machine.
 /datum/effect_system/fluid_spread/smoke/chem/smoke_machine
@@ -129,7 +129,10 @@
 	var/TankContents[0]
 	var/TankCurrentVolume = 0
 	for(var/datum/reagent/R in reagents.reagent_list)
-		TankContents.Add(list(list("name" = R.name, "volume" = R.volume))) // list in a list because Byond merges the first list...
+		var/chem_name = R.name
+		if(istype(R, /datum/reagent/ammonia/urine) && user.client?.prefs.read_preference(/datum/preference/toggle/prude_mode))
+			chem_name = "Ammonia?"
+		TankContents.Add(list(list("name" = chem_name, "volume" = R.volume))) // list in a list because Byond merges the first list...
 		TankCurrentVolume += R.volume
 	data["TankContents"] = TankContents
 	data["isTankLoaded"] = reagents.total_volume ? TRUE : FALSE

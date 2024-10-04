@@ -80,7 +80,7 @@
 	if(!new_loop)
 		return
 
-	RegisterSignal(new_loop, COMSIG_PARENT_QDELETING, PROC_REF(handle_stopping))
+	RegisterSignal(new_loop, COMSIG_QDELETING, PROC_REF(handle_stopping))
 
 ///Deals with what happens when we stop moving, IE we die
 /obj/effect/meteor/proc/handle_stopping()
@@ -327,8 +327,8 @@
 	signature = "bluespace flux"
 
 /obj/effect/meteor/bluespace/Bump()
-	..()
-	if(prob(35))
+	. = ..()
+	if(!QDELETED(src) && prob(35)) // monkestation edit: runtime fix
 		do_teleport(src, get_turf(src), 6, asoundin = 'sound/effects/phasein.ogg', channel = TELEPORT_CHANNEL_BLUESPACE)
 
 /obj/effect/meteor/banana

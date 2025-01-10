@@ -8,7 +8,7 @@
 	icon_state = "slaughter_demon"
 	icon_living = "slaughter_demon"
 
-	minimum_survivable_temperature = TCMB
+	bodytemp_cold_damage_limit = TCMB
 
 	// slaughter demons are specifically intended to have low melee damage, but as they hit and build up their killstreak
 	// their wound bonuses grow and grow higher. this is how they're able to efficiently kill and slaughter their victims.
@@ -67,7 +67,7 @@
 
 /// Performs the classic slaughter demon bodyslam on the attack_target. Yeets them a screen away.
 /mob/living/basic/demon/slaughter/proc/bodyslam(atom/attack_target)
-	if(!isliving(attack_target))
+	if(!isliving(attack_target) || attack_target == src)
 		return
 
 	if(!Adjacent(attack_target))
@@ -147,7 +147,7 @@
 /// We do our own special thing on death, which is to spawn a kitten.
 /mob/living/basic/demon/slaughter/laughter/proc/on_death()
 	SIGNAL_HANDLER
-	var/mob/living/simple_animal/pet/cat/kitten/kitty = new(drop_location())
+	var/mob/living/basic/pet/cat/kitten/kitty = new(drop_location())
 	kitty.name = "Laughter"
 
 /mob/living/basic/demon/slaughter/laughter/ex_act(severity)

@@ -34,6 +34,7 @@
 	ai_controller = /datum/ai_controller/basic_controller/gorilla
 	faction = list(FACTION_MONKEY, FACTION_JUNGLE)
 	butcher_results = list(/obj/item/food/meat/slab/gorilla = 4, /obj/effect/gibspawner/generic/animal = 1)
+	max_grab = GRAB_KILL
 	/// How likely our meaty fist is to stun someone
 	var/paralyze_chance = 20
 	/// A counter for when we can scream again
@@ -95,7 +96,7 @@
 	else
 		target.throw_at(get_edge_target_turf(target, dir), range = rand(1, 2), speed = 7, thrower = src)
 
-/mob/living/basic/gorilla/gib()
+/mob/living/basic/gorilla/gib(no_brain, no_organs, no_bodyparts, safe_gib = TRUE)
 	var/mob/living/brain/gorilla_brain = new(drop_location())
 	gorilla_brain.name = real_name
 	gorilla_brain.real_name = real_name

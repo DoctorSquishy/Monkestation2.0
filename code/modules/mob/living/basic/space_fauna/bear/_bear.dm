@@ -34,8 +34,8 @@
 	faction = list(FACTION_RUSSIAN)
 
 	habitable_atmos = list("min_oxy" = 0, "max_oxy" = 0, "min_plas" = 0, "max_plas" = 0, "min_co2" = 0, "max_co2" = 0, "min_n2" = 0, "max_n2" = 0)
-	minimum_survivable_temperature = TCMB
-	maximum_survivable_temperature = T0C + 1500
+	bodytemp_cold_damage_limit = TCMB
+	bodytemp_heat_damage_limit = T0C + 1500
 	ai_controller = /datum/ai_controller/basic_controller/bear
 	/// is the bear wearing a armor?
 	var/armored = FALSE
@@ -125,9 +125,14 @@
 
 	AddComponent(/datum/component/regenerator,\
 		regeneration_delay = 1 SECONDS,\
-		health_per_second = 5,\
+		brute_per_second = 5,\
 		outline_colour = COLOR_YELLOW,\
 	)
+	var/static/list/on_consume = list(
+		/datum/reagent/consumable/nutriment = 1,
+		/datum/reagent/consumable/nutriment/vitamin = 0.1,
+	)
+	AddElement(/datum/element/consumable_mob, reagents_list = on_consume)
 
 /mob/living/basic/bear/butter/attack_hand(mob/living/user, list/modifiers) //Borrowed code from Cak, feeds people if they hit you. More nutriment but less vitamin to represent BUTTER.
 	. = ..()

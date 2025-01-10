@@ -290,7 +290,7 @@ SUBSYSTEM_DEF(garbage)
 	// monkestation start: disable hard deletes
 	if(!D)
 		return
-	if(!enable_hard_deletes)
+	if(!enable_hard_deletes && !override)
 		failed_hard_deletes |= D
 		return
 	// monkestation end
@@ -360,7 +360,7 @@ SUBSYSTEM_DEF(garbage)
 /// Datums passed to this will be given a chance to clean up references to allow the GC to collect them.
 /proc/qdel(datum/to_delete, force = FALSE)
 	if(!istype(to_delete))
-		//DREAMLUAU_CLEAR_REF_USERDATA(to_delete)
+		DREAMLUAU_CLEAR_REF_USERDATA(to_delete)
 		del(to_delete)
 		return
 

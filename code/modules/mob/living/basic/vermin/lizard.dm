@@ -50,7 +50,7 @@
 
 /datum/ai_controller/basic_controller/lizard
 	blackboard = list(
-		BB_TARGETING_STRATEGY = /datum/targeting_strategy/basic/allow_items,
+		BB_TARGETING_STRATEGY = /datum/targeting_strategy/basic,
 	)
 
 	ai_traits = STOP_MOVING_WHEN_PULLED
@@ -58,7 +58,6 @@
 	idle_behavior = /datum/idle_behavior/idle_random_walk
 	planning_subtrees = list(
 		/datum/ai_planning_subtree/find_food,
-		/datum/ai_planning_subtree/basic_melee_attack_subtree,
 		/datum/ai_planning_subtree/random_speech/lizard,
 	)
 
@@ -71,8 +70,8 @@
 	icon_state = "lizard_space"
 	icon_living = "lizard_space"
 	unsuitable_atmos_damage = 0
-	minimum_survivable_temperature = TCMB
-	maximum_survivable_temperature = T0C + 40
+	bodytemp_cold_damage_limit = TCMB
+	bodytemp_heat_damage_limit = T0C + 40
 
 /// Janitor's pet lizard.
 /mob/living/basic/lizard/wags_his_tail

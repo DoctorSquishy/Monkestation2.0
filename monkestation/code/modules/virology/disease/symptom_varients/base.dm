@@ -45,12 +45,13 @@
 	return TRUE
 
 /datum/symptom_varient/proc/trigger_symptom()
-	if(!host_disease)
+	if(QDELETED(host_disease) || QDELETED(host_disease.affected_mob))
 		return FALSE
 	if(!COOLDOWN_FINISHED(src, host_cooldown))
 		return FALSE
 	host_symptom.run_effect(host_disease.affected_mob, host_disease)
 	COOLDOWN_START(src, host_cooldown, cooldown_time)
+	return TRUE
 
 /datum/symptom_varient/proc/Copy(datum/symptom/new_symp)
 	return new type(new_symp)

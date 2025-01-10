@@ -106,8 +106,8 @@
 	blood_overlay_type = "coat"
 	body_parts_covered = CHEST|GROIN|ARMS
 	armor_type = /datum/armor/jacket_det_suit
-	cold_protection = CHEST|GROIN|ARMS
-	heat_protection = CHEST|GROIN|ARMS
+
+
 
 /datum/armor/jacket_det_suit
 	melee = 25
@@ -161,8 +161,11 @@
 		/obj/item/tank/internals/emergency_oxygen,
 		/obj/item/tank/internals/plasmaman,
 		/obj/item/t_scanner,
+		/obj/item/gun/ballistic/rifle/boltaction/pipegun,
 		/obj/item/gun/ballistic/rifle/boltaction/pipegun/prime,
 		/obj/item/tank/internals/oxygen, //monkestation edit
+		/obj/item/storage/bag/rebar_quiver,
+		/obj/item/gun/ballistic/rifle/rebarxbow,
 	)
 	resistance_flags = NONE
 	species_exception = list(/datum/species/golem)
@@ -293,8 +296,8 @@
 		/obj/item/tank/internals,
 	)
 	armor_type = /datum/armor/jacket_curator
-	cold_protection = CHEST|ARMS
-	heat_protection = CHEST|ARMS
+
+
 
 //Robotocist
 /datum/armor/jacket_curator

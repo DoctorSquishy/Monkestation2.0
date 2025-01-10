@@ -5,7 +5,14 @@
 
 /datum/wound/slash
 	name = "Slashing (Cut) Wound"
+	undiagnosed_name = "Cut"
 	sound_effect = 'sound/weapons/slice.ogg'
+
+/datum/wound/slash/wound_injury(datum/wound/old_wound, attack_direction)
+	if(!old_wound && limb.current_gauze && (wound_flags & ACCEPTS_GAUZE))
+		// oops your existing gauze got cut through! need a new one now
+		limb.seep_gauze(initial(limb.current_gauze.absorption_capacity) * 0.8)
+	return ..()
 
 /datum/wound_pregen_data/flesh_slash
 	abstract = TRUE
@@ -134,7 +141,7 @@
 		return BLOOD_FLOW_INCREASING
 
 /datum/wound/slash/flesh/handle_process(seconds_per_tick, times_fired)
-
+	. = ..()
 	if (!victim || HAS_TRAIT(victim, TRAIT_STASIS))
 		return
 
@@ -189,19 +196,25 @@
 	else if(istype(I, /obj/item/stack/medical/suture))
 		return suture(I, user)
 
-/datum/wound/slash/flesh/try_handling(mob/living/carbon/human/user)
-	if(user.pulling != victim || user.zone_selected != limb.body_zone || !victim.try_inject(user, injection_flags = INJECT_TRY_SHOW_ERROR_MESSAGE))
+/datum/wound/slash/flesh/try_handling(mob/living/user)
+	if(user.pulling != victim || !HAS_TRAIT(user, TRAIT_WOUND_LICKER) || !victim.try_inject(user, injection_flags = INJECT_TRY_SHOW_ERROR_MESSAGE))
 		return FALSE
+	if(!isnull(user.hud_used?.zone_select) && user.zone_selected != limb.body_zone)
+		return FALSE
+
 	if(DOING_INTERACTION_WITH_TARGET(user, victim))
 		to_chat(user, span_warning("You're already interacting with [victim]!"))
 		return
-	if(user.is_mouth_covered())
-		to_chat(user, span_warning("Your mouth is covered, you can't lick [victim]'s wounds!"))
-		return
-	if(!user.get_organ_slot(ORGAN_SLOT_TONGUE))
-		to_chat(user, span_warning("You can't lick wounds without a tongue!")) // f in chat
-		return
+	if(iscarbon(user))
+		var/mob/living/carbon/carbon_user = user
+		if(carbon_user.is_mouth_covered())
+			to_chat(user, span_warning("Your mouth is covered, you can't lick [victim]'s wounds!"))
+			return
+		if(!carbon_user.get_organ_slot(ORGAN_SLOT_TONGUE))
+			to_chat(user, span_warning("You can't lick wounds without a tongue!")) // f in chat
+			return
 
+	lick_wounds(user)
 	return TRUE
 
 /// if a felinid is licking this cut to reduce bleeding
@@ -317,7 +330,9 @@
 /datum/wound/slash/flesh/moderate
 	name = "Rough Abrasion"
 	desc = "Patient's skin has been badly scraped, generating moderate blood loss."
-	treat_text = "Application of clean bandages or first-aid grade sutures, followed by food and rest."
+	treat_text = "Apply bandaging or suturing to the wound. \
+		Follow up with food and a rest period."
+	treat_text_short = "Apply bandaging or suturing."
 	examine_desc = "has an open cut"
 	occur_text = "is cut open, slowly leaking blood"
 	sound_effect = 'sound/effects/wounds/blood1.ogg'
@@ -346,7 +361,10 @@
 /datum/wound/slash/flesh/severe
 	name = "Open Laceration"
 	desc = "Patient's skin is ripped clean open, allowing significant blood loss."
-	treat_text = "Speedy application of first-aid grade sutures and clean bandages, followed by vitals monitoring to ensure recovery."
+	treat_text = "Swiftly apply bandaging or suturing to the wound, \
+		or make use of blood clotting agents or cauterization. \
+		Follow up with iron supplements or saline-glucose and a rest period."
+	treat_text_short = "Apply bandaging, suturing, clotting agents, or cauterization."
 	examine_desc = "has a severe cut"
 	occur_text = "is ripped open, veins spurting blood"
 	sound_effect = 'sound/effects/wounds/blood2.ogg'
@@ -376,7 +394,10 @@
 /datum/wound/slash/flesh/critical
 	name = "Weeping Avulsion"
 	desc = "Patient's skin is completely torn open, along with significant loss of tissue. Extreme blood loss will lead to quick death without intervention."
-	treat_text = "Immediate bandaging and either suturing or cauterization, followed by supervised resanguination."
+	treat_text = "Immediately apply bandaging or suturing to the wound, \
+		or make use of blood clotting agents or cauterization. \
+		Follow up supervised resanguination."
+	treat_text_short = "Apply bandaging, suturing, clotting agents, or cauterization."
 	examine_desc = "is carved down to the bone, spraying blood wildly"
 	occur_text = "is torn open, spraying blood wildly"
 	sound_effect = 'sound/effects/wounds/blood3.ogg'

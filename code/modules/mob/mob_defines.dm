@@ -22,6 +22,7 @@
 	see_in_dark = 1e6
 	// A list of factions that this mob is currently in, for hostile mob targeting, amongst other things
 	faction = list(FACTION_NEUTRAL)
+	use_correction = TRUE
 	/// The current client inhabiting this mob. Managed by login/logout
 	/// This exists so we can do cleanup in logout for occasions where a client was transfere rather then destroyed
 	/// We need to do this because the mob on logout never actually has a reference to client
@@ -98,11 +99,6 @@
 	  * is reset to this value
 	  */
 	var/name_archive //For admin things like possession
-
-	/// Default body temperature
-	var/bodytemperature = BODYTEMP_NORMAL //310.15K / 98.6F
-	/// Our body temperatue as of the last process, prevents pointless work when handling alerts
-	var/old_bodytemperature = 0
 
 	/// Hunger level of the mob
 	var/nutrition = NUTRITION_LEVEL_START_MIN // randomised in Initialize

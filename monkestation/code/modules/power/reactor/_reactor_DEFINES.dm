@@ -1,5 +1,17 @@
 // DEFINES FOR NUCLEAR REACTOR
 
+// The volume of each reactor module
+#define NUCLEAR_REACTOR_VOLUME 1000
+
+
+
+
+
+
+
+
+
+
 // Index of each node in the list of nodes the reactor has
 #define COOLANT_INPUT_GATE 1
 #define MODERATOR_INPUT_GATE 2

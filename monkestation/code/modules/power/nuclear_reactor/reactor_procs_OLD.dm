@@ -1,4 +1,5 @@
 // Upload Reactor Programs to station
+/*
 //// If this causes unforeseen issues go back, simply add the program like the sm_monitor instead
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/upload_reactor_monitor()
 	// Add to starting program lists for midround and late Initialize
@@ -27,6 +28,7 @@
 		ce_disk.add_file(new /datum/computer_file/program/reactor_monitor)
 	for(var/obj/item/computer_disk/engineering/engie_disk)
 		engie_disk.add_file(new /datum/computer_file/program/reactor_monitor)
+*/
 
 //Start up the reactor, enable reactor hum
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/start_up()
@@ -329,7 +331,7 @@
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/has_fuel()
 	return length(fuel_rods)
 
-/obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/get_fuel_power()
+/obj/machinery/atmospherics/components/quaternary/nuclear_reactor/proc/get_fuel_power()
 	var/total_fuel_power = 0
 	for(var/obj/item/fuel_rod/rod in fuel_rods)
 		total_fuel_power += rod.fuel_power
@@ -548,7 +550,7 @@
 		return
 	if(isliving(atom_movable) && temperature > T0C)
 		var/mob/living/living_mob = atom_movable
-		living_mob.adjust_bodytemperature(clamp(temperature, BODYTEMP_COOLING_MAX, BODYTEMP_HEATING_MAX)) //If you're on fire, you heat up!
+		living_mob.adjust_bodytemperature(clamp(temperature, BODYTEMP_ENVIRONMENT_COOLING_MAX, BODYTEMP_ENVIRONMENT_HEATING_MAX)) //If you're on fire, you heat up!
 
 
 /// Returns data that are exclusively about this reactor

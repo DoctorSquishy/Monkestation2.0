@@ -22,12 +22,6 @@
 				"amount" = reactor_gas.heat_mod,
 				"positive" = TRUE,
 			))
-		if(reactor_gas.heat_resistance)
-			numeric_data += list(list(
-				"name" = "Core Thermal Resistance",
-				"amount" = reactor_gas.heat_resistance,
-				"positive" = FALSE,
-			))
 		if(reactor_gas.radioactivity_mod)
 			numeric_data += list(list(
 				"name" = "Radioactivity",
@@ -67,8 +61,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 	var/gas_path
 	// How much more waste heat and gasses the reactor generates
 	var/heat_mod = 0
-	// How extra hot the reactor can run before taking damage
-	var/heat_resistance = 0
 	// Gases ability to transfer heat to coolant
 	var/permeability_mod = 0
 	// Increases the amount of radiation
@@ -104,7 +96,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 /datum/reactor_gas/nitrogen
 	gas_path = /datum/gas/nitrogen
 	heat_mod = -0.2
-	heat_resistance = 0.1
 	radioactivity_mod = 0.02
 	control_mod = 0.2
 	desc ="Slightly increases the control of criticality (K) in exchange for lower heat. Byproducts: Tritium."
@@ -122,7 +113,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 /datum/reactor_gas/carbon_dioxide
 	gas_path = /datum/gas/carbon_dioxide
 	heat_mod = -0.4
-	heat_resistance = 0.3
 	radioactivity_mod = 0.08
 	control_mod = 0.4
 	desc ="Good for shutting down the reactor. Suppresses and controls reactor reactions in exchange for increased radiation and less heat. Byproducts: Tritium."
@@ -159,7 +149,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 /datum/reactor_gas/water_vapor
 	gas_path = /datum/gas/water_vapor
 	heat_mod = 0.4
-	heat_resistance = 0.2
 	permeability_mod = 0.04
 	desc ="Increases coolant efficiency, heat output, and temperature limits. Byproducts: Tritium, Hydrogen, Oxygen."
 
@@ -183,7 +172,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 /datum/reactor_gas/nitrous_oxide
 	gas_path = /datum/gas/nitrous_oxide
 	heat_mod = -0.1
-	heat_resistance = 0.3
 	radioactivity_mod = 0.02
 	desc ="Reduces heat ouput, increaes coolant efficiency, and slightly increases temperature limits. Byproducts: Tritium, Nitrogen, Oxygen."
 
@@ -235,7 +223,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 /datum/reactor_gas/bz
 	gas_path = /datum/gas/bz
 	heat_mod = 0.5
-	heat_resistance = 0.2
 	radioactivity_mod = 0.15
 	desc ="Increases heat and radiation output and temperature limits. Byproducts: Plasma, Nitrous Oxide."
 
@@ -310,7 +297,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 /datum/reactor_gas/nitrium
 	gas_path = /datum/gas/nitrium
 	heat_mod = 0.6
-	heat_resistance = 0.2
 	radioactivity_mod = 0.1
 	control_mod = -0.1
 	permeability_mod = 0.04
@@ -363,7 +349,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 /datum/reactor_gas/freon
 	gas_path = /datum/gas/freon
 	heat_mod = -1
-	heat_resistance = 0.4
 	permeability_mod = 0.08
 	desc ="Chill those reactions down while improving heat resistance and cooling. Byproducts: Tritium, Plasma, CO2, BZ."
 
@@ -388,7 +373,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 
 /datum/reactor_gas/halon
 	gas_path = /datum/gas/halon
-	heat_resistance = 0.2
 	permeability_mod = 0.06
 	control_mod = -0.08
 	depletion_mod = 0.02
@@ -414,7 +398,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 /datum/reactor_gas/helium
 	gas_path = /datum/gas/helium
 	heat_mod = -0.6
-	heat_resistance = 0.5
 	control_mod = 0.3
 	desc ="Stable and able to take the heat. Byproducts: Tritium, Proto-Nitrate, BZ."
 
@@ -441,7 +424,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 /datum/reactor_gas/antinoblium
 	gas_path = /datum/gas/antinoblium
 	heat_mod = 1.5
-	heat_resistance = 1
 	radioactivity_mod = 0.5
 	control_mod = -0.2
 	permeability_mod = 0.5
@@ -465,7 +447,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 /datum/reactor_gas/healium
 	gas_path = /datum/gas/healium
 	heat_mod = 0.5
-	heat_resistance = 0.5
 	radioactivity_mod = 0.3
 	depletion_mod = 0.2
 	desc ="Like giving the reactor a shot of adrenaline laced creatine with a scoop of pure radiation. Watch those blemishes just melt away!  Byproducts: Tritium, Freon, BZ."
@@ -543,7 +524,6 @@ GLOBAL_LIST_INIT(reactor_gas_behavior, init_reactor_gas())
 /datum/reactor_gas/zauker
 	gas_path = /datum/gas/zauker
 	heat_mod = 6.66
-	heat_resistance = 6.66
 	radioactivity_mod = 6.66
 	control_mod = -0.666
 	permeability_mod = -0.666

@@ -353,7 +353,7 @@
 		if(isliving(atom_on_reactor))
 			var/mob/living/living_mob = atom_on_reactor
 			if(temperature > living_mob.bodytemperature)
-				living_mob.adjust_bodytemperature(clamp(temperature, BODYTEMP_COOLING_MAX, BODYTEMP_HEATING_MAX)) //If you're on fire, you heat up!
+				living_mob.adjust_bodytemperature(clamp(temperature, BODYTEMP_ENVIRONMENT_COOLING_MAX, BODYTEMP_ENVIRONMENT_HEATING_MAX)) //If you're on fire, you heat up!
 
 		if(IS_EDIBLE(atom_on_reactor) && temperature >= REACTOR_TEMPERATURE_OPERATING)
 			grilled_item = atom_on_reactor

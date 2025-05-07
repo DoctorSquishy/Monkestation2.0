@@ -265,7 +265,7 @@ GLOBAL_LIST_INIT(gaslist_cache, init_gaslist_cache())
 		. = TRUE
 		var/self_heat_cap = heat_capacity()
 		var/other_heat_cap = other.heat_capacity()
-		var/new_temp = (temperature * self_heat_cap + other.temperature * other_heat_cap) / (self_heat_cap + other_heat_cap)
+		var/new_temp = (temperature * self_heat_cap + other.temperature * other_heat_cap) / max((self_heat_cap + other_heat_cap), 0.0001) //prevents division by zero
 		temperature = new_temp
 		other.temperature = new_temp
 

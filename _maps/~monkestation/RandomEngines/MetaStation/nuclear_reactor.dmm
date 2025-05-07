@@ -38,12 +38,6 @@
 /obj/machinery/atmospherics/pipe/smart/manifold4w/cyan/visible,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
-"aO" = (
-/obj/machinery/atmospherics/pipe/layer_manifold/orange/hidden{
-	dir = 4
-	},
-/turf/open/floor/plating,
-/area/station/engineering/supermatter/room)
 "aR" = (
 /obj/structure/sign/directions/ptl/directional/east,
 /turf/open/floor/iron/dark,
@@ -85,16 +79,16 @@
 "cb" = (
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
-"cr" = (
-/obj/item/sealant,
-/turf/open/floor/plating,
-/area/station/engineering/supermatter/room)
 "cE" = (
 /obj/machinery/atmospherics/components/trinary/mixer{
 	dir = 1
 	},
 /obj/effect/turf_decal/stripes/line,
 /turf/open/floor/iron,
+/area/station/engineering/supermatter/room)
+"cG" = (
+/obj/machinery/atmospherics/components/quaternary/nuclear_reactor,
+/turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "cY" = (
 /obj/machinery/atmospherics/components/unary/portables_connector/visible{
@@ -122,10 +116,6 @@
 	dir = 8
 	},
 /obj/machinery/portable_atmospherics/canister/hydrogen,
-/turf/open/floor/plating,
-/area/station/engineering/supermatter/room)
-"ek" = (
-/obj/machinery/modular_computer/console/preset/engineering,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "eG" = (
@@ -176,7 +166,9 @@
 /turf/open/floor/iron/dark,
 /area/station/engineering/supermatter/room)
 "kl" = (
-/obj/item/fuel_rod,
+/obj/machinery/atmospherics/components/binary/pump{
+	dir = 4
+	},
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "lc" = (
@@ -195,6 +187,13 @@
 /obj/machinery/portable_atmospherics/canister/nitrous_oxide,
 /turf/open/floor/iron,
 /area/station/engineering/supermatter/room)
+"lO" = (
+/obj/machinery/atmospherics/components/unary/portables_connector/visible{
+	dir = 8
+	},
+/obj/machinery/portable_atmospherics/canister/water_vapor,
+/turf/open/floor/plating,
+/area/station/engineering/supermatter/room)
 "mD" = (
 /obj/machinery/power/rad_collector,
 /turf/open/floor/iron/dark,
@@ -211,10 +210,6 @@
 	c_tag = "Singularity Engine #3"
 	},
 /turf/open/floor/iron/dark,
-/area/station/engineering/supermatter/room)
-"oJ" = (
-/obj/machinery/atmospherics/pipe/layer_manifold/green/hidden,
-/turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "pF" = (
 /obj/machinery/atmospherics/components/unary/portables_connector/visible{
@@ -234,16 +229,6 @@
 	},
 /obj/machinery/portable_atmospherics/canister/nob,
 /turf/open/floor/iron,
-/area/station/engineering/supermatter/room)
-"qK" = (
-/obj/machinery/atmospherics/components/binary/pump/reactor_moderator{
-	dir = 4
-	},
-/turf/open/floor/plating,
-/area/station/engineering/supermatter/room)
-"rq" = (
-/obj/item/fuel_rod/plutonium,
-/turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "rM" = (
 /obj/machinery/power/apc/auto_name/directional/south,
@@ -401,24 +386,14 @@
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "Eq" = (
-/obj/machinery/atmospherics/components/binary/pump/reactor_output{
-	dir = 4
+/obj/machinery/atmospherics/components/binary/pump{
+	dir = 8
 	},
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "Fs" = (
 /obj/machinery/atmospherics/components/trinary/mixer{
 	dir = 1
-	},
-/turf/open/floor/plating,
-/area/station/engineering/supermatter/room)
-"Gz" = (
-/obj/machinery/atmospherics/pipe/layer_manifold/cyan/hidden,
-/turf/open/floor/plating,
-/area/station/engineering/supermatter/room)
-"GT" = (
-/obj/machinery/atmospherics/components/binary/pump/reactor_input{
-	dir = 8
 	},
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
@@ -451,10 +426,6 @@
 /obj/effect/mapping_helpers/airlock/access/all/engineering/general,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
-"Lz" = (
-/obj/machinery/computer/reactor/main,
-/turf/open/floor/plating,
-/area/station/engineering/supermatter/room)
 "LM" = (
 /obj/effect/spawner/structure/window/reinforced/plasma,
 /obj/machinery/atmospherics/components/trinary/mixer/flipped{
@@ -472,12 +443,6 @@
 "MY" = (
 /obj/machinery/atmospherics/pipe/smart/manifold4w/green/visible,
 /obj/machinery/meter,
-/turf/open/floor/plating,
-/area/station/engineering/supermatter/room)
-"Nk" = (
-/obj/machinery/atmospherics/components/trinary/nuclear_reactor/engine{
-	dir = 2
-	},
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "Np" = (
@@ -508,10 +473,6 @@
 /obj/effect/spawner/structure/window/reinforced/plasma,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
 /turf/open/floor/plating,
-/area/station/engineering/supermatter/room)
-"QH" = (
-/obj/structure/sign/delamination_counter/directional/north,
-/turf/open/floor/iron/dark,
 /area/station/engineering/supermatter/room)
 "Ri" = (
 /obj/machinery/atmospherics/components/unary/portables_connector/visible,
@@ -554,11 +515,6 @@
 "Wd" = (
 /obj/structure/cable,
 /turf/open/floor/iron/dark,
-/area/station/engineering/supermatter/room)
-"XQ" = (
-/obj/machinery/atmospherics/pipe/smart/manifold4w/green/visible,
-/obj/item/fuel_rod/material/bananium,
-/turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "XV" = (
 /obj/machinery/light/directional/west,
@@ -682,7 +638,7 @@ Np
 Wd
 OD
 au
-QH
+VM
 VM
 VM
 VM
@@ -846,7 +802,7 @@ Qe
 Eg
 pF
 aI
-qK
+cb
 Il
 dX
 sg
@@ -872,9 +828,9 @@ cb
 cb
 cb
 cb
-cb
-aO
-cb
+cG
+cG
+cG
 cb
 cb
 cb
@@ -899,12 +855,12 @@ cb
 HZ
 aJ
 vm
-Gz
-Nk
-oJ
+cG
+cG
+cG
 MY
 uG
-ek
+cb
 cb
 cb
 au
@@ -921,17 +877,17 @@ IV
 IV
 IV
 au
-cr
-cb
-cb
-GT
 cb
 cb
 cb
+kl
 cb
+cG
+cG
+cG
 cb
 Eq
-Lz
+cb
 cb
 cb
 au
@@ -953,9 +909,9 @@ cb
 Ri
 aJ
 cb
+cb
 kl
-kl
-kl
+cb
 HZ
 uG
 cb
@@ -979,10 +935,10 @@ cb
 vw
 vw
 xh
-uG
-XQ
-XQ
-XQ
+cb
+cb
+MY
+cb
 uG
 wT
 cb
@@ -1007,10 +963,10 @@ vw
 cb
 au
 cb
-rq
-rq
-rq
 cb
+cb
+cb
+lO
 au
 cb
 cb

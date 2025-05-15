@@ -194,6 +194,11 @@
 /obj/machinery/portable_atmospherics/canister/water_vapor,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
+"ma" = (
+/obj/item/reactor_rod/material,
+/obj/machinery/atmospherics/pipe/smart/manifold4w/green/visible,
+/turf/open/floor/plating,
+/area/station/engineering/supermatter/room)
 "mD" = (
 /obj/machinery/power/rad_collector,
 /turf/open/floor/iron/dark,
@@ -312,8 +317,8 @@
 /turf/open/floor/iron/dark,
 /area/station/engineering/supermatter/room)
 "xh" = (
-/obj/machinery/atmospherics/components/trinary/filter/flipped/critical,
 /obj/machinery/light/directional/east,
+/obj/machinery/atmospherics/pipe/smart/manifold4w/green/visible,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "xT" = (
@@ -521,6 +526,10 @@
 /obj/machinery/atmospherics/components/unary/portables_connector/visible{
 	dir = 4
 	},
+/turf/open/floor/plating,
+/area/station/engineering/supermatter/room)
+"XX" = (
+/obj/item/reactor_rod/material,
 /turf/open/floor/plating,
 /area/station/engineering/supermatter/room)
 "Ym" = (
@@ -907,10 +916,10 @@ au
 cb
 cb
 Ri
-aJ
+uG
 cb
 cb
-kl
+cb
 cb
 HZ
 uG
@@ -933,12 +942,12 @@ IV
 au
 cb
 vw
-vw
+cb
 xh
-cb
-cb
-MY
-cb
+ma
+ma
+ma
+uG
 uG
 wT
 cb
@@ -962,9 +971,9 @@ cb
 vw
 cb
 au
-cb
-cb
-cb
+XX
+XX
+XX
 cb
 lO
 au
@@ -989,9 +998,9 @@ cb
 vw
 cb
 cb
-cb
-cb
-cb
+XX
+XX
+XX
 cb
 cb
 cb

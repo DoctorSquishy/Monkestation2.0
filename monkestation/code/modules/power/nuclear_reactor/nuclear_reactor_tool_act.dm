@@ -4,15 +4,15 @@
 #define ICON_SPLIT_DOUBLE (world.icon_size/3)*2
 #define ICON_SPLIT_TRIPLE world.icon_size
 
-#define BOTTOM_LEFT 1
-#define MIDDLE_LEFT 2
-#define TOP_LEFT 3
-#define BOTTOM_MIDDLE 4
+#define TOP_LEFT 1
+#define TOP_MIDDLE 2
+#define TOP_RIGHT 3
+#define MIDDLE_LEFT 4
 #define MIDDLE_MIDDLE 5
-#define TOP_MIDDLE 6
-#define BOTTOM_RIGHT 7
-#define MIDDLE_RIGHT 8
-#define TOP_RIGHT 9
+#define MIDDLE_RIGHT 6
+#define BOTTOM_LEFT 7
+#define BOTTOM_MIDDLE 8
+#define BOTTOM_RIGHT 9
 
 /obj/machinery/atmospherics/components/quaternary/nuclear_reactor/attackby(obj/item/held_obj, mob/user, params)
 	var/list/modifiers = params2list(params)
@@ -37,17 +37,15 @@
 	var/rod_choice = select_rod(modifiers, user) //Returns a number 1-9
 	//Define a mapping of positions for each rod_choice
 	var/list/rod_positions = list(
-		BOTTOM_LEFT = list(0, -20),
-		MIDDLE_LEFT = list(0, -10),
 		TOP_LEFT = list(0, 0),
-
-		BOTTOM_MIDDLE = list(10, -20),
-		MIDDLE_MIDDLE = list(10, -10),
 		TOP_MIDDLE = list(10, 0),
-
-		BOTTOM_RIGHT = list(20, -20),
+		TOP_RIGHT = list(20, 0),
+		MIDDLE_LEFT = list(0, -10),
+		MIDDLE_MIDDLE = list(10, -10),
 		MIDDLE_RIGHT = list(20, -10),
-		TOP_RIGHT = list(20, 0)
+		BOTTOM_LEFT = list(0, -20),
+		BOTTOM_MIDDLE = list(10, -20),
+		BOTTOM_RIGHT = list(20, -20)
 	)
 	//Check if the conduit is already occupied
 	if(conduits[rod_choice])
@@ -56,6 +54,7 @@
 
 	//Check if the conduit_[rod_choice] is true; if not, create a new conduit
 	var/obj/machinery/reactor_conduit/conduit = new /obj/machinery/reactor_conduit(src.loc)
+	conduit.conduit_num = rod_choice
 	conduit.conduit_id(rod_choice)
 
 	//Fetch the predefined position for the rod_choice and offset the icon

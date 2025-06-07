@@ -17,7 +17,6 @@
 
 	//Reactor Rod Slots
 	var/list/conduits[9]
-
 	/// The gasmix we just recently absorbed for nuclear reactions
 	var/datum/gas_mixture/reactor_core_gasmix
 
@@ -53,5 +52,4 @@
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/update_icon(updates)
 	. = ..()
 	icon_state = "[base_icon_state]_build_3"
-
 

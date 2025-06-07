@@ -54,8 +54,7 @@
 
 	//Check if the conduit_[rod_choice] is true; if not, create a new conduit
 	var/obj/machinery/reactor_conduit/conduit = new /obj/machinery/reactor_conduit(src.loc)
-	conduit.conduit_num = rod_choice
-	conduit.conduit_id(rod_choice)
+	conduit.set_conduit_number(rod_choice)
 
 	//Fetch the predefined position for the rod_choice and offset the icon
 	var/icon_x = rod_positions[rod_choice][1] // X-offset
@@ -69,6 +68,10 @@
 
 	//Mark this conduit as occupied in conduits list
 	conduits[rod_choice] = TRUE // Register conduit as active
+	var/conduit_turf = get_turf(src)
+	var/conduit_x = conduit.x_pos
+	var/conduit_y = conduit.y_pos
+	conduit.update_rod_adjacency_around(conduit_turf, conduit_x, conduit_y)
 	to_chat(user, span_notice("Rod successfully inserted into conduit [rod_choice]."))
 	return
 

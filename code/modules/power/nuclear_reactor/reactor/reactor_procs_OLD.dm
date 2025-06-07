@@ -1,5 +1,5 @@
 // Upload Reactor Programs to station
-/*
+
 //// If this causes unforeseen issues go back, simply add the program like the sm_monitor instead
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/upload_reactor_monitor()
 	// Add to starting program lists for midround and late Initialize
@@ -28,7 +28,7 @@
 		ce_disk.add_file(new /datum/computer_file/program/reactor_monitor)
 	for(var/obj/item/computer_disk/engineering/engie_disk)
 		engie_disk.add_file(new /datum/computer_file/program/reactor_monitor)
-*/
+
 
 //Start up the reactor, enable reactor hum
 /obj/machinery/atmospherics/components/trinary/nuclear_reactor/proc/start_up()
